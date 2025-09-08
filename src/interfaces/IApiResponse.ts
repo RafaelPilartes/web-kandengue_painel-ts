@@ -1,0 +1,24 @@
+export interface ApiResponse<T> {
+  error: boolean
+  msg: string
+  data?: T
+  chats?: T
+  id?: number
+  url?: T
+  count?: number
+  pagination?: {
+    limit: number | null
+    offset: number
+    count: number
+  }
+}
+
+export interface ListResponseType<T> {
+  data: T
+  message?: string
+  pagination?: {
+    limit: number | null
+    offset: number
+    count: number
+  } | null
+}
