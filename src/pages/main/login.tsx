@@ -11,7 +11,6 @@ import { useAdminStore } from '../../stores/userStore'
 import { ToastContainer } from 'react-toastify'
 import { showToast } from '../../utils/toasts'
 import { BeatLoader } from 'react-spinners'
-import type { AdminInterface } from '../../interfaces/IAdmin'
 import { useAdminsViewModel } from '@/viewModels/AdminViewModel'
 import { useAuthViewModel } from '@/viewModels/AuthViewModel'
 import type { AdminEntity } from '@/core/entities/Admin'
@@ -33,7 +32,7 @@ type loginUserType = z.infer<typeof loginUserSchema>
 export function Login() {
   const { addAdmin } = useAdminStore()
 
-  const { loading, error, createAdmin } = useAdminsViewModel()
+  const { fetchAllAdminSByField } = useAdminsViewModel()
   const { login, isLoggingIn, loginError } = useAuthViewModel()
 
   const {
@@ -46,11 +45,26 @@ export function Login() {
 
   async function handleLogin(dataForm: loginUserType) {
     try {
-      const user = await login({
+      const authRes = await login({
         email: dataForm.email,
         password: dataForm.password
       })
-      console.log('Login feito:', user.user)
+
+      if (authRes.user.uid) {
+        const response = await fetchAllAdminSByField(
+          'email',
+          authRes.user.email
+        )
+
+        const adminData: AdminEntity | null = response?.data[0] ?? null
+
+        if (adminData) {
+          addAdmin(adminData)
+          showToast('success', 'Login efetuado com sucesso!')
+        } else {
+          showToast('error', 'Dados do administrador não encontrados.')
+        }
+      }
     } catch (err) {
       console.error(err)
     }
@@ -62,25 +76,31 @@ export function Login() {
     }
   }, [loginError])
 
-  const handleCreateAdmin = async () => {
-    const adminData: Omit<AdminEntity, 'id'> = {
-      name: 'Admin',
-      email: '6bPfM@example.com',
-      entity_code: '123',
-      photo: '123',
-      phone: '123',
-      status: 'active',
-      role: 'superadmin',
-      permissions: [{ value: 'manage_all', label: 'Gerenciar Tudo' }]
-    }
+  // const handleCreateAdmin = async () => {
+  //   const adminData: Omit<AdminEntity, 'id'> = {
+  //     name: 'Admin',
+  //     email: 'admin1@gmail.com',
+  //     entity_code: 'KDT002',
+  //     photo: 'https://i.pravatar.cc/150?img=2',
+  //     phone: '+244 923 456 789',
+  //     status: 'active',
+  //     role: 'manager',
+  //     permissions: [
+  //       { value: 'manage_users', label: 'Gerenciar Usuários' },
+  //       {
+  //         value: 'assign_roles_permissions',
+  //         label: 'Atribuir Funções e Permissões'
+  //       }
+  //     ]
+  //   }
 
-    try {
-      const admin = await createAdmin.mutateAsync(adminData)
-      console.log('Admin criado:', admin)
-    } catch (err) {
-      console.error(err)
-    }
-  }
+  //   try {
+  //     const admin = await createAdmin.mutateAsync(adminData)
+  //     console.log('Admin criado:', admin)
+  //   } catch (err) {
+  //     console.error(err)
+  //   }
+  // }
 
   return (
     <>
@@ -152,19 +172,6 @@ export function Login() {
                       </button>
                     )}
                   </form>
-                </div>
-
-                <div>
-                  <h1>Login</h1>
-                  <button onClick={handleCreateAdmin} disabled={isLoggingIn}>
-                    {isLoggingIn ? 'Entrando...' : 'Entrar'}
-                  </button>
-
-                  {loginError && (
-                    <p style={{ color: 'red' }}>
-                      {(loginError as Error).message}
-                    </p>
-                  )}
                 </div>
               </div>
 

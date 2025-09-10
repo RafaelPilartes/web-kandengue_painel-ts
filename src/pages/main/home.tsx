@@ -1,21 +1,16 @@
+// pages/home/Home.tsx
 import { useEffect, useState } from 'react'
-
-// Icon
-
 import { Breadcrumbs } from '../../components/Breadcrumbs'
-// Data
-import { routsNameMain } from '../../data/routsName'
-// UseStores
-import { Building2, ShieldCheck, Stethoscope, Users } from 'lucide-react'
-import type { AdminInterface } from '../../interfaces/IAdmin'
-import AdminViewModel from '../../services/ViewModel/AdminViewModel'
-
-// Lib
+import { routsNameMain } from '../../constants/routsName'
 import {
-  Bar,
-  Line
-  // Pie
-} from 'react-chartjs-2'
+  Users,
+  Truck,
+  ShieldCheck,
+  CarFront,
+  CreditCard,
+  Map
+} from 'lucide-react'
+import { Bar, Line } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -28,8 +23,8 @@ import {
   PointElement,
   LineElement
 } from 'chart.js'
-import { AdminListsSection } from '../../components/table/AdminListsSection'
-// Registrar os componentes do Chart.js
+
+// Registrar chart.js
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -43,19 +38,23 @@ ChartJS.register(
 )
 
 export function Home() {
-  // State
   const [isLoading, setIsLoading] = useState<boolean>(true)
-
-  // Total data count
-  const [rowsDataAdmins, setRowsDataAdmins] = useState<AdminInterface[] | null>(
-    null
-  )
 
   const itemsBreadcrumbs = [
     { label: 'Painel', to: routsNameMain.home },
-    { label: 'Painel da Administrativo' }
+    { label: 'Painel Administrativo' }
   ]
-  const monthlyAppointments = {
+
+  // Dados de exemplo (substituir por ViewModel futuramente)
+  const stats = {
+    passengers: 1200,
+    drivers: 340,
+    admins: 12,
+    rides: 4580,
+    revenue: 250000
+  }
+
+  const ridesByMonth = {
     labels: [
       'Jan',
       'Feb',
@@ -72,8 +71,8 @@ export function Home() {
     ],
     datasets: [
       {
-        label: 'Agendamentos por mês',
-        data: [20, 35, 50, 40, 60, 75, 80, 70, 65, 55, 45, 30],
+        label: 'Corridas por mês',
+        data: [120, 200, 350, 400, 560, 600, 750, 720, 680, 640, 500, 420],
         borderColor: '#3B82F6',
         backgroundColor: 'rgba(59, 130, 246, 0.3)',
         tension: 0.4
@@ -81,160 +80,100 @@ export function Home() {
     ]
   }
 
-  const weekdayAppointments = {
+  const revenueByMonth = {
     labels: [
-      'Domingo',
-      'Segunda',
-      'Terça',
-      'Quarta',
-      'Quinta',
-      'Sexta',
-      'Sábado'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
     ],
     datasets: [
       {
-        label: 'Agendamentos por dia da semana',
-        data: [15, 40, 38, 45, 50, 35, 20],
+        label: 'Receita por mês (AOA)',
+        data: [
+          15000, 18000, 21000, 25000, 28000, 30000, 35000, 32000, 29000, 27000,
+          22000, 20000
+        ],
         backgroundColor: '#10B981'
       }
     ]
   }
 
-  // 1. Pagamentos por tipo de serviço
-  const paymentData = {
-    labels: ['Enfermagem', 'Fisioterapia', 'Cuidadores', 'Psicologia'],
+  const ridesByType = {
+    labels: ['Entregas', 'Corridas de carro', 'Corridas de moto'],
     datasets: [
       {
-        label: 'AOA arrecadado',
-        data: [520500, 320600, 250900, 155800],
-        backgroundColor: ['#2563EB', '#10B981', '#F59E0B', '#EF4444']
+        label: 'Tipos de Corridas',
+        data: [3200, 2900, 1480],
+        backgroundColor: ['#2563EB', '#F59E0B', '#EF4444']
       }
     ]
   }
 
-  // 2. Solicitações de suporte por tipo/mês
-  const supportData = {
-    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-    datasets: [
-      {
-        label: 'Paciente',
-        data: [5, 8, 12, 10, 6, 4],
-        backgroundColor: '#3B82F6'
-      },
-      {
-        label: 'Técnico',
-        data: [2, 5, 6, 9, 7, 3],
-        backgroundColor: '#10B981'
-      },
-      {
-        label: 'Parceiro',
-        data: [1, 3, 2, 4, 2, 1],
-        backgroundColor: '#F59E0B'
-      }
-    ]
-  }
-
-  // Function
   useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true)
-
-      try {
-        // Executa ambas as requisições em paralelo
-        const [rowsDataAdmins] = await Promise.all([
-          AdminViewModel.getAllTotal()
-        ])
-
-        // Lida com technicians
-        if (rowsDataAdmins.error) {
-          console.error('Erro ao buscar administradores:', rowsDataAdmins.msg)
-        } else {
-          setRowsDataAdmins(rowsDataAdmins.data as AdminInterface[])
-        }
-      } catch (error) {
-        console.error('Erro ao buscar dados:', error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    fetchData()
+    setIsLoading(true)
+    setTimeout(() => {
+      setIsLoading(false)
+    }, 500)
   }, [])
 
   return (
-    <div className="w-full h-full flex flex-col justify-start items-start gap-6 overflow-x-hidden ">
+    <div className="w-full h-full flex flex-col gap-6 overflow-x-hidden">
       <Breadcrumbs items={itemsBreadcrumbs} />
 
-      {isLoading}
+      {isLoading && <span>Carregando...</span>}
 
       <div className="w-full grid grid-cols-4 max-w-s-1030:grid-cols-2 max-w-s-520:grid-cols-1 gap-6">
-        {/* Patients */}
-        <div className="w-full p-6 flex flex-col justify-start items-start gap-3 rounded-md bg-light dark:bg-dark shadow-3xl border-b-8 border-blue-600">
-          <span className="text-blue-600 ">
-            <Users size={36} />
-          </span>
-          <span className="font-normal text-base ">Total de pacientes</span>
-          <span className="text-3xl font-semibold ">{0}</span>
+        <div className="p-6 flex flex-col gap-3 rounded-md bg-light dark:bg-dark shadow-3xl border-b-8 border-blue-600">
+          <Users size={36} className="text-blue-600" />
+          <span className="text-base">Total de Usuários</span>
+          <span className="text-3xl font-semibold">{stats.passengers}</span>
         </div>
 
-        {/* Technicians */}
-        <div className="w-full p-6 flex flex-col justify-start items-start gap-3 rounded-md bg-light dark:bg-dark shadow-3xl border-b-8 border-green-500">
-          <span className="text-green-500 ">
-            <Stethoscope size={36} />
-          </span>
-          <span className="font-normal text-base ">Total de tecnicos</span>
-          <span className="text-3xl font-semibold ">{0}</span>
+        <div className="p-6 flex flex-col gap-3 rounded-md bg-light dark:bg-dark shadow-3xl border-b-8 border-green-500">
+          <Truck size={36} className="text-green-500" />
+          <span className="text-base">Total de Motoristas</span>
+          <span className="text-3xl font-semibold">{stats.drivers}</span>
         </div>
 
-        {/* Partners */}
-        <div className="w-full p-6 flex flex-col justify-start items-start gap-3 rounded-md bg-light dark:bg-dark shadow-3xl border-b-8 border-orange-500">
-          <span className="text-orange-500 ">
-            <Building2 size={36} />
-          </span>
-          <span className="font-normal text-base ">Total de parceiros</span>
-          <span className="text-3xl font-semibold ">{0}</span>
+        <div className="p-6 flex flex-col gap-3 rounded-md bg-light dark:bg-dark shadow-3xl border-b-8 border-orange-500">
+          <CarFront size={36} className="text-orange-500" />
+          <span className="text-base">Total de Corridas</span>
+          <span className="text-3xl font-semibold">{stats.rides}</span>
         </div>
 
-        {/* Admins */}
-        <div className="w-full p-6 flex flex-col justify-start items-start gap-3 rounded-md bg-light dark:bg-dark shadow-3xl border-b-8 border-yellow-400">
-          <span className="text-yellow-400 ">
-            <ShieldCheck size={36} />
-          </span>
-          <span className="font-normal text-base ">
-            Total de administradores
-          </span>
-          <span className="text-3xl font-semibold ">
-            {rowsDataAdmins?.length}
+        <div className="p-6 flex flex-col gap-3 rounded-md bg-light dark:bg-dark shadow-3xl border-b-8 border-purple-500">
+          <CreditCard size={36} className="text-purple-500" />
+          <span className="text-base">Receita Total</span>
+          <span className="text-3xl font-semibold">
+            AOA {stats.revenue.toLocaleString()}
           </span>
         </div>
       </div>
 
-      <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="chart p-6 rounded-md bg-light dark:bg-dark shadow-3xl">
-          <h2>Pagamentos por tipo de serviço</h2>
-          <Bar data={paymentData} />
+          <h2>Corridas por Mês</h2>
+          <Line data={ridesByMonth} />
         </div>
 
         <div className="chart p-6 rounded-md bg-light dark:bg-dark shadow-3xl">
-          <h2>Solicitações de suporte por tipo/mês</h2>
-          <Bar data={supportData} />
+          <h2>Receita por Mês</h2>
+          <Bar data={revenueByMonth} />
         </div>
       </div>
 
-      <AdminListsSection />
-
-      <div className="w-full flex flex-col gap-8">
-        <div className="charts-container grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="chart p-6 rounded-md bg-light dark:bg-dark shadow-3xl">
-            <h2>Agendamentos por mês</h2>
-            <Line data={monthlyAppointments} />
-          </div>
-
-          <div className="chart p-6 rounded-md bg-light dark:bg-dark shadow-3xl">
-            <h2>Agendamentos por dia da semana</h2>
-            <Bar data={weekdayAppointments} />
-          </div>
-        </div>
+      <div className="chart p-6 rounded-md bg-light dark:bg-dark shadow-3xl">
+        <h2>Distribuição de Tipos de Corrida</h2>
+        <Bar data={ridesByType} />
       </div>
     </div>
   )

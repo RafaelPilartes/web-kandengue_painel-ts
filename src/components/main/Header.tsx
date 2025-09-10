@@ -9,26 +9,26 @@ import {
 import { useContext } from 'react'
 import { AppContext } from '../../provider/AppProvider'
 import { DropdownUser } from '../DropdownUser'
-import { useUserStore } from '../../stores/userStore'
+import { useAdminStore } from '../../stores/userStore'
 import DarkModeSwitcher from './DarkModeSwitcher'
 import { Link } from 'react-router-dom'
-import { routsNameMain } from '../../data/routsName'
+import { routsNameMain } from '../../constants/routsName'
 import { DropdownInfo } from '../DropdownInfo'
 import { Chat } from 'phosphor-react'
 
 export const Header = () => {
-  const { currentUserData, removeUser } = useUserStore()
+  const { currentAdminData, removeAdmin } = useAdminStore()
 
   const { menuIsVisible, setMenuIsVisible } = useContext(AppContext)
 
   const logOut = () => {
-    removeUser()
+    removeAdmin()
   }
 
   const options = [
     {
       icon: <User />,
-      label: `${currentUserData?.name}`,
+      label: `${currentAdminData?.name}`,
       onCLick: () => null
     },
     {
@@ -39,9 +39,9 @@ export const Header = () => {
   ]
   const useInfo = {
     photo:
-      currentUserData?.photo ||
+      currentAdminData?.photo ||
       'https://cdn.pixabay.com/photo/2023/02/18/11/00/icon-7797704_1280.png',
-    name: `${currentUserData?.name}`,
+    name: `${currentAdminData?.name}`,
     function: 'User'
   }
   const notificationList = [

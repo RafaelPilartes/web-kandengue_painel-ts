@@ -25,6 +25,42 @@ export class AdminService {
     }
   }
 
+  async getByEmail(
+    email: string
+  ): Promise<ListResponseType<AdminEntity> | null> {
+    try {
+      return await adminRepository.getByEmail(email)
+    } catch (error: any) {
+      console.error(`Erro ao buscar admin ${email}:`, error)
+      throw new Error(error.message || 'Erro ao buscar admin')
+    }
+  }
+
+  // get by custom field
+  async getAllByField(
+    field: string,
+    value: any,
+    limit?: number,
+    offset?: number
+  ): Promise<ListResponseType<AdminEntity[]>> {
+    try {
+      const { data, pagination } = await adminRepository.getAllByField(
+        field,
+        value,
+        limit,
+        offset
+      )
+
+      return { data, pagination }
+    } catch (error: any) {
+      console.error(
+        `Erro ao buscar admin pelo campo ${field} com valor ${value}:`,
+        error
+      )
+      throw new Error(error.message || 'Erro ao buscar admin')
+    }
+  }
+
   async create(
     admin: Omit<AdminEntity, 'id'>
   ): Promise<ListResponseType<AdminEntity>> {

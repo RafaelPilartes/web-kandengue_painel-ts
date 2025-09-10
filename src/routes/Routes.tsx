@@ -7,11 +7,12 @@ import Loading from '../pages/loading'
 // Layout
 import RootLayout from '../layout/RootLayout'
 // Data Route
-import { routsNameMain } from '../data/routsName'
+import { routsNameMain } from '../constants/routsName'
 // Route
 import { Private, PrivateLogin } from './PrivateRoute'
 
 import { Login } from '../pages/main/login'
+import { Home } from '@/pages/main/home'
 
 // Page
 
@@ -20,6 +21,20 @@ export function Router() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/" element={<RootLayout />}>
+          {/* Home */}
+          <Route
+            index
+            element={
+              <React.Suspense fallback={<Loading />}>
+                <Private>
+                  <Home />
+                </Private>
+              </React.Suspense>
+            }
+          />
+        </Route>
+
         {/* Login */}
         <Route
           path={routsNameMain.login}

@@ -1,6 +1,7 @@
+import type { UserInterface } from '@/interfaces/IUser'
 import type { UserStatus } from '@/types/enum'
 
-export class UserEntity {
+export class UserEntity implements UserInterface {
   id?: string
   entity_code: string
   photo?: string

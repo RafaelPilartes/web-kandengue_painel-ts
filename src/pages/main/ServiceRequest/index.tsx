@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import swal from 'sweetalert'
 
 // Data
-import { routsNameMain } from '../../../data/routsName'
+import { routsNameMain } from '../../../constants/routsName'
 
 // Services
 import ServiceRequestViewModel from '../../../services/ViewModel/ServiceRequestViewModel'

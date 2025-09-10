@@ -1,11 +1,11 @@
 import { Navigate } from 'react-router-dom'
-import { useUserStore } from '../stores/userStore'
+import { useAdminStore } from '../stores/userStore'
 import type { Props } from '../types/props'
 
 export function Private({ children }: Props) {
-  const { currentUserData } = useUserStore()
+  const { currentAdminData } = useAdminStore()
 
-  if (!currentUserData) {
+  if (!currentAdminData) {
     return <Navigate to={'/login'} />
   }
 
@@ -13,9 +13,9 @@ export function Private({ children }: Props) {
 }
 
 export function PrivateLogin({ children }: Props) {
-  const { currentUserData } = useUserStore()
+  const { currentAdminData } = useAdminStore()
 
-  if (currentUserData) {
+  if (currentAdminData) {
     return <Navigate to={'/'} />
   }
 

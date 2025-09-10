@@ -20,6 +20,39 @@ export function useAdminsViewModel(limit?: number, offset?: number) {
     staleTime: 1000 * 60 // cache 1min
   })
 
+  /** 🔹 Buscar lista de administradores por field */
+  const fetchAllAdminSByField = async (
+    field: string,
+    value: any,
+    limit?: number,
+    offset?: number
+  ) => {
+    try {
+      const response = await adminService.getAllByField(
+        field,
+        value,
+        limit,
+        offset
+      )
+
+      return response
+    } catch (err) {
+      console.error('Erro ao buscar administradores por campo:', err)
+      return null
+    }
+  }
+
+  // const {
+  //   data: adminsByFieldResponse,
+  //   isLoading: loadingByField,
+  //   error: errorByField
+  // } = useQuery<ListResponseType<AdminEntity[]>>({
+  //   queryKey: ['adminsByField', field, value, limit, offset],
+  //   queryFn: () => adminService.getAllByField(field as string, value),
+  //   enabled: !!field,
+  //   staleTime: 1000 * 60 // cache 1min
+  // })
+
   /** 🔹 Criar administrador */
   const createAdmin = useMutation({
     mutationFn: (admin: Omit<AdminEntity, 'id'>) => adminService.create(admin),
@@ -55,12 +88,25 @@ export function useAdminsViewModel(limit?: number, offset?: number) {
     }
   }
 
+  /** 🔹 Buscar administrador único (on-demand) */
+  const fetchAdminByEmail = async (email: string) => {
+    try {
+      return await adminService.getByEmail(email)
+    } catch (err) {
+      console.error('Erro ao buscar administrador:', err)
+      return null
+    }
+  }
+
   return {
     admins: adminsResponse?.data ?? [],
     pagination: adminsResponse?.pagination,
     loading,
     error,
     refresh: refetch,
+
+    fetchAllAdminSByField,
+    fetchAdminByEmail,
 
     createAdmin,
     updateAdmin,
