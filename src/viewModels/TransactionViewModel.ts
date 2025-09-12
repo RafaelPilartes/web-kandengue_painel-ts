@@ -1,26 +1,42 @@
+// viewModels/TransactionViewModel.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { TransactionService } from '@/services/transaction.service'
 import { TransactionEntity } from '@/core/entities/Transaction'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
+import { firebaseCollections } from '@/constants/firebaseCollections'
 
 const transactionService = new TransactionService()
 
-export function useTransactionsViewModel(limit?: number, offset?: number) {
+export function useTransactionsViewModel(
+  limit?: number,
+  offset?: number,
+  searchTerm?: string,
+  filters?: Partial<TransactionEntity>
+) {
   const queryClient = useQueryClient()
 
-  /** 🔹 Buscar lista de transactions */
+  const filtersKey = filters ? JSON.stringify(filters) : ''
+
+  /** 🔹 Buscar lista de transações */
   const {
     data: transactionsResponse,
     isLoading: loading,
     error,
     refetch
   } = useQuery<ListResponseType<TransactionEntity[]>>({
-    queryKey: ['transactions', limit, offset],
-    queryFn: () => transactionService.getAll(limit, offset),
+    queryKey: [
+      firebaseCollections.transactions.root,
+      limit,
+      offset,
+      searchTerm,
+      filtersKey
+    ],
+    queryFn: () =>
+      transactionService.getAll(limit, offset, searchTerm, filters),
     staleTime: 1000 * 60 // cache 1min
   })
 
-  /** 🔹 Buscar lista de transactions por field */
+  /** 🔹 Buscar lista de transações por field */
   const fetchAllTransactionSByField = async (
     field: string,
     value: any,
@@ -28,30 +44,25 @@ export function useTransactionsViewModel(limit?: number, offset?: number) {
     offset?: number
   ) => {
     try {
-      const response = await transactionService.getAllByField(
-        field,
-        value,
-        limit,
-        offset
-      )
-
-      return response
+      return await transactionService.getAllByField(field, value, limit, offset)
     } catch (err) {
-      console.error('Erro ao buscar transactions por campo:', err)
+      console.error('Erro ao buscar transações por campo:', err)
       return null
     }
   }
 
-  /** 🔹 Criar transaction */
+  /** 🔹 Criar transação */
   const createTransaction = useMutation({
     mutationFn: (transaction: Omit<TransactionEntity, 'id'>) =>
       transactionService.create(transaction),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['transactions'] })
+      queryClient.invalidateQueries({
+        queryKey: [firebaseCollections.transactions.root]
+      })
     }
   })
 
-  /** 🔹 Atualizar transaction */
+  /** 🔹 Atualizar transação */
   const updateTransaction = useMutation({
     mutationFn: ({
       id,
@@ -61,24 +72,28 @@ export function useTransactionsViewModel(limit?: number, offset?: number) {
       transaction: Partial<TransactionEntity>
     }) => transactionService.update(id, transaction),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['transactions'] })
+      queryClient.invalidateQueries({
+        queryKey: [firebaseCollections.transactions.root]
+      })
     }
   })
 
-  /** 🔹 Deletar transaction */
+  /** 🔹 Deletar transação */
   const deleteTransaction = useMutation({
     mutationFn: (id: string) => transactionService.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['transactions'] })
+      queryClient.invalidateQueries({
+        queryKey: [firebaseCollections.transactions.root]
+      })
     }
   })
 
-  /** 🔹 Buscar transaction único (on-demand) */
+  /** 🔹 Buscar transação único (on-demand) */
   const fetchTransactionById = async (id: string) => {
     try {
       return await transactionService.getById(id)
     } catch (err) {
-      console.error('Erro ao buscar transaction:', err)
+      console.error('Erro ao buscar transação:', err)
       return null
     }
   }

@@ -1,12 +1,15 @@
+// core/interfaces/IRideTrackingRepository.ts
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { RideTrackingEntity } from '../entities/RideTracking'
 
 export interface IRideTrackingRepository {
   getAll(
     limit?: number,
-    offset?: number
+    offset?: number,
+    searchTerm?: string,
+    filters?: Partial<RideTrackingEntity>
   ): Promise<ListResponseType<RideTrackingEntity[]>>
-  getById(id: string): Promise<ListResponseType<RideTrackingEntity> | null>
+  getById(id: string): Promise<RideTrackingEntity | null>
   getAllByField(
     field: string,
     value: any,
@@ -15,10 +18,10 @@ export interface IRideTrackingRepository {
   ): Promise<ListResponseType<RideTrackingEntity[]>>
   create(
     RideTracking: Omit<RideTrackingEntity, 'id'>
-  ): Promise<ListResponseType<RideTrackingEntity>>
+  ): Promise<RideTrackingEntity>
   update(
     id: string,
     RideTracking: Partial<RideTrackingEntity>
-  ): Promise<ListResponseType<RideTrackingEntity>>
+  ): Promise<RideTrackingEntity>
   delete(id: string): Promise<void>
 }

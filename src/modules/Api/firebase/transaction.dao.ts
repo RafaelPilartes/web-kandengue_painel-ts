@@ -1,3 +1,4 @@
+// modules/Api/firebase/transactions.dao.ts
 import type { ITransactionRepository } from '@/core/interfaces/ITransactionRepository'
 import { TransactionEntity } from '@/core/entities/Transaction'
 import {
@@ -9,7 +10,11 @@ import {
   deleteDoc,
   query,
   where,
-  setDoc
+  setDoc,
+  orderBy,
+  limit as fbLimit,
+  startAfter,
+  getCountFromServer
 } from 'firebase/firestore'
 import { db } from '@/config/firebase.config'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
@@ -28,53 +33,125 @@ export class FirebaseTransactionDAO implements ITransactionRepository {
     ) as T
   }
 
-  async getAll(): Promise<{ data: TransactionEntity[] }> {
-    const snapshot = await getDocs(this.transactionsRef)
+  // helper: aplica filtros (where) sobre um ref/q
+  private applyFilters(baseRef: any, filters?: Partial<TransactionEntity>) {
+    let q: any = baseRef
+    if (!filters) return q
+
+    Object.entries(filters).forEach(([field, value]) => {
+      if (value !== undefined && value !== '') {
+        q = query(q, where(field as string, '==', value))
+      }
+    })
+    return q
+  }
+
+  /** 🔹 Listar transactions com paginação + pesquisa opcional */
+  async getAll(
+    limitValue: number = 10,
+    offset = 0,
+    searchTerm?: string,
+    filters?: Partial<TransactionEntity>
+  ): Promise<ListResponseType<TransactionEntity[]>> {
+    // 1) constrói query base aplicando filtros
+    let baseQuery: any = this.applyFilters(this.transactionsRef, filters)
+
+    // 2) se tiver searchTerm (aqui exemplo por email) -> usa range and orderBy on same field
+    const search = searchTerm?.toString().trim()
+    if (search) {
+      const lower = search.toLowerCase()
+      baseQuery = query(
+        baseQuery,
+        orderBy('email'),
+        where('email', '>=', lower),
+        where('email', '<=', lower + '\uf8ff')
+      )
+    } else {
+      // padrão: ordena por createdAt (use o campo consistente no seu DB)
+      baseQuery = query(baseQuery, orderBy('created_at', 'desc'))
+    }
+
+    // 3) conta total com mesma baseQuery (opcionalmente, se quiser performance, você pode evitar)
+    let total = 0
+    try {
+      const countSnap = await getCountFromServer(baseQuery)
+      total = countSnap.data().count
+    } catch (err) {
+      // se count falhar, não interrompe; continua sem count
+      console.warn('Erro ao obter count:', err)
+    }
+
+    // 4) se offset > 0 -> precisamos do lastVisible correspondente ao offset
+    let finalQuery = query(baseQuery, fbLimit(limitValue)) // default
+    if (offset > 0) {
+      // NOTE: esse "skip" é caro para offsets grandes — ver nota abaixo
+      const skipQuery = query(baseQuery, fbLimit(offset))
+      const skipSnap = await getDocs(skipQuery)
+      const lastVisible = skipSnap.docs[skipSnap.docs.length - 1]
+      if (!lastVisible) {
+        // offset maior do que registros existentes
+        return {
+          data: [],
+          pagination: { limit: limitValue, offset, count: total }
+        }
+      }
+      finalQuery = query(
+        baseQuery,
+        startAfter(lastVisible),
+        fbLimit(limitValue)
+      )
+    }
+
+    const snapshot = await getDocs(finalQuery)
+
+    if (snapshot.empty) {
+      return {
+        data: [],
+        pagination: { limit: limitValue, offset, count: total }
+      }
+    }
+
     const transactions = snapshot.docs.map(
       docSnap =>
         new TransactionEntity({
           ...(docSnap.data() as TransactionEntity)
         })
     )
+
+    console.log('transactions', snapshot.docs)
+
     return {
-      data: transactions
+      data: transactions,
+      pagination: {
+        limit: limitValue,
+        offset,
+        count: total
+      }
     }
   }
 
-  async getById(
-    id: string
-  ): Promise<ListResponseType<TransactionEntity> | null> {
+  async getById(id: string): Promise<TransactionEntity | null> {
     const docSnap = await getDoc(doc(this.transactionsRef, id))
     if (!docSnap.exists()) return null
     const transactionData = new TransactionEntity({
       ...(docSnap.data() as TransactionEntity)
     })
-    return {
-      data: transactionData
-    }
+    return transactionData
   }
 
   async getAllByField(
     field: keyof TransactionEntity,
-    value: any
+    value: any,
+    limit = 10,
+    offset = 0
   ): Promise<ListResponseType<TransactionEntity[]>> {
-    const q = query(this.transactionsRef, where(field as string, '==', value))
-    const querySnapshot = await getDocs(q)
-
-    if (querySnapshot.empty) return { data: [] }
-
-    const transactions = querySnapshot.docs.map(
-      docSnap =>
-        new TransactionEntity({
-          ...(docSnap.data() as TransactionEntity)
-        })
-    )
-    return { data: transactions }
+    const filters: Partial<TransactionEntity> = { [field]: value } as any
+    return this.getAll(limit, offset, undefined, filters)
   }
 
   async create(
     transaction: Omit<TransactionEntity, 'id'>
-  ): Promise<ListResponseType<TransactionEntity>> {
+  ): Promise<TransactionEntity> {
     const transactionId = crypto.randomUUID()
     const sanitized = this.sanitize(transaction)
 
@@ -84,13 +161,13 @@ export class FirebaseTransactionDAO implements ITransactionRepository {
       id: transactionId,
       ...transaction
     })
-    return { data: transactionData }
+    return transactionData
   }
 
   async update(
     id: string,
     transaction: Partial<TransactionEntity>
-  ): Promise<ListResponseType<TransactionEntity>> {
+  ): Promise<TransactionEntity> {
     const sanitized = this.sanitize(transaction)
     await updateDoc(doc(this.transactionsRef, id), sanitized)
 

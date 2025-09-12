@@ -18,7 +18,8 @@ export interface ListResponseType<T> {
   message?: string
   pagination?: {
     limit: number | null
-    offset: number
+    offset: any | null
     count: number
+    total?: number | undefined // total de registros na base
   } | null
 }

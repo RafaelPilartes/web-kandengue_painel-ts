@@ -10,10 +10,10 @@ export class NotificationEntity implements NotificationInterface {
   message: string
   type: NotificationType
   category: NotificationCategory
-  specific_user?: string
+  specific_user?: boolean
   user?: UserInterface
   is_read?: boolean
-  created_at: string
+  created_at: Date
 
   constructor(params: NotificationInterface) {
     this.id = params.id

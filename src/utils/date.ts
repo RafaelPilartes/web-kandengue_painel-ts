@@ -1,22 +1,15 @@
 import dayjs from 'dayjs'
 
-// import moment, { Moment } from 'moment'
-// import { Timestamp } from 'firebase/firestore'
+import { Timestamp } from 'firebase/firestore'
 
-// export function formatDateFromFirestore(
-//   timestamp: any | Moment | Date,
-//   formato: string
-// ): string {
-//   const momentDate = moment(timestamp.toDate())
-//   return momentDate.format(formato)
-// }
-// export function formatDateTimestampToSting(
-//   timestamp: Timestamp | Date | any
-// ): string {
-//   const timestampDate = (timestamp as Timestamp).toDate()
-//   const formattedDate = timestampDate?.toISOString().split('T')[0]
-//   return formattedDate
-// }
+// formatDateFromFirestore
+export function formatDateFromFirestore(timestamp: Timestamp): string {
+  return timestamp.toDate().toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  })
+}
 
 export const toDay = new Date().toISOString().split('T')[0]
 

@@ -1,3 +1,4 @@
+// services/rides.service.ts
 import { rideRepository } from '@/modules/Api'
 import { RideEntity } from '@/core/entities/Ride'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
@@ -5,23 +6,24 @@ import type { ListResponseType } from '@/interfaces/IApiResponse'
 export class RideService {
   async getAll(
     limit?: number,
-    offset?: number
+    offset?: number,
+    searchTerm?: string,
+    filters?: Partial<RideEntity>
   ): Promise<ListResponseType<RideEntity[]>> {
     try {
-      const { data, pagination } = await rideRepository.getAll(limit, offset)
-      return { data, pagination }
+      return await rideRepository.getAll(limit, offset, searchTerm, filters)
     } catch (error: any) {
-      console.error('Erro ao buscar usuários:', error)
-      throw new Error(error.message || 'Erro ao buscar usuários')
+      console.error('Erro ao buscar corrida:', error)
+      throw new Error(error.message || 'Erro ao buscar corrida')
     }
   }
 
-  async getById(id: string): Promise<ListResponseType<RideEntity> | null> {
+  async getById(id: string): Promise<RideEntity | null> {
     try {
       return await rideRepository.getById(id)
     } catch (error: any) {
-      console.error(`Erro ao buscar usuário ${id}:`, error)
-      throw new Error(error.message || 'Erro ao buscar usuário')
+      console.error(`Erro ao buscar corrida ${id}:`, error)
+      throw new Error(error.message || 'Erro ao buscar corrida')
     }
   }
 
@@ -43,33 +45,28 @@ export class RideService {
       return { data, pagination }
     } catch (error: any) {
       console.error(
-        `Erro ao buscar ride pelo campo ${field} com valor ${value}:`,
+        `Erro ao buscar corrida pelo campo ${field} com valor ${value}:`,
         error
       )
-      throw new Error(error.message || 'Erro ao buscar ride')
+      throw new Error(error.message || 'Erro ao buscar corrida')
     }
   }
 
-  async create(
-    ride: Omit<RideEntity, 'id'>
-  ): Promise<ListResponseType<RideEntity>> {
+  async create(ride: Omit<RideEntity, 'id'>): Promise<RideEntity> {
     try {
       return await rideRepository.create(ride)
     } catch (error: any) {
-      console.error('Erro ao criar usuário:', error)
-      throw new Error(error.message || 'Erro ao criar usuário')
+      console.error('Erro ao criar corrida:', error)
+      throw new Error(error.message || 'Erro ao criar corrida')
     }
   }
 
-  async update(
-    id: string,
-    ride: Partial<RideEntity>
-  ): Promise<ListResponseType<RideEntity>> {
+  async update(id: string, ride: Partial<RideEntity>): Promise<RideEntity> {
     try {
       return await rideRepository.update(id, ride)
     } catch (error: any) {
-      console.error(`Erro ao atualizar usuário ${id}:`, error)
-      throw new Error(error.message || 'Erro ao atualizar usuário')
+      console.error(`Erro ao atualizar corrida ${id}:`, error)
+      throw new Error(error.message || 'Erro ao atualizar corrida')
     }
   }
 
@@ -77,8 +74,8 @@ export class RideService {
     try {
       return await rideRepository.delete(id)
     } catch (error: any) {
-      console.error(`Erro ao deletar usuário ${id}:`, error)
-      throw new Error(error.message || 'Erro ao deletar usuário')
+      console.error(`Erro ao deletar corrida ${id}:`, error)
+      throw new Error(error.message || 'Erro ao deletar corrida')
     }
   }
 }

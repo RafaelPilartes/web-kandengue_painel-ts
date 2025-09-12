@@ -1,3 +1,4 @@
+// services/rideRates.service.ts
 import { rideRateRepository } from '@/modules/Api'
 import { RideRateEntity } from '@/core/entities/RideRate'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
@@ -5,26 +6,24 @@ import type { ListResponseType } from '@/interfaces/IApiResponse'
 export class RideRateService {
   async getAll(
     limit?: number,
-    offset?: number
+    offset?: number,
+    searchTerm?: string,
+    filters?: Partial<RideRateEntity>
   ): Promise<ListResponseType<RideRateEntity[]>> {
     try {
-      const { data, pagination } = await rideRateRepository.getAll(
-        limit,
-        offset
-      )
-      return { data, pagination }
+      return await rideRateRepository.getAll(limit, offset, searchTerm, filters)
     } catch (error: any) {
-      console.error('Erro ao buscar usuários:', error)
-      throw new Error(error.message || 'Erro ao buscar usuários')
+      console.error('Erro ao buscar taxa de viagem:', error)
+      throw new Error(error.message || 'Erro ao buscar taxa de viagem')
     }
   }
 
-  async getById(id: string): Promise<ListResponseType<RideRateEntity> | null> {
+  async getById(id: string): Promise<RideRateEntity | null> {
     try {
       return await rideRateRepository.getById(id)
     } catch (error: any) {
-      console.error(`Erro ao buscar usuário ${id}:`, error)
-      throw new Error(error.message || 'Erro ao buscar usuário')
+      console.error(`Erro ao buscar taxa de viagem ${id}:`, error)
+      throw new Error(error.message || 'Erro ao buscar taxa de viagem')
     }
   }
 
@@ -46,33 +45,31 @@ export class RideRateService {
       return { data, pagination }
     } catch (error: any) {
       console.error(
-        `Erro ao buscar rideRate pelo campo ${field} com valor ${value}:`,
+        `Erro ao buscar taxa de viagem pelo campo ${field} com valor ${value}:`,
         error
       )
-      throw new Error(error.message || 'Erro ao buscar rideRate')
+      throw new Error(error.message || 'Erro ao buscar taxa de viagem')
     }
   }
 
-  async create(
-    rideRate: Omit<RideRateEntity, 'id'>
-  ): Promise<ListResponseType<RideRateEntity>> {
+  async create(rideRate: Omit<RideRateEntity, 'id'>): Promise<RideRateEntity> {
     try {
       return await rideRateRepository.create(rideRate)
     } catch (error: any) {
-      console.error('Erro ao criar usuário:', error)
-      throw new Error(error.message || 'Erro ao criar usuário')
+      console.error('Erro ao criar taxa de viagem:', error)
+      throw new Error(error.message || 'Erro ao criar taxa de viagem')
     }
   }
 
   async update(
     id: string,
     rideRate: Partial<RideRateEntity>
-  ): Promise<ListResponseType<RideRateEntity>> {
+  ): Promise<RideRateEntity> {
     try {
       return await rideRateRepository.update(id, rideRate)
     } catch (error: any) {
-      console.error(`Erro ao atualizar usuário ${id}:`, error)
-      throw new Error(error.message || 'Erro ao atualizar usuário')
+      console.error(`Erro ao atualizar taxa de viagem ${id}:`, error)
+      throw new Error(error.message || 'Erro ao atualizar taxa de viagem')
     }
   }
 
@@ -80,8 +77,8 @@ export class RideRateService {
     try {
       return await rideRateRepository.delete(id)
     } catch (error: any) {
-      console.error(`Erro ao deletar usuário ${id}:`, error)
-      throw new Error(error.message || 'Erro ao deletar usuário')
+      console.error(`Erro ao deletar taxa de viagem ${id}:`, error)
+      throw new Error(error.message || 'Erro ao deletar taxa de viagem')
     }
   }
 }

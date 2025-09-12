@@ -1,3 +1,4 @@
+// services/vehicles.service.ts
 import { vehicleRepository } from '@/modules/Api'
 import { VehicleEntity } from '@/core/entities/Vehicle'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
@@ -5,23 +6,24 @@ import type { ListResponseType } from '@/interfaces/IApiResponse'
 export class VehicleService {
   async getAll(
     limit?: number,
-    offset?: number
+    offset?: number,
+    searchTerm?: string,
+    filters?: Partial<VehicleEntity>
   ): Promise<ListResponseType<VehicleEntity[]>> {
     try {
-      const { data, pagination } = await vehicleRepository.getAll(limit, offset)
-      return { data, pagination }
+      return await vehicleRepository.getAll(limit, offset, searchTerm, filters)
     } catch (error: any) {
-      console.error('Erro ao buscar usuários:', error)
-      throw new Error(error.message || 'Erro ao buscar usuários')
+      console.error('Erro ao buscar veículos:', error)
+      throw new Error(error.message || 'Erro ao buscar veículos')
     }
   }
 
-  async getById(id: string): Promise<ListResponseType<VehicleEntity> | null> {
+  async getById(id: string): Promise<VehicleEntity | null> {
     try {
       return await vehicleRepository.getById(id)
     } catch (error: any) {
-      console.error(`Erro ao buscar usuário ${id}:`, error)
-      throw new Error(error.message || 'Erro ao buscar usuário')
+      console.error(`Erro ao buscar veículo ${id}:`, error)
+      throw new Error(error.message || 'Erro ao buscar veículo')
     }
   }
 
@@ -43,33 +45,31 @@ export class VehicleService {
       return { data, pagination }
     } catch (error: any) {
       console.error(
-        `Erro ao buscar vehicle pelo campo ${field} com valor ${value}:`,
+        `Erro ao buscar veículo pelo campo ${field} com valor ${value}:`,
         error
       )
-      throw new Error(error.message || 'Erro ao buscar vehicle')
+      throw new Error(error.message || 'Erro ao buscar veículo')
     }
   }
 
-  async create(
-    vehicle: Omit<VehicleEntity, 'id'>
-  ): Promise<ListResponseType<VehicleEntity>> {
+  async create(vehicle: Omit<VehicleEntity, 'id'>): Promise<VehicleEntity> {
     try {
       return await vehicleRepository.create(vehicle)
     } catch (error: any) {
-      console.error('Erro ao criar usuário:', error)
-      throw new Error(error.message || 'Erro ao criar usuário')
+      console.error('Erro ao criar veículo:', error)
+      throw new Error(error.message || 'Erro ao criar veículo')
     }
   }
 
   async update(
     id: string,
     vehicle: Partial<VehicleEntity>
-  ): Promise<ListResponseType<VehicleEntity>> {
+  ): Promise<VehicleEntity> {
     try {
       return await vehicleRepository.update(id, vehicle)
     } catch (error: any) {
-      console.error(`Erro ao atualizar usuário ${id}:`, error)
-      throw new Error(error.message || 'Erro ao atualizar usuário')
+      console.error(`Erro ao atualizar veículo ${id}:`, error)
+      throw new Error(error.message || 'Erro ao atualizar veículo')
     }
   }
 
@@ -77,8 +77,8 @@ export class VehicleService {
     try {
       return await vehicleRepository.delete(id)
     } catch (error: any) {
-      console.error(`Erro ao deletar usuário ${id}:`, error)
-      throw new Error(error.message || 'Erro ao deletar usuário')
+      console.error(`Erro ao deletar veículo ${id}:`, error)
+      throw new Error(error.message || 'Erro ao deletar veículo')
     }
   }
 }

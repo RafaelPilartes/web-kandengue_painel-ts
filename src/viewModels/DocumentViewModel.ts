@@ -1,26 +1,41 @@
+// viewModels/DocumentViewModel.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { DocumentService } from '@/services/document.service'
 import { DocumentEntity } from '@/core/entities/Document'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
+import { firebaseCollections } from '@/constants/firebaseCollections'
 
 const documentService = new DocumentService()
 
-export function useDocumentsViewModel(limit?: number, offset?: number) {
+export function useDocumentsViewModel(
+  limit?: number,
+  offset?: number,
+  searchTerm?: string,
+  filters?: Partial<DocumentEntity>
+) {
   const queryClient = useQueryClient()
 
-  /** 🔹 Buscar lista de documents */
+  const filtersKey = filters ? JSON.stringify(filters) : ''
+
+  /** 🔹 Buscar lista de documentos */
   const {
     data: documentsResponse,
     isLoading: loading,
     error,
     refetch
   } = useQuery<ListResponseType<DocumentEntity[]>>({
-    queryKey: ['documents', limit, offset],
-    queryFn: () => documentService.getAll(limit, offset),
+    queryKey: [
+      firebaseCollections.documents.root,
+      limit,
+      offset,
+      searchTerm,
+      filtersKey
+    ],
+    queryFn: () => documentService.getAll(limit, offset, searchTerm, filters),
     staleTime: 1000 * 60 // cache 1min
   })
 
-  /** 🔹 Buscar lista de documents por field */
+  /** 🔹 Buscar lista de documentos por field */
   const fetchAllDocumentSByField = async (
     field: string,
     value: any,
@@ -28,30 +43,25 @@ export function useDocumentsViewModel(limit?: number, offset?: number) {
     offset?: number
   ) => {
     try {
-      const response = await documentService.getAllByField(
-        field,
-        value,
-        limit,
-        offset
-      )
-
-      return response
+      return await documentService.getAllByField(field, value, limit, offset)
     } catch (err) {
-      console.error('Erro ao buscar documents por campo:', err)
+      console.error('Erro ao buscar documentos por campo:', err)
       return null
     }
   }
 
-  /** 🔹 Criar document */
+  /** 🔹 Criar documento */
   const createDocument = useMutation({
     mutationFn: (document: Omit<DocumentEntity, 'id'>) =>
       documentService.create(document),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['documents'] })
+      queryClient.invalidateQueries({
+        queryKey: [firebaseCollections.documents.root]
+      })
     }
   })
 
-  /** 🔹 Atualizar document */
+  /** 🔹 Atualizar documento */
   const updateDocument = useMutation({
     mutationFn: ({
       id,
@@ -61,24 +71,28 @@ export function useDocumentsViewModel(limit?: number, offset?: number) {
       document: Partial<DocumentEntity>
     }) => documentService.update(id, document),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['documents'] })
+      queryClient.invalidateQueries({
+        queryKey: [firebaseCollections.documents.root]
+      })
     }
   })
 
-  /** 🔹 Deletar document */
+  /** 🔹 Deletar documento */
   const deleteDocument = useMutation({
     mutationFn: (id: string) => documentService.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['documents'] })
+      queryClient.invalidateQueries({
+        queryKey: [firebaseCollections.documents.root]
+      })
     }
   })
 
-  /** 🔹 Buscar document único (on-demand) */
+  /** 🔹 Buscar documento único (on-demand) */
   const fetchDocumentById = async (id: string) => {
     try {
       return await documentService.getById(id)
     } catch (err) {
-      console.error('Erro ao buscar document:', err)
+      console.error('Erro ao buscar documento:', err)
       return null
     }
   }

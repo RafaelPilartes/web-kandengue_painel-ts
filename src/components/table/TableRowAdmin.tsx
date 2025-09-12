@@ -10,11 +10,12 @@ import {
 } from '../../utils/gettersLabels'
 import { ActionsMenu } from '../ActionsMenu'
 import { Eye } from 'lucide-react'
+import { formatDateFromFirestore } from '@/utils/date'
 
 interface TableRowProps {
   rowItem: AdminInterface
-  openPageViewRow?: (id: number) => void
-  handleDeleteRow: (action: number) => void
+  openPageViewRow?: (id: string) => void
+  handleDeleteRow: (action: string) => void
   openModalEditRow: (action: any) => void
 }
 
@@ -39,20 +40,20 @@ const TableRow: React.FC<TableRowProps> = ({
           <div className="relative w-9 h-9 overflow-hidden">
             <img
               className="w-full h-full object-cover rounded-full"
-              src={rowItem.user.photo || '/default-avatar.png'}
-              alt={rowItem.user.name}
+              src={rowItem.photo || '/default-avatar.png'}
+              alt={rowItem.name}
             />
           </div>
           <div className="flex flex-col justify-center items-start">
             <span className="text-dark dark:text-light font-semibold text-sm">
-              {rowItem.user.name}
+              {rowItem.name}
             </span>
-            <span className="text-xs">{rowItem.user.email}</span>
+            <span className="text-xs">{rowItem.email}</span>
           </div>
         </div>
       </td>
       <td className="px-3 py-3 min-w-[6rem]">
-        <p>{getUserStatusLabel(rowItem.user.status)}</p>
+        <p>{rowItem.phone}</p>
       </td>
 
       <td className="px-3 py-3 min-w-[6rem]">
@@ -60,12 +61,12 @@ const TableRow: React.FC<TableRowProps> = ({
       </td>
       <td className="px-3 py-3 min-w-[6rem]">
         <BadgeSimple
-          color={rowItem.user.status == 'active' ? 'blue' : 'red'}
-          label={getUserStatusLabel(rowItem.user.status)}
+          color={rowItem.status == 'active' ? 'blue' : 'red'}
+          label={getUserStatusLabel(rowItem.status)}
         />
       </td>
       <td className="px-3 py-3 min-w-[6rem]">
-        <p>{rowItem.created_at}</p>
+        <p>{formatDateFromFirestore(rowItem.created_at as any)}</p>
       </td>
       <td className="px-3 py-3 min-w-[6rem]">
         <div className="flex flex-row justify-start items-center gap-4">
@@ -74,7 +75,7 @@ const TableRow: React.FC<TableRowProps> = ({
               {
                 icon: <Eye size={16} />,
                 label: 'Ver detalhes',
-                onClick: () => openPageViewRow?.(rowItem.id as number)
+                onClick: () => openPageViewRow?.(rowItem.id as string)
               },
               {
                 icon: <FiEdit size={16} />,
@@ -84,7 +85,7 @@ const TableRow: React.FC<TableRowProps> = ({
               {
                 icon: <AiFillDelete size={16} />,
                 label: 'Excluir',
-                onClick: () => handleDeleteRow(rowItem.id as number),
+                onClick: () => handleDeleteRow(rowItem.id as string),
                 className:
                   'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900'
               }

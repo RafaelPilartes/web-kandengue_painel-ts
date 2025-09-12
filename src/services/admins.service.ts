@@ -1,3 +1,4 @@
+// services/admins.service.ts
 import { adminRepository } from '@/modules/Api'
 import { AdminEntity } from '@/core/entities/Admin'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
@@ -5,18 +6,19 @@ import type { ListResponseType } from '@/interfaces/IApiResponse'
 export class AdminService {
   async getAll(
     limit?: number,
-    offset?: number
+    offset?: number,
+    searchTerm?: string,
+    filters?: Partial<AdminEntity>
   ): Promise<ListResponseType<AdminEntity[]>> {
     try {
-      const { data, pagination } = await adminRepository.getAll(limit, offset)
-      return { data, pagination }
+      return await adminRepository.getAll(limit, offset, searchTerm, filters)
     } catch (error: any) {
-      console.error('Erro ao buscar usuários:', error)
-      throw new Error(error.message || 'Erro ao buscar usuários')
+      console.error('Erro ao buscar admins:', error)
+      throw new Error(error.message || 'Erro ao buscar admins')
     }
   }
 
-  async getById(id: string): Promise<ListResponseType<AdminEntity> | null> {
+  async getById(id: string): Promise<AdminEntity | null> {
     try {
       return await adminRepository.getById(id)
     } catch (error: any) {
@@ -25,9 +27,7 @@ export class AdminService {
     }
   }
 
-  async getByEmail(
-    email: string
-  ): Promise<ListResponseType<AdminEntity> | null> {
+  async getByEmail(email: string): Promise<AdminEntity | null> {
     try {
       return await adminRepository.getByEmail(email)
     } catch (error: any) {
@@ -61,9 +61,7 @@ export class AdminService {
     }
   }
 
-  async create(
-    admin: Omit<AdminEntity, 'id'>
-  ): Promise<ListResponseType<AdminEntity>> {
+  async create(admin: Omit<AdminEntity, 'id'>): Promise<AdminEntity> {
     if (!admin.name || !admin.email) {
       throw new Error('Nome e email são obrigatórios')
     }
@@ -76,10 +74,7 @@ export class AdminService {
     }
   }
 
-  async update(
-    id: string,
-    admin: Partial<AdminEntity>
-  ): Promise<ListResponseType<AdminEntity>> {
+  async update(id: string, admin: Partial<AdminEntity>): Promise<AdminEntity> {
     try {
       return await adminRepository.update(id, admin)
     } catch (error: any) {

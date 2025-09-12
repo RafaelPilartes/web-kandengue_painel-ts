@@ -1,3 +1,4 @@
+// services/documents.service.ts
 import { documentRepository } from '@/modules/Api'
 import { DocumentEntity } from '@/core/entities/Document'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
@@ -5,26 +6,24 @@ import type { ListResponseType } from '@/interfaces/IApiResponse'
 export class DocumentService {
   async getAll(
     limit?: number,
-    offset?: number
+    offset?: number,
+    searchTerm?: string,
+    filters?: Partial<DocumentEntity>
   ): Promise<ListResponseType<DocumentEntity[]>> {
     try {
-      const { data, pagination } = await documentRepository.getAll(
-        limit,
-        offset
-      )
-      return { data, pagination }
+      return await documentRepository.getAll(limit, offset, searchTerm, filters)
     } catch (error: any) {
-      console.error('Erro ao buscar usuários:', error)
-      throw new Error(error.message || 'Erro ao buscar usuários')
+      console.error('Erro ao buscar documentos:', error)
+      throw new Error(error.message || 'Erro ao buscar documentos')
     }
   }
 
-  async getById(id: string): Promise<ListResponseType<DocumentEntity> | null> {
+  async getById(id: string): Promise<DocumentEntity | null> {
     try {
       return await documentRepository.getById(id)
     } catch (error: any) {
-      console.error(`Erro ao buscar usuário ${id}:`, error)
-      throw new Error(error.message || 'Erro ao buscar usuário')
+      console.error(`Erro ao buscar documento ${id}:`, error)
+      throw new Error(error.message || 'Erro ao buscar documento')
     }
   }
 
@@ -46,33 +45,31 @@ export class DocumentService {
       return { data, pagination }
     } catch (error: any) {
       console.error(
-        `Erro ao buscar document pelo campo ${field} com valor ${value}:`,
+        `Erro ao buscar documento pelo campo ${field} com valor ${value}:`,
         error
       )
-      throw new Error(error.message || 'Erro ao buscar document')
+      throw new Error(error.message || 'Erro ao buscar documento')
     }
   }
 
-  async create(
-    document: Omit<DocumentEntity, 'id'>
-  ): Promise<ListResponseType<DocumentEntity>> {
+  async create(document: Omit<DocumentEntity, 'id'>): Promise<DocumentEntity> {
     try {
       return await documentRepository.create(document)
     } catch (error: any) {
-      console.error('Erro ao criar usuário:', error)
-      throw new Error(error.message || 'Erro ao criar usuário')
+      console.error('Erro ao criar documento:', error)
+      throw new Error(error.message || 'Erro ao criar documento')
     }
   }
 
   async update(
     id: string,
     document: Partial<DocumentEntity>
-  ): Promise<ListResponseType<DocumentEntity>> {
+  ): Promise<DocumentEntity> {
     try {
       return await documentRepository.update(id, document)
     } catch (error: any) {
-      console.error(`Erro ao atualizar usuário ${id}:`, error)
-      throw new Error(error.message || 'Erro ao atualizar usuário')
+      console.error(`Erro ao atualizar documento ${id}:`, error)
+      throw new Error(error.message || 'Erro ao atualizar documento')
     }
   }
 
@@ -80,8 +77,8 @@ export class DocumentService {
     try {
       return await documentRepository.delete(id)
     } catch (error: any) {
-      console.error(`Erro ao deletar usuário ${id}:`, error)
-      throw new Error(error.message || 'Erro ao deletar usuário')
+      console.error(`Erro ao deletar documento ${id}:`, error)
+      throw new Error(error.message || 'Erro ao deletar documento')
     }
   }
 }

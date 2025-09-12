@@ -11,11 +11,11 @@ export class DocumentEntity implements DocumentInterface {
   type: DocumentType
   url: string
   status: DocumentStatus
-  uploaded_at: string
-  reviewed_at?: string
+  uploaded_at: Date
+  reviewed_at?: Date
   feedback?: string
 
-  created_at: string
+  created_at: Date
   updated_at?: Date
 
   constructor(params: DocumentInterface) {

@@ -1,3 +1,4 @@
+// viewModels/NotificationViewModel.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { NotificationService } from '@/services/notification.service'
 import { NotificationEntity } from '@/core/entities/Notification'
@@ -5,22 +6,30 @@ import type { ListResponseType } from '@/interfaces/IApiResponse'
 
 const notificationService = new NotificationService()
 
-export function useNotificationsViewModel(limit?: number, offset?: number) {
+export function useNotificationsViewModel(
+  limit?: number,
+  offset?: number,
+  searchTerm?: string,
+  filters?: Partial<NotificationEntity>
+) {
   const queryClient = useQueryClient()
 
-  /** 🔹 Buscar lista de notifications */
+  const filtersKey = filters ? JSON.stringify(filters) : ''
+
+  /** 🔹 Buscar lista de taxa de viagens */
   const {
     data: notificationsResponse,
     isLoading: loading,
     error,
     refetch
   } = useQuery<ListResponseType<NotificationEntity[]>>({
-    queryKey: ['notifications', limit, offset],
-    queryFn: () => notificationService.getAll(limit, offset),
+    queryKey: ['notifications', limit, offset, searchTerm, filtersKey],
+    queryFn: () =>
+      notificationService.getAll(limit, offset, searchTerm, filters),
     staleTime: 1000 * 60 // cache 1min
   })
 
-  /** 🔹 Buscar lista de notifications por field */
+  /** 🔹 Buscar lista de taxa de viagens por field */
   const fetchAllNotificationSByField = async (
     field: string,
     value: any,
@@ -28,21 +37,19 @@ export function useNotificationsViewModel(limit?: number, offset?: number) {
     offset?: number
   ) => {
     try {
-      const response = await notificationService.getAllByField(
+      return await notificationService.getAllByField(
         field,
         value,
         limit,
         offset
       )
-
-      return response
     } catch (err) {
-      console.error('Erro ao buscar notifications por campo:', err)
+      console.error('Erro ao buscar taxa de viagens por campo:', err)
       return null
     }
   }
 
-  /** 🔹 Criar notification */
+  /** 🔹 Criar taxa de viagem */
   const createNotification = useMutation({
     mutationFn: (notification: Omit<NotificationEntity, 'id'>) =>
       notificationService.create(notification),
@@ -51,7 +58,7 @@ export function useNotificationsViewModel(limit?: number, offset?: number) {
     }
   })
 
-  /** 🔹 Atualizar notification */
+  /** 🔹 Atualizar taxa de viagem */
   const updateNotification = useMutation({
     mutationFn: ({
       id,
@@ -65,7 +72,7 @@ export function useNotificationsViewModel(limit?: number, offset?: number) {
     }
   })
 
-  /** 🔹 Deletar notification */
+  /** 🔹 Deletar taxa de viagem */
   const deleteNotification = useMutation({
     mutationFn: (id: string) => notificationService.delete(id),
     onSuccess: () => {
@@ -73,12 +80,12 @@ export function useNotificationsViewModel(limit?: number, offset?: number) {
     }
   })
 
-  /** 🔹 Buscar notification único (on-demand) */
+  /** 🔹 Buscar taxa de viagem único (on-demand) */
   const fetchNotificationById = async (id: string) => {
     try {
       return await notificationService.getById(id)
     } catch (err) {
-      console.error('Erro ao buscar notification:', err)
+      console.error('Erro ao buscar taxa de viagem:', err)
       return null
     }
   }

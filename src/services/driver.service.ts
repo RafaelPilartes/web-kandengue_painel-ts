@@ -1,3 +1,4 @@
+// services/drivers.service.ts
 import { driverRepository } from '@/modules/Api'
 import { DriverEntity } from '@/core/entities/Driver'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
@@ -5,23 +6,24 @@ import type { ListResponseType } from '@/interfaces/IApiResponse'
 export class DriverService {
   async getAll(
     limit?: number,
-    offset?: number
+    offset?: number,
+    searchTerm?: string,
+    filters?: Partial<DriverEntity>
   ): Promise<ListResponseType<DriverEntity[]>> {
     try {
-      const { data, pagination } = await driverRepository.getAll(limit, offset)
-      return { data, pagination }
+      return await driverRepository.getAll(limit, offset, searchTerm, filters)
     } catch (error: any) {
-      console.error('Erro ao buscar usuários:', error)
-      throw new Error(error.message || 'Erro ao buscar usuários')
+      console.error('Erro ao buscar motoristas:', error)
+      throw new Error(error.message || 'Erro ao buscar motoristas')
     }
   }
 
-  async getById(id: string): Promise<ListResponseType<DriverEntity> | null> {
+  async getById(id: string): Promise<DriverEntity | null> {
     try {
       return await driverRepository.getById(id)
     } catch (error: any) {
-      console.error(`Erro ao buscar usuário ${id}:`, error)
-      throw new Error(error.message || 'Erro ao buscar usuário')
+      console.error(`Erro ao buscar motorista ${id}:`, error)
+      throw new Error(error.message || 'Erro ao buscar motorista')
     }
   }
 
@@ -43,33 +45,44 @@ export class DriverService {
       return { data, pagination }
     } catch (error: any) {
       console.error(
-        `Erro ao buscar driver pelo campo ${field} com valor ${value}:`,
+        `Erro ao buscar motorista pelo campo ${field} com valor ${value}:`,
         error
       )
-      throw new Error(error.message || 'Erro ao buscar driver')
+      throw new Error(error.message || 'Erro ao buscar motorista')
     }
   }
 
-  async create(
-    driver: Omit<DriverEntity, 'id'>
-  ): Promise<ListResponseType<DriverEntity>> {
+  async getByEmail(email: string): Promise<DriverEntity | null> {
+    try {
+      return await driverRepository.getByEmail(email)
+    } catch (error: any) {
+      console.error(`Erro ao buscar motorista ${email}:`, error)
+      throw new Error(error.message || 'Erro ao buscar motorista')
+    }
+  }
+
+  async create(driver: Omit<DriverEntity, 'id'>): Promise<DriverEntity> {
+    if (!driver.name || !driver.email) {
+      throw new Error('Nome e email são obrigatórios')
+    }
+
     try {
       return await driverRepository.create(driver)
     } catch (error: any) {
-      console.error('Erro ao criar usuário:', error)
-      throw new Error(error.message || 'Erro ao criar usuário')
+      console.error('Erro ao criar motorista:', error)
+      throw new Error(error.message || 'Erro ao criar motorista')
     }
   }
 
   async update(
     id: string,
     driver: Partial<DriverEntity>
-  ): Promise<ListResponseType<DriverEntity>> {
+  ): Promise<DriverEntity> {
     try {
       return await driverRepository.update(id, driver)
     } catch (error: any) {
-      console.error(`Erro ao atualizar usuário ${id}:`, error)
-      throw new Error(error.message || 'Erro ao atualizar usuário')
+      console.error(`Erro ao atualizar motorista ${id}:`, error)
+      throw new Error(error.message || 'Erro ao atualizar motorista')
     }
   }
 
@@ -77,8 +90,8 @@ export class DriverService {
     try {
       return await driverRepository.delete(id)
     } catch (error: any) {
-      console.error(`Erro ao deletar usuário ${id}:`, error)
-      throw new Error(error.message || 'Erro ao deletar usuário')
+      console.error(`Erro ao deletar motorista ${id}:`, error)
+      throw new Error(error.message || 'Erro ao deletar motorista')
     }
   }
 }

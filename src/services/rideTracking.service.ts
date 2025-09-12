@@ -1,3 +1,4 @@
+// services/rideTrackings.service.ts
 import { rideTrackingRepository } from '@/modules/Api'
 import { RideTrackingEntity } from '@/core/entities/RideTracking'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
@@ -5,28 +6,29 @@ import type { ListResponseType } from '@/interfaces/IApiResponse'
 export class RideTrackingService {
   async getAll(
     limit?: number,
-    offset?: number
+    offset?: number,
+    searchTerm?: string,
+    filters?: Partial<RideTrackingEntity>
   ): Promise<ListResponseType<RideTrackingEntity[]>> {
     try {
-      const { data, pagination } = await rideTrackingRepository.getAll(
+      return await rideTrackingRepository.getAll(
         limit,
-        offset
+        offset,
+        searchTerm,
+        filters
       )
-      return { data, pagination }
     } catch (error: any) {
-      console.error('Erro ao buscar usuários:', error)
-      throw new Error(error.message || 'Erro ao buscar usuários')
+      console.error('Erro ao buscar trajetorias de viagens:', error)
+      throw new Error(error.message || 'Erro ao buscar trajetoria de viagem')
     }
   }
 
-  async getById(
-    id: string
-  ): Promise<ListResponseType<RideTrackingEntity> | null> {
+  async getById(id: string): Promise<RideTrackingEntity | null> {
     try {
       return await rideTrackingRepository.getById(id)
     } catch (error: any) {
-      console.error(`Erro ao buscar usuário ${id}:`, error)
-      throw new Error(error.message || 'Erro ao buscar usuário')
+      console.error(`Erro ao buscar trajetoria de viagem ${id}:`, error)
+      throw new Error(error.message || 'Erro ao buscar trajetorias de viagens')
     }
   }
 
@@ -48,33 +50,33 @@ export class RideTrackingService {
       return { data, pagination }
     } catch (error: any) {
       console.error(
-        `Erro ao buscar rideTracking pelo campo ${field} com valor ${value}:`,
+        `Erro ao buscar trajetoria de viagem pelo campo ${field} com valor ${value}:`,
         error
       )
-      throw new Error(error.message || 'Erro ao buscar rideTracking')
+      throw new Error(error.message || 'Erro ao buscar trajetoria de viagem')
     }
   }
 
   async create(
     rideTracking: Omit<RideTrackingEntity, 'id'>
-  ): Promise<ListResponseType<RideTrackingEntity>> {
+  ): Promise<RideTrackingEntity> {
     try {
       return await rideTrackingRepository.create(rideTracking)
     } catch (error: any) {
-      console.error('Erro ao criar usuário:', error)
-      throw new Error(error.message || 'Erro ao criar usuário')
+      console.error('Erro ao criar trajetoria de viagem:', error)
+      throw new Error(error.message || 'Erro ao criar trajetoria de viagem')
     }
   }
 
   async update(
     id: string,
     rideTracking: Partial<RideTrackingEntity>
-  ): Promise<ListResponseType<RideTrackingEntity>> {
+  ): Promise<RideTrackingEntity> {
     try {
       return await rideTrackingRepository.update(id, rideTracking)
     } catch (error: any) {
-      console.error(`Erro ao atualizar usuário ${id}:`, error)
-      throw new Error(error.message || 'Erro ao atualizar usuário')
+      console.error(`Erro ao atualizar trajetoria de viagem ${id}:`, error)
+      throw new Error(error.message || 'Erro ao atualizar trajetoria de viagem')
     }
   }
 
@@ -82,8 +84,8 @@ export class RideTrackingService {
     try {
       return await rideTrackingRepository.delete(id)
     } catch (error: any) {
-      console.error(`Erro ao deletar usuário ${id}:`, error)
-      throw new Error(error.message || 'Erro ao deletar usuário')
+      console.error(`Erro ao deletar trajetoria de viagem ${id}:`, error)
+      throw new Error(error.message || 'Erro ao deletar trajetoria de viagem')
     }
   }
 }

@@ -1,9 +1,9 @@
 export type BreakdownType = {
-  base_fare: number
-  distance_cost: number
-  wait_cost: number
-  insurance_fee: number
-  discount?: number
+  base_fare: number // Preço base
+  distance_cost: number // Custo total pela distância
+  wait_cost: number // Custo total pela espera
+  insurance_fee: number // Taxa de seguro
+  discount?: number // Desconto
 }
 
 export type PayoutsType = {

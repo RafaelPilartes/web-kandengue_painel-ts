@@ -1,3 +1,4 @@
+// modules/Api/firebase/admins.dao.ts
 import type { IAdminRepository } from '@/core/interfaces/IAdminRepository'
 import { AdminEntity } from '@/core/entities/Admin'
 import {
@@ -9,7 +10,11 @@ import {
   deleteDoc,
   query,
   where,
-  setDoc
+  setDoc,
+  orderBy,
+  limit as fbLimit,
+  startAfter,
+  getCountFromServer
 } from 'firebase/firestore'
 import { db } from '@/config/firebase.config'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
@@ -25,33 +30,145 @@ export class FirebaseAdminDAO implements IAdminRepository {
     ) as T
   }
 
-  async getAll(): Promise<{ data: AdminEntity[] }> {
-    const snapshot = await getDocs(this.adminsRef)
+  // helper: aplica filtros (where) sobre um ref/q
+  private applyFilters(baseRef: any, filters?: Partial<AdminEntity>) {
+    let q: any = baseRef
+    if (!filters) return q
+
+    Object.entries(filters).forEach(([field, value]) => {
+      if (value !== undefined && value !== '') {
+        q = query(q, where(field as string, '==', value))
+      }
+    })
+    return q
+  }
+
+  // 🔹 Busca todos os admins em lote
+  async getAllInBatches(batchSize = 500): Promise<AdminEntity[]> {
+    let lastDoc: any = null
+    let allAdmins: AdminEntity[] = []
+
+    while (true) {
+      let q = query(
+        this.adminsRef,
+        orderBy('createdAt', 'desc'),
+        fbLimit(batchSize),
+        ...(lastDoc ? [startAfter(lastDoc)] : [])
+      )
+
+      const snapshot = await getDocs(q)
+      if (snapshot.empty) break
+
+      const admins = snapshot.docs.map(
+        docSnap =>
+          new AdminEntity({
+            id: docSnap.id,
+            ...(docSnap.data() as AdminEntity)
+          })
+      )
+
+      allAdmins = [...allAdmins, ...admins]
+
+      lastDoc = snapshot.docs[snapshot.docs.length - 1]
+      if (snapshot.size < batchSize) break // última página
+    }
+
+    return allAdmins
+  }
+
+  /** 🔹 Listar admins com paginação + pesquisa opcional */
+  async getAll(
+    limitValue: number = 10,
+    offset = 0,
+    searchTerm?: string,
+    filters?: Partial<AdminEntity>
+  ): Promise<ListResponseType<AdminEntity[]>> {
+    // 1) constrói query base aplicando filtros
+    let baseQuery: any = this.applyFilters(this.adminsRef, filters)
+
+    // 2) se tiver searchTerm (aqui exemplo por email) -> usa range and orderBy on same field
+    const search = searchTerm?.toString().trim()
+    if (search) {
+      const lower = search.toLowerCase()
+      baseQuery = query(
+        baseQuery,
+        orderBy('email'),
+        where('email', '>=', lower),
+        where('email', '<=', lower + '\uf8ff')
+      )
+    } else {
+      // padrão: ordena por createdAt (use o campo consistente no seu DB)
+      baseQuery = query(baseQuery, orderBy('created_at', 'desc'))
+    }
+
+    // 3) conta total com mesma baseQuery (opcionalmente, se quiser performance, você pode evitar)
+    let total = 0
+    try {
+      const countSnap = await getCountFromServer(baseQuery)
+      total = countSnap.data().count
+    } catch (err) {
+      // se count falhar, não interrompe; continua sem count
+      console.warn('Erro ao obter count:', err)
+    }
+
+    // 4) se offset > 0 -> precisamos do lastVisible correspondente ao offset
+    let finalQuery = query(baseQuery, fbLimit(limitValue)) // default
+    if (offset > 0) {
+      // NOTE: esse "skip" é caro para offsets grandes — ver nota abaixo
+      const skipQuery = query(baseQuery, fbLimit(offset))
+      const skipSnap = await getDocs(skipQuery)
+      const lastVisible = skipSnap.docs[skipSnap.docs.length - 1]
+      if (!lastVisible) {
+        // offset maior do que registros existentes
+        return {
+          data: [],
+          pagination: { limit: limitValue, offset, count: total }
+        }
+      }
+      finalQuery = query(
+        baseQuery,
+        startAfter(lastVisible),
+        fbLimit(limitValue)
+      )
+    }
+
+    const snapshot = await getDocs(finalQuery)
+
+    if (snapshot.empty) {
+      return {
+        data: [],
+        pagination: { limit: limitValue, offset, count: total }
+      }
+    }
+
     const admins = snapshot.docs.map(
       docSnap =>
         new AdminEntity({
+          id: docSnap.id,
           ...(docSnap.data() as AdminEntity)
         })
     )
+
     return {
-      data: admins
+      data: admins,
+      pagination: {
+        limit: limitValue,
+        offset,
+        count: total
+      }
     }
   }
 
-  async getById(id: string): Promise<ListResponseType<AdminEntity> | null> {
+  async getById(id: string): Promise<AdminEntity | null> {
     const docSnap = await getDoc(doc(this.adminsRef, id))
     if (!docSnap.exists()) return null
     const adminData = new AdminEntity({
       ...(docSnap.data() as AdminEntity)
     })
-    return {
-      data: adminData
-    }
+    return adminData
   }
 
-  async getByEmail(
-    email: string
-  ): Promise<ListResponseType<AdminEntity> | null> {
+  async getByEmail(email: string): Promise<AdminEntity | null> {
     const querySnapshot = await getDocs(
       query(this.adminsRef, where('email', '==', email))
     )
@@ -61,43 +178,30 @@ export class FirebaseAdminDAO implements IAdminRepository {
       id: querySnapshot.docs[0].id,
       ...(querySnapshot.docs[0].data() as AdminEntity)
     })
-    return { data: adminData }
+    return adminData
   }
 
   async getAllByField(
     field: keyof AdminEntity,
-    value: any
+    value: any,
+    limit = 10,
+    offset = 0
   ): Promise<ListResponseType<AdminEntity[]>> {
-    const q = query(this.adminsRef, where(field as string, '==', value))
-    const querySnapshot = await getDocs(q)
-
-    if (querySnapshot.empty) return { data: [] }
-
-    const admins = querySnapshot.docs.map(
-      docSnap =>
-        new AdminEntity({
-          ...(docSnap.data() as AdminEntity)
-        })
-    )
-    return { data: admins }
+    const filters: Partial<AdminEntity> = { [field]: value } as any
+    return this.getAll(limit, offset, undefined, filters)
   }
 
-  async create(
-    admin: Omit<AdminEntity, 'id'>
-  ): Promise<ListResponseType<AdminEntity>> {
+  async create(admin: Omit<AdminEntity, 'id'>): Promise<AdminEntity> {
     const adminId = crypto.randomUUID()
     const sanitized = this.sanitize(admin)
 
     await setDoc(doc(this.adminsRef, adminId), sanitized)
 
     const adminData = new AdminEntity({ id: adminId, ...admin })
-    return { data: adminData }
+    return adminData
   }
 
-  async update(
-    id: string,
-    admin: Partial<AdminEntity>
-  ): Promise<ListResponseType<AdminEntity>> {
+  async update(id: string, admin: Partial<AdminEntity>): Promise<AdminEntity> {
     const sanitized = this.sanitize(admin)
     await updateDoc(doc(this.adminsRef, id), sanitized)
 

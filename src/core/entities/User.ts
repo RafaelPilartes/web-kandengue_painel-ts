@@ -9,6 +9,8 @@ export class UserEntity implements UserInterface {
   email: string
   phone: string
   status: UserStatus
+  created_at: Date
+  updated_at?: Date
 
   constructor(params: {
     id?: string
@@ -18,6 +20,8 @@ export class UserEntity implements UserInterface {
     photo?: string
     phone: string
     status: UserStatus
+    created_at: Date
+    updated_at?: Date
   }) {
     this.id = params.id
     this.name = params.name
@@ -26,5 +30,7 @@ export class UserEntity implements UserInterface {
     this.photo = params.photo
     this.phone = params.phone
     this.status = params.status
+    this.created_at = params.created_at
+    this.updated_at = params.updated_at
   }
 }

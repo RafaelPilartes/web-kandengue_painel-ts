@@ -13,6 +13,7 @@ import { Private, PrivateLogin } from './PrivateRoute'
 
 import { Login } from '../pages/main/login'
 import { Home } from '@/pages/main/home'
+import { Admin } from '@/pages/main/Admin'
 
 // Page
 
@@ -29,6 +30,17 @@ export function Router() {
               <React.Suspense fallback={<Loading />}>
                 <Private>
                   <Home />
+                </Private>
+              </React.Suspense>
+            }
+          />
+          {/* Admin */}
+          <Route
+            path={routsNameMain.users.admins.index}
+            element={
+              <React.Suspense fallback={<Loading />}>
+                <Private>
+                  <Admin />
                 </Private>
               </React.Suspense>
             }

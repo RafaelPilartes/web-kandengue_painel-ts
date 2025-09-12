@@ -1,3 +1,4 @@
+// services/transactions.service.ts
 import { transactionRepository } from '@/modules/Api'
 import { TransactionEntity } from '@/core/entities/Transaction'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
@@ -5,28 +6,29 @@ import type { ListResponseType } from '@/interfaces/IApiResponse'
 export class TransactionService {
   async getAll(
     limit?: number,
-    offset?: number
+    offset?: number,
+    searchTerm?: string,
+    filters?: Partial<TransactionEntity>
   ): Promise<ListResponseType<TransactionEntity[]>> {
     try {
-      const { data, pagination } = await transactionRepository.getAll(
+      return await transactionRepository.getAll(
         limit,
-        offset
+        offset,
+        searchTerm,
+        filters
       )
-      return { data, pagination }
     } catch (error: any) {
-      console.error('Erro ao buscar usuários:', error)
-      throw new Error(error.message || 'Erro ao buscar usuários')
+      console.error('Erro ao buscar transações:', error)
+      throw new Error(error.message || 'Erro ao buscar transações')
     }
   }
 
-  async getById(
-    id: string
-  ): Promise<ListResponseType<TransactionEntity> | null> {
+  async getById(id: string): Promise<TransactionEntity | null> {
     try {
       return await transactionRepository.getById(id)
     } catch (error: any) {
-      console.error(`Erro ao buscar usuário ${id}:`, error)
-      throw new Error(error.message || 'Erro ao buscar usuário')
+      console.error(`Erro ao buscar transação ${id}:`, error)
+      throw new Error(error.message || 'Erro ao buscar transação')
     }
   }
 
@@ -48,33 +50,33 @@ export class TransactionService {
       return { data, pagination }
     } catch (error: any) {
       console.error(
-        `Erro ao buscar transaction pelo campo ${field} com valor ${value}:`,
+        `Erro ao buscar transação pelo campo ${field} com valor ${value}:`,
         error
       )
-      throw new Error(error.message || 'Erro ao buscar transaction')
+      throw new Error(error.message || 'Erro ao buscar transação')
     }
   }
 
   async create(
     transaction: Omit<TransactionEntity, 'id'>
-  ): Promise<ListResponseType<TransactionEntity>> {
+  ): Promise<TransactionEntity> {
     try {
       return await transactionRepository.create(transaction)
     } catch (error: any) {
-      console.error('Erro ao criar usuário:', error)
-      throw new Error(error.message || 'Erro ao criar usuário')
+      console.error('Erro ao criar transação:', error)
+      throw new Error(error.message || 'Erro ao criar transação')
     }
   }
 
   async update(
     id: string,
     transaction: Partial<TransactionEntity>
-  ): Promise<ListResponseType<TransactionEntity>> {
+  ): Promise<TransactionEntity> {
     try {
       return await transactionRepository.update(id, transaction)
     } catch (error: any) {
-      console.error(`Erro ao atualizar usuário ${id}:`, error)
-      throw new Error(error.message || 'Erro ao atualizar usuário')
+      console.error(`Erro ao atualizar transação ${id}:`, error)
+      throw new Error(error.message || 'Erro ao atualizar transação')
     }
   }
 
@@ -82,8 +84,8 @@ export class TransactionService {
     try {
       return await transactionRepository.delete(id)
     } catch (error: any) {
-      console.error(`Erro ao deletar usuário ${id}:`, error)
-      throw new Error(error.message || 'Erro ao deletar usuário')
+      console.error(`Erro ao deletar transação ${id}:`, error)
+      throw new Error(error.message || 'Erro ao deletar transação')
     }
   }
 }

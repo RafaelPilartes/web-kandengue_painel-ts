@@ -8,6 +8,6 @@ export interface UserInterface {
   email: string
   phone: string
   status: UserStatus
-  created_at?: string
-  updated_at?: string
+  created_at: Date
+  updated_at?: Date
 }

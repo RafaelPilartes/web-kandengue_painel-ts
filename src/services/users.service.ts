@@ -1,3 +1,4 @@
+// services/users.service.ts
 import { userRepository } from '@/modules/Api'
 import { UserEntity } from '@/core/entities/User'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
@@ -5,18 +6,19 @@ import type { ListResponseType } from '@/interfaces/IApiResponse'
 export class UserService {
   async getAll(
     limit?: number,
-    offset?: number
+    offset?: number,
+    searchTerm?: string,
+    filters?: Partial<UserEntity>
   ): Promise<ListResponseType<UserEntity[]>> {
     try {
-      const { data, pagination } = await userRepository.getAll(limit, offset)
-      return { data, pagination }
+      return await userRepository.getAll(limit, offset, searchTerm, filters)
     } catch (error: any) {
-      console.error('Erro ao buscar usuários:', error)
-      throw new Error(error.message || 'Erro ao buscar usuários')
+      console.error('Erro ao buscar users:', error)
+      throw new Error(error.message || 'Erro ao buscar users')
     }
   }
 
-  async getById(id: string): Promise<ListResponseType<UserEntity> | null> {
+  async getById(id: string): Promise<UserEntity | null> {
     try {
       return await userRepository.getById(id)
     } catch (error: any) {
@@ -25,9 +27,41 @@ export class UserService {
     }
   }
 
-  async create(
-    user: Omit<UserEntity, 'id'>
-  ): Promise<ListResponseType<UserEntity>> {
+  // get by custom field
+  async getAllByField(
+    field: string,
+    value: any,
+    limit?: number,
+    offset?: number
+  ): Promise<ListResponseType<UserEntity[]>> {
+    try {
+      const { data, pagination } = await userRepository.getAllByField(
+        field,
+        value,
+        limit,
+        offset
+      )
+
+      return { data, pagination }
+    } catch (error: any) {
+      console.error(
+        `Erro ao buscar user pelo campo ${field} com valor ${value}:`,
+        error
+      )
+      throw new Error(error.message || 'Erro ao buscar user')
+    }
+  }
+
+  async getByEmail(email: string): Promise<UserEntity | null> {
+    try {
+      return await userRepository.getByEmail(email)
+    } catch (error: any) {
+      console.error(`Erro ao buscar usuario ${email}:`, error)
+      throw new Error(error.message || 'Erro ao buscar usuario')
+    }
+  }
+
+  async create(user: Omit<UserEntity, 'id'>): Promise<UserEntity> {
     if (!user.name || !user.email) {
       throw new Error('Nome e email são obrigatórios')
     }
@@ -40,10 +74,7 @@ export class UserService {
     }
   }
 
-  async update(
-    id: string,
-    user: Partial<UserEntity>
-  ): Promise<ListResponseType<UserEntity>> {
+  async update(id: string, user: Partial<UserEntity>): Promise<UserEntity> {
     try {
       return await userRepository.update(id, user)
     } catch (error: any) {
