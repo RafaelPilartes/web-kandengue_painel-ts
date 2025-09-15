@@ -4,8 +4,11 @@ import { TransactionService } from '@/services/transaction.service'
 import { TransactionEntity } from '@/core/entities/Transaction'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
+import { WalletService } from '@/services/wallet.service'
+import type { TransactionType, TransactionCategoryType } from '@/types/enum'
 
 const transactionService = new TransactionService()
+const walletService = new WalletService()
 
 export function useTransactionsViewModel(
   limit?: number,
@@ -37,7 +40,7 @@ export function useTransactionsViewModel(
   })
 
   /** 🔹 Buscar lista de transações por field */
-  const fetchAllTransactionSByField = async (
+  const fetchAllTransactionsByField = async (
     field: string,
     value: any,
     limit?: number,
@@ -98,6 +101,49 @@ export function useTransactionsViewModel(
     }
   }
 
+  /** 🔹 Função composta: atualizar saldo + registrar transação */
+  const updateBalanceAndAddTransaction = useMutation({
+    mutationFn: async ({
+      walletId,
+      amount,
+      type,
+      category,
+      description
+    }: {
+      walletId: string
+      amount: number
+      type: TransactionType
+      category: TransactionCategoryType
+      description?: string
+    }) => {
+      // 1. Buscar carteira atual
+      const wallet = await walletService.getById(walletId)
+      if (!wallet) throw new Error('Carteira não encontrada')
+
+      // 2. Calcular novo saldo
+      const newBalance =
+        type === 'credit' ? wallet.balance + amount : wallet.balance - amount
+
+      // 3. Atualiza saldo da carteira
+      const updatedWallet = await walletService.update(walletId, {
+        balance: newBalance
+      })
+
+      // 4. Cria a transação correspondente
+      const transaction: Omit<TransactionEntity, 'id'> = {
+        wallet_id: walletId,
+        amount,
+        type,
+        category,
+        description: description ?? ''
+      }
+
+      const createdTransaction = await transactionService.create(transaction)
+
+      return { updatedWallet, createdTransaction }
+    }
+  })
+
   return {
     transactions: transactionsResponse?.data ?? [],
     pagination: transactionsResponse?.pagination,
@@ -105,11 +151,13 @@ export function useTransactionsViewModel(
     error,
     refresh: refetch,
 
-    fetchAllTransactionSByField,
+    fetchAllTransactionsByField,
 
     createTransaction,
     updateTransaction,
     deleteTransaction,
-    fetchTransactionById
+    fetchTransactionById,
+
+    updateBalanceAndAddTransaction
   }
 }

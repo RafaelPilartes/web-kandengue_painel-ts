@@ -13,13 +13,15 @@ export interface ApiResponse<T> {
   }
 }
 
+export type paginationType = {
+  limit: number | null
+  offset: any | null
+  count: number
+  total?: number | undefined // total de registros na base
+} | null
+
 export interface ListResponseType<T> {
   data: T
   message?: string
-  pagination?: {
-    limit: number | null
-    offset: any | null
-    count: number
-    total?: number | undefined // total de registros na base
-  } | null
+  pagination?: paginationType
 }

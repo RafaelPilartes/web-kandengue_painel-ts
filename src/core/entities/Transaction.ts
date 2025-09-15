@@ -1,25 +1,28 @@
 // core/entities/Transaction.ts
 
-import type { DriverInterface } from '@/interfaces/IDriver'
 import type { TransactionInterface } from '@/interfaces/ITransaction'
 import type { TransactionCategoryType, TransactionType } from '@/types/enum'
 
 export class TransactionEntity implements TransactionInterface {
   id: string
-  driver: DriverInterface
+  wallet_id: string
   type: TransactionType
   category: TransactionCategoryType
-  description?: string
+  reference_id?: string // id de corrida, topup
   amount: number
-  created_at: Date
+  description?: string
+  created_at?: Date
+  updated_at?: Date
 
   constructor(params: TransactionInterface) {
     this.id = params.id
-    this.driver = params.driver
+    this.wallet_id = params.wallet_id
     this.type = params.type
     this.category = params.category
-    this.description = params.description
+    this.reference_id = params.reference_id
     this.amount = params.amount
+    this.description = params.description
     this.created_at = params.created_at
+    this.updated_at = params.updated_at
   }
 }

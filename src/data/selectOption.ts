@@ -10,6 +10,24 @@ export const statusOptions: OptionType[] = [
   { value: 'active', label: 'Ativo' },
   { value: 'pending', label: 'Pendente' }
 ]
+
+export const requestStatusOptions: OptionType[] = [
+  { value: 'pending', label: 'Pendente' },
+  { value: 'approved', label: 'Aprovado' },
+  { value: 'rejected', label: 'Rejeitado' }
+]
+
+export const TransactionTypeOptions: OptionType[] = [
+  { value: 'credit', label: 'Crédito' },
+  { value: 'debit', label: 'Débito' },
+  { value: 'refund', label: 'Devolução' }
+]
+
+export const walletTopupMethodOptions: OptionType[] = [
+  { value: 'bank_transfer', label: 'Transferência Bancária' },
+  { value: 'automated', label: 'Automático' },
+  { value: 'cash', label: 'Dinheiro' }
+]
 export const userStatusOptions: OptionType[] = [
   { value: 'inactive', label: 'Inativo' },
   { value: 'active', label: 'Ativo' },
@@ -19,6 +37,25 @@ export const userStatusOptions: OptionType[] = [
 export const booleanOptions: OptionType[] = [
   { value: 'true', label: 'Sim' },
   { value: 'false', label: 'Não' }
+]
+
+export const notificationTypeOptions: OptionType[] = [
+  { value: 'ride', label: 'Corrida' },
+  { value: 'wallet', label: 'Carteira' },
+  { value: 'document', label: 'Documento' },
+  { value: 'system', label: 'Sistema' }
+]
+
+export const notificationCategoryOptions: OptionType[] = [
+  { value: 'driver', label: 'Motorista' },
+  { value: 'passenger', label: 'Passageiro' },
+  { value: 'admin', label: 'Administrador' },
+  { value: 'all', label: 'Todos' }
+]
+
+export const isOnlineOptions: OptionType[] = [
+  { value: 'true', label: 'Online' },
+  { value: 'false', label: 'Offline' }
 ]
 
 export const rowPerPageOptions: OptionType[] = [
@@ -73,6 +110,23 @@ export const weekdayOptions: OptionType[] = [
   { value: 'friday', label: 'Sexta-feira' },
   { value: 'saturday', label: 'Sabado' },
   { value: 'sunday', label: 'Domingo' }
+]
+
+export const rideStatusOptions: OptionType[] = [
+  { value: 'pending', label: 'Pendente' },
+  { value: 'accepting_pending', label: 'Aceitando/Pendente' },
+  { value: 'driver_on_the_way', label: 'Motorista em Caminho' },
+  { value: 'arrived_pickup', label: 'Chegou no Pick-up' },
+  { value: 'picked_up', label: 'Pegou o Passageiro' },
+  { value: 'arrived_dropoff', label: 'Chegou no Drop-off' },
+  { value: 'completed', label: 'Completo' },
+  { value: 'canceled', label: 'Cancelado' }
+]
+export const rideTypeOptions: OptionType[] = [
+  { value: 'car', label: 'Carro' },
+  { value: 'motorcycle', label: 'Moto' },
+  { value: 'bicycle', label: 'Bicicleta' },
+  { value: 'delivery', label: 'Entrega' }
 ]
 
 // ==============================================

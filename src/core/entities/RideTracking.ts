@@ -1,15 +1,17 @@
 // core/entities/RideTracking.ts
-import type { RideTrackingInterface } from '@/interfaces/IRideTracking'
+import type { RideTrackingsInterface } from '@/interfaces/IRideTracking'
 import type { LiveLocationType } from '@/types/ride'
 
-export class RideTrackingEntity implements RideTrackingInterface {
+export class RideTrackingEntity implements RideTrackingsInterface {
   id: string
-  rideId: string
+  ride_id: string
   path: LiveLocationType[]
+  created_at?: Date
 
-  constructor(params: RideTrackingInterface) {
+  constructor(params: RideTrackingsInterface) {
     this.id = params.id
-    this.rideId = params.rideId
+    this.ride_id = params.ride_id
     this.path = params.path
+    this.created_at = params.created_at
   }
 }

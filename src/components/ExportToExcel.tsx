@@ -78,7 +78,7 @@ const ExportToExcel: React.FC<ExportToExcelProps> = ({
     worksheet.addRow([]) // Adicionar uma linha vazia após a imagem
 
     // Titulo em baixo do logo
-    const nameLogoRow = worksheet.addRow(['Saúde em Casa'])
+    const nameLogoRow = worksheet.addRow(['Kandengue Atrevido'])
     nameLogoRow.font = { bold: true, size: 14 }
     nameLogoRow.alignment = { horizontal: 'center' } // Centralizar o texto
     worksheet.addRow([]) // Adicionar uma linha vazia após a imagem

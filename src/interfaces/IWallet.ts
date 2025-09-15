@@ -1,13 +1,14 @@
 // interfaces/IWallet.ts
 
-import type { UserInterface } from './IUser'
+import type { currencyEnumType, StatusEnumType } from '@/types/enum'
+import type { DriverInterface } from './IDriver'
 
 export interface WalletInterface {
   id?: string
-  user: UserInterface
+  user: DriverInterface
   balance: number
-  status: 'active' | 'inactive'
-  currency: 'AOA' | 'USD'
-  created_at: Date
+  status: StatusEnumType
+  currency: currencyEnumType
+  created_at?: Date
   updated_at?: Date
 }

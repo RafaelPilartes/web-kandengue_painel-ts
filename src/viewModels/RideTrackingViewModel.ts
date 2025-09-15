@@ -37,7 +37,7 @@ export function useRideTrackingsViewModel(
   })
 
   /** 🔹 Buscar lista de trajetorias de viagens por field */
-  const fetchAllRideTrackingSByField = async (
+  const fetchAllRideTrackingsByField = async (
     field: string,
     value: any,
     limit?: number,
@@ -106,11 +106,11 @@ export function useRideTrackingsViewModel(
   return {
     rideTrackings: rideTrackingsResponse?.data ?? [],
     pagination: rideTrackingsResponse?.pagination,
-    loading,
+    isLoadingRidesTracking: loading,
     error,
     refresh: refetch,
 
-    fetchAllRideTrackingSByField,
+    fetchAllRideTrackingsByField,
 
     createRideTracking,
     updateRideTracking,

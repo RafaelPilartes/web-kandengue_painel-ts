@@ -1,7 +1,8 @@
 import type { LiveLocationType } from '@/types/ride'
 
-export interface RideTrackingInterface {
+export interface RideTrackingsInterface {
   id: string
-  rideId: string
+  ride_id: string
   path: LiveLocationType[] // todas localizações ao longo da corrida
+  created_at?: Date
 }

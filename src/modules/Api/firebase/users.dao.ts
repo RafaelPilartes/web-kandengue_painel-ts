@@ -19,6 +19,7 @@ import {
 import { db } from '@/config/firebase.config'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
+import { generateId } from '@/helpers/generateId'
 
 export class FirebaseUserDAO implements IUserRepository {
   private usersRef = collection(db, firebaseCollections.users.root)
@@ -45,7 +46,7 @@ export class FirebaseUserDAO implements IUserRepository {
 
   /** 🔹 Listar users com paginação + pesquisa opcional */
   async getAll(
-    limitValue: number = 10,
+    limitValue: number = 500,
     offset = 0,
     searchTerm?: string,
     filters?: Partial<UserEntity>
@@ -53,7 +54,7 @@ export class FirebaseUserDAO implements IUserRepository {
     // 1) constrói query base aplicando filtros
     let baseQuery: any = this.applyFilters(this.usersRef, filters)
 
-    // 2) se tiver searchTerm (aqui exemplo por email) -> usa range and orderBy on same field
+    // 2) se tiver searchTerm
     const search = searchTerm?.toString().trim()
     if (search) {
       const lower = search.toLowerCase()
@@ -115,8 +116,6 @@ export class FirebaseUserDAO implements IUserRepository {
         })
     )
 
-    console.log('users', snapshot.docs)
-
     return {
       data: users,
       pagination: {
@@ -160,8 +159,12 @@ export class FirebaseUserDAO implements IUserRepository {
   }
 
   async create(user: Omit<UserEntity, 'id'>): Promise<UserEntity> {
-    const userId = crypto.randomUUID()
-    const sanitized = this.sanitize(user)
+    const userId = generateId('us')
+    const sanitized = {
+      ...this.sanitize(user),
+      id: userId,
+      created_at: new Date()
+    }
 
     await setDoc(doc(this.usersRef, userId), sanitized)
 
@@ -170,7 +173,10 @@ export class FirebaseUserDAO implements IUserRepository {
   }
 
   async update(id: string, user: Partial<UserEntity>): Promise<UserEntity> {
-    const sanitized = this.sanitize(user)
+    const sanitized = {
+      ...this.sanitize(user),
+      updated_at: new Date()
+    }
     await updateDoc(doc(this.usersRef, id), sanitized)
 
     const updated = await this.getById(id)

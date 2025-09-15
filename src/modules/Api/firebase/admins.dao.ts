@@ -19,6 +19,7 @@ import {
 import { db } from '@/config/firebase.config'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
+import { generateId } from '@/helpers/generateId'
 
 export class FirebaseAdminDAO implements IAdminRepository {
   private adminsRef = collection(db, firebaseCollections.admins.root)
@@ -78,7 +79,7 @@ export class FirebaseAdminDAO implements IAdminRepository {
 
   /** 🔹 Listar admins com paginação + pesquisa opcional */
   async getAll(
-    limitValue: number = 10,
+    limitValue: number = 500,
     offset = 0,
     searchTerm?: string,
     filters?: Partial<AdminEntity>
@@ -86,7 +87,7 @@ export class FirebaseAdminDAO implements IAdminRepository {
     // 1) constrói query base aplicando filtros
     let baseQuery: any = this.applyFilters(this.adminsRef, filters)
 
-    // 2) se tiver searchTerm (aqui exemplo por email) -> usa range and orderBy on same field
+    // 2) se tiver searchTerm
     const search = searchTerm?.toString().trim()
     if (search) {
       const lower = search.toLowerCase()
@@ -192,8 +193,12 @@ export class FirebaseAdminDAO implements IAdminRepository {
   }
 
   async create(admin: Omit<AdminEntity, 'id'>): Promise<AdminEntity> {
-    const adminId = crypto.randomUUID()
-    const sanitized = this.sanitize(admin)
+    const adminId = generateId('adm')
+    const sanitized = {
+      ...this.sanitize(admin),
+      id: adminId,
+      created_at: new Date()
+    }
 
     await setDoc(doc(this.adminsRef, adminId), sanitized)
 
@@ -202,7 +207,10 @@ export class FirebaseAdminDAO implements IAdminRepository {
   }
 
   async update(id: string, admin: Partial<AdminEntity>): Promise<AdminEntity> {
-    const sanitized = this.sanitize(admin)
+    const sanitized = {
+      ...this.sanitize(admin),
+      updated_at: new Date()
+    }
     await updateDoc(doc(this.adminsRef, id), sanitized)
 
     const updated = await this.getById(id)

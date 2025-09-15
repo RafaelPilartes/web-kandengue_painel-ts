@@ -1,14 +1,14 @@
 export type modalCreateType<T> = {
   baseInfo?: T
-  handleUpdateListing: () => void
+  handleUpdateListing?: () => void
   modalCreateRowIsOpen: boolean
   setModalCreateRowIsOpen: (e: boolean) => void
 }
 
-export type modalEditeType<T> = {
+export type modalEditType<T> = {
   baseInfo: T
   modalEditRowIsOpen: boolean
-  handleUpdateListing: () => void
+  handleUpdateListing?: () => void
   setModalEditRowIsOpen: (e: boolean) => void
 }
 

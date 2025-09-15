@@ -19,6 +19,7 @@ import {
 import { db } from '@/config/firebase.config'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
+import { generateId } from '@/helpers/generateId'
 
 export class FirebaseWalletDAO implements IWalletRepository {
   private walletsRef = collection(db, firebaseCollections.wallets.root)
@@ -45,7 +46,7 @@ export class FirebaseWalletDAO implements IWalletRepository {
 
   /** 🔹 Listar wallets com paginação + pesquisa opcional */
   async getAll(
-    limitValue: number = 10,
+    limitValue: number = 500,
     offset = 0,
     searchTerm?: string,
     filters?: Partial<WalletEntity>
@@ -53,15 +54,15 @@ export class FirebaseWalletDAO implements IWalletRepository {
     // 1) constrói query base aplicando filtros
     let baseQuery: any = this.applyFilters(this.walletsRef, filters)
 
-    // 2) se tiver searchTerm (aqui exemplo por email) -> usa range and orderBy on same field
+    // 2) se tiver searchTerm
     const search = searchTerm?.toString().trim()
     if (search) {
       const lower = search.toLowerCase()
       baseQuery = query(
         baseQuery,
-        orderBy('email'),
-        where('email', '>=', lower),
-        where('email', '<=', lower + '\uf8ff')
+        orderBy('user.email'),
+        where('user.email', '>=', lower),
+        where('user.email', '<=', lower + '\uf8ff')
       )
     } else {
       // padrão: ordena por createdAt (use o campo consistente no seu DB)
@@ -115,8 +116,6 @@ export class FirebaseWalletDAO implements IWalletRepository {
         })
     )
 
-    console.log('wallets', snapshot.docs)
-
     return {
       data: wallets,
       pagination: {
@@ -147,8 +146,12 @@ export class FirebaseWalletDAO implements IWalletRepository {
   }
 
   async create(wallet: Omit<WalletEntity, 'id'>): Promise<WalletEntity> {
-    const walletId = crypto.randomUUID()
-    const sanitized = this.sanitize(wallet)
+    const walletId = generateId('wt')
+    const sanitized = {
+      ...this.sanitize(wallet),
+      id: walletId,
+      created_at: new Date()
+    }
 
     await setDoc(doc(this.walletsRef, walletId), sanitized)
 
@@ -160,7 +163,10 @@ export class FirebaseWalletDAO implements IWalletRepository {
     id: string,
     wallet: Partial<WalletEntity>
   ): Promise<WalletEntity> {
-    const sanitized = this.sanitize(wallet)
+    const sanitized = {
+      ...this.sanitize(wallet),
+      updated_at: new Date()
+    }
     await updateDoc(doc(this.walletsRef, id), sanitized)
 
     const updated = await this.getById(id)

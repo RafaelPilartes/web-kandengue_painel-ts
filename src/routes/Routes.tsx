@@ -13,7 +13,17 @@ import { Private, PrivateLogin } from './PrivateRoute'
 
 import { Login } from '../pages/main/login'
 import { Home } from '@/pages/main/home'
-import { Admin } from '@/pages/main/Admin'
+import { AdminPage } from '@/pages/main/Admin'
+import { UserPage } from '@/pages/main/Passengers'
+import { DriverPage } from '@/pages/main/Drivers'
+import { RidesPage } from '@/pages/main/Rides'
+import { RealtimePage } from '@/pages/main/Rides/realtime'
+import { FinancesPage } from '@/pages/main/Finances'
+import { WalletsPage } from '@/pages/main/Finances/wallet'
+import { NotificationsPage } from '@/pages/main/Notifications'
+import { MetricsPage } from '@/pages/main/Metrics'
+import { SettingsPage } from '@/pages/main/Settings'
+import { WalletTopupRequestsPage } from '@/pages/main/Finances/walletTopupRequest'
 
 // Page
 
@@ -40,7 +50,126 @@ export function Router() {
             element={
               <React.Suspense fallback={<Loading />}>
                 <Private>
-                  <Admin />
+                  <AdminPage />
+                </Private>
+              </React.Suspense>
+            }
+          />
+          {/* Driver */}
+          <Route
+            path={routsNameMain.users.drivers.index}
+            element={
+              <React.Suspense fallback={<Loading />}>
+                <Private>
+                  <DriverPage />
+                </Private>
+              </React.Suspense>
+            }
+          />
+          {/* Passenger */}
+          <Route
+            path={routsNameMain.users.passengers.index}
+            element={
+              <React.Suspense fallback={<Loading />}>
+                <Private>
+                  <UserPage />
+                </Private>
+              </React.Suspense>
+            }
+          />
+          {/* Rides */}
+          <Route
+            path={routsNameMain.rides.index}
+            element={
+              <React.Suspense fallback={<Loading />}>
+                <Private>
+                  <RidesPage />
+                </Private>
+              </React.Suspense>
+            }
+          />
+          <Route
+            path={routsNameMain.rides.realtime}
+            element={
+              <React.Suspense fallback={<Loading />}>
+                <Private>
+                  <RealtimePage />
+                </Private>
+              </React.Suspense>
+            }
+          />
+          {/* Finances */}
+          <Route
+            path={routsNameMain.finance.index}
+            element={
+              <React.Suspense fallback={<Loading />}>
+                <Private>
+                  <FinancesPage />
+                </Private>
+              </React.Suspense>
+            }
+          />
+          {/* Rides */}
+          <Route
+            path={routsNameMain.rides.index}
+            element={
+              <React.Suspense fallback={<Loading />}>
+                <Private>
+                  <RidesPage />
+                </Private>
+              </React.Suspense>
+            }
+          />
+          {/* Wallets */}
+          <Route
+            path={routsNameMain.finance.wallet}
+            element={
+              <React.Suspense fallback={<Loading />}>
+                <Private>
+                  <WalletsPage />
+                </Private>
+              </React.Suspense>
+            }
+          />
+          <Route
+            path={routsNameMain.finance.walletTopupRequest}
+            element={
+              <React.Suspense fallback={<Loading />}>
+                <Private>
+                  <WalletTopupRequestsPage />
+                </Private>
+              </React.Suspense>
+            }
+          />
+          {/* Notifications */}
+          <Route
+            path={routsNameMain.notifications.index}
+            element={
+              <React.Suspense fallback={<Loading />}>
+                <Private>
+                  <NotificationsPage />
+                </Private>
+              </React.Suspense>
+            }
+          />
+          {/* Metrics */}
+          <Route
+            path={routsNameMain.metrics.index}
+            element={
+              <React.Suspense fallback={<Loading />}>
+                <Private>
+                  <MetricsPage />
+                </Private>
+              </React.Suspense>
+            }
+          />
+          {/* Settings */}
+          <Route
+            path={routsNameMain.settings.index}
+            element={
+              <React.Suspense fallback={<Loading />}>
+                <Private>
+                  <SettingsPage />
                 </Private>
               </React.Suspense>
             }

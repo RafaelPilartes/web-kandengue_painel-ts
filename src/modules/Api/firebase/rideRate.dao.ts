@@ -19,6 +19,7 @@ import {
 import { db } from '@/config/firebase.config'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
+import { generateId } from '@/helpers/generateId'
 
 export class FirebaseRideRateDAO implements IRideRateRepository {
   private rideRatesRef = collection(db, firebaseCollections.rideRates.root)
@@ -45,7 +46,7 @@ export class FirebaseRideRateDAO implements IRideRateRepository {
 
   /** 🔹 Listar rideRates com paginação + pesquisa opcional */
   async getAll(
-    limitValue: number = 10,
+    limitValue: number = 500,
     offset = 0,
     searchTerm?: string,
     filters?: Partial<RideRateEntity>
@@ -53,7 +54,7 @@ export class FirebaseRideRateDAO implements IRideRateRepository {
     // 1) constrói query base aplicando filtros
     let baseQuery: any = this.applyFilters(this.rideRatesRef, filters)
 
-    // 2) se tiver searchTerm (aqui exemplo por email) -> usa range and orderBy on same field
+    // 2) se tiver searchTerm
     const search = searchTerm?.toString().trim()
     if (search) {
       const lower = search.toLowerCase()
@@ -108,6 +109,7 @@ export class FirebaseRideRateDAO implements IRideRateRepository {
       }
     }
 
+    // 5) retorna
     const rideRates = snapshot.docs.map(
       docSnap =>
         new RideRateEntity({
@@ -115,7 +117,8 @@ export class FirebaseRideRateDAO implements IRideRateRepository {
         })
     )
 
-    console.log('rideRates', snapshot.docs)
+    // console.log('rideRates ==', rideRates[0])
+    // console.log('rideRates ??', snapshot.empty)
 
     return {
       data: rideRates,
@@ -147,8 +150,12 @@ export class FirebaseRideRateDAO implements IRideRateRepository {
   }
 
   async create(rideRate: Omit<RideRateEntity, 'id'>): Promise<RideRateEntity> {
-    const rideRateId = crypto.randomUUID()
-    const sanitized = this.sanitize(rideRate)
+    const rideRateId = generateId('rate')
+    const sanitized = {
+      ...this.sanitize(rideRate),
+      id: rideRateId,
+      created_at: new Date()
+    }
 
     await setDoc(doc(this.rideRatesRef, rideRateId), sanitized)
 
@@ -160,7 +167,10 @@ export class FirebaseRideRateDAO implements IRideRateRepository {
     id: string,
     rideRate: Partial<RideRateEntity>
   ): Promise<RideRateEntity> {
-    const sanitized = this.sanitize(rideRate)
+    const sanitized = {
+      ...this.sanitize(rideRate),
+      updated_at: new Date()
+    }
     await updateDoc(doc(this.rideRatesRef, id), sanitized)
 
     const updated = await this.getById(id)

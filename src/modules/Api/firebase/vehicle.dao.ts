@@ -19,6 +19,7 @@ import {
 import { db } from '@/config/firebase.config'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
+import { generateId } from '@/helpers/generateId'
 
 export class FirebaseVehicleDAO implements IVehicleRepository {
   private vehiclesRef = collection(db, firebaseCollections.vehicles.root)
@@ -45,7 +46,7 @@ export class FirebaseVehicleDAO implements IVehicleRepository {
 
   /** 🔹 Listar vehicles com paginação + pesquisa opcional */
   async getAll(
-    limitValue: number = 10,
+    limitValue: number = 500,
     offset = 0,
     searchTerm?: string,
     filters?: Partial<VehicleEntity>
@@ -53,15 +54,15 @@ export class FirebaseVehicleDAO implements IVehicleRepository {
     // 1) constrói query base aplicando filtros
     let baseQuery: any = this.applyFilters(this.vehiclesRef, filters)
 
-    // 2) se tiver searchTerm (aqui exemplo por email) -> usa range and orderBy on same field
+    // 2) se tiver searchTerm
     const search = searchTerm?.toString().trim()
     if (search) {
       const lower = search.toLowerCase()
       baseQuery = query(
         baseQuery,
-        orderBy('email'),
-        where('email', '>=', lower),
-        where('email', '<=', lower + '\uf8ff')
+        orderBy('plate'),
+        where('plate', '>=', lower),
+        where('plate', '<=', lower + '\uf8ff')
       )
     } else {
       // padrão: ordena por createdAt (use o campo consistente no seu DB)
@@ -115,8 +116,6 @@ export class FirebaseVehicleDAO implements IVehicleRepository {
         })
     )
 
-    console.log('vehicles', snapshot.docs)
-
     return {
       data: vehicles,
       pagination: {
@@ -147,8 +146,12 @@ export class FirebaseVehicleDAO implements IVehicleRepository {
   }
 
   async create(vehicle: Omit<VehicleEntity, 'id'>): Promise<VehicleEntity> {
-    const vehicleId = crypto.randomUUID()
-    const sanitized = this.sanitize(vehicle)
+    const vehicleId = generateId('veh')
+    const sanitized = {
+      ...this.sanitize(vehicle),
+      id: vehicleId,
+      created_at: new Date()
+    }
 
     await setDoc(doc(this.vehiclesRef, vehicleId), sanitized)
 
@@ -160,7 +163,10 @@ export class FirebaseVehicleDAO implements IVehicleRepository {
     id: string,
     vehicle: Partial<VehicleEntity>
   ): Promise<VehicleEntity> {
-    const sanitized = this.sanitize(vehicle)
+    const sanitized = {
+      ...this.sanitize(vehicle),
+      updated_at: new Date()
+    }
     await updateDoc(doc(this.vehiclesRef, id), sanitized)
 
     const updated = await this.getById(id)

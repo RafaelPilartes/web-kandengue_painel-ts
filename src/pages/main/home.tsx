@@ -31,7 +31,6 @@ import { useRidesViewModel } from '@/viewModels/RideViewModel'
 import { Spinner } from 'phosphor-react'
 import { formatMoney } from '@/utils/number'
 import { rideCalculation } from '@/utils/rideCalculation'
-import { useAdminsViewModel } from '@/viewModels/AdminViewModel'
 
 // Registrar chart.js
 ChartJS.register(
@@ -57,7 +56,6 @@ export function Home() {
   const { users, isLoadingUsers } = useUsersViewModel()
   const { drivers, isLoadingDrivers } = useDriversViewModel()
   const { rides, isLoadingRides, calculateCompanyProfit } = useRidesViewModel()
-  const { admins } = useAdminsViewModel()
 
   const companyProfit = calculateCompanyProfit(rides)
 
@@ -99,26 +97,6 @@ export function Home() {
     <div className="w-full h-full flex flex-col gap-6 overflow-x-hidden">
       <Breadcrumbs items={itemsBreadcrumbs} />
 
-      <div>
-        {admins.length > 0 && (
-          <div className="flex flex-col gap-2">
-            <span className="text-lg font-semibold text-dark dark:text-light">
-              Administradores
-            </span>
-            <div className="flex flex-wrap gap-2">
-              {admins.map(a => (
-                <span
-                  key={a.id}
-                  className="p-2 rounded-md bg-light dark:bg-dark/50 shadow"
-                >
-                  {a.email}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
       {/* Estatísticas */}
       <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Estatísticas principais */}
@@ -156,9 +134,13 @@ export function Home() {
           <div className="p-6 flex flex-col gap-3 rounded-md bg-light dark:bg-dark shadow-3xl border-b-8 border-purple-500">
             <CreditCard size={36} className="text-purple-500" />
             <span className="text-base">Receita Total</span>
-            <span className="text-2xl font-semibold">
-              AOA {formatMoney(companyProfit)}
-            </span>
+            {isLoadingRides ? (
+              <Spinner size={24} className="text-purple-500 animate-spin" />
+            ) : (
+              <span className="text-2xl font-semibold">
+                AOA {formatMoney(companyProfit)}
+              </span>
+            )}
           </div>
         </div>
 
@@ -191,16 +173,16 @@ export function Home() {
           <Spinner size={24} className="text-blue-600 animate-spin" />
         ) : (
           <ul className="flex flex-col gap-2">
-            {topDrivers.map((d, i) => (
+            {topDrivers.map((driver, i) => (
               <li
-                key={d.id}
+                key={driver.id}
                 className="flex justify-between items-center p-3 rounded-md bg-light dark:bg-dark/50 shadow border-b-2 border-b-yellow-500"
               >
                 <span>
-                  {i + 1}. {d.name}
+                  {i + 1}. {driver.name}
                 </span>
                 <span className="text-sm text-gray-500">
-                  {d.rideCount} corridas
+                  {driver.rideCount} corridas
                 </span>
               </li>
             ))}

@@ -13,7 +13,7 @@ export class NotificationEntity implements NotificationInterface {
   specific_user?: boolean
   user?: UserInterface
   is_read?: boolean
-  created_at: Date
+  created_at?: Date
 
   constructor(params: NotificationInterface) {
     this.id = params.id

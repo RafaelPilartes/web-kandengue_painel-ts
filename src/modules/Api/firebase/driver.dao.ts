@@ -19,6 +19,7 @@ import {
 import { db } from '@/config/firebase.config'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
+import { generateId } from '@/helpers/generateId'
 
 export class FirebaseDriverDAO implements IDriverRepository {
   private driversRef = collection(db, firebaseCollections.drivers.root)
@@ -45,7 +46,7 @@ export class FirebaseDriverDAO implements IDriverRepository {
 
   /** 🔹 Listar drivers com paginação + pesquisa opcional */
   async getAll(
-    limitValue: number = 10,
+    limitValue: number = 500,
     offset = 0,
     searchTerm?: string,
     filters?: Partial<DriverEntity>
@@ -53,7 +54,7 @@ export class FirebaseDriverDAO implements IDriverRepository {
     // 1) constrói query base aplicando filtros
     let baseQuery: any = this.applyFilters(this.driversRef, filters)
 
-    // 2) se tiver searchTerm (aqui exemplo por email) -> usa range and orderBy on same field
+    // 2) se tiver searchTerm
     const search = searchTerm?.toString().trim()
     if (search) {
       const lower = search.toLowerCase()
@@ -115,8 +116,6 @@ export class FirebaseDriverDAO implements IDriverRepository {
         })
     )
 
-    console.log('drivers', snapshot.docs)
-
     return {
       data: drivers,
       pagination: {
@@ -160,8 +159,12 @@ export class FirebaseDriverDAO implements IDriverRepository {
   }
 
   async create(driver: Omit<DriverEntity, 'id'>): Promise<DriverEntity> {
-    const driverId = crypto.randomUUID()
-    const sanitized = this.sanitize(driver)
+    const driverId = generateId('dri')
+    const sanitized = {
+      ...this.sanitize(driver),
+      id: driverId,
+      created_at: new Date()
+    }
 
     await setDoc(doc(this.driversRef, driverId), sanitized)
 
@@ -173,7 +176,10 @@ export class FirebaseDriverDAO implements IDriverRepository {
     id: string,
     driver: Partial<DriverEntity>
   ): Promise<DriverEntity> {
-    const sanitized = this.sanitize(driver)
+    const sanitized = {
+      ...this.sanitize(driver),
+      updated_at: new Date()
+    }
     await updateDoc(doc(this.driversRef, id), sanitized)
 
     const updated = await this.getById(id)

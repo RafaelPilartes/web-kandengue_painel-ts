@@ -16,7 +16,7 @@ export type RateType = {
   start_time: string
   end_time: string
   base_fare: number
-  price_per_Km: number
+  price_per_km: number
   wait_time_free_minutes: number
   price_per_minute: number
 }
@@ -30,4 +30,5 @@ export type PayoutsType = {
 export type LiveLocationType = {
   latitude: number
   longitude: number
+  timestamp: Date
 }

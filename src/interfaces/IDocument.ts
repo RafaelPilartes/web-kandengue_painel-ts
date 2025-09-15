@@ -11,6 +11,6 @@ export interface DocumentInterface {
   uploaded_at: Date
   reviewed_at?: Date
   feedback?: string
-  created_at: Date
+  created_at?: Date
   updated_at?: Date
 }

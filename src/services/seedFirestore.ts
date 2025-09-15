@@ -1,5 +1,6 @@
 // src/services/seedFirestore.ts
 import { db } from '@/config/firebase.config'
+import { firebaseCollections } from '@/constants/firebaseCollections'
 import {
   users,
   vehicles,
@@ -9,8 +10,9 @@ import {
   notifications,
   rides,
   rideRates,
-  rideTracking,
-  wallets
+  rideTrackings,
+  wallets,
+  walletTopupRequests
 } from '@/data/mockData'
 import { setDoc, doc } from 'firebase/firestore'
 
@@ -35,14 +37,23 @@ async function addCollectionData<T>(
 
 // rodar o seed
 export async function seedFirestore() {
-  await addCollectionData('users', users, 'id')
-  await addCollectionData('vehicles', vehicles, 'id')
-  await addCollectionData('drivers', drivers, 'id')
-  await addCollectionData('documents', documents, 'id')
-  await addCollectionData('transactions', transactions, 'id')
-  await addCollectionData('notifications', notifications, 'id')
-  await addCollectionData('rides', rides, 'id')
-  await addCollectionData('rideRates', rideRates, 'id')
-  await addCollectionData('rideTracking', rideTracking, 'id')
-  await addCollectionData('wallets', wallets, 'id')
+  // await addCollectionData(firebaseCollections.users.root, users, 'id')
+  // await addCollectionData(firebaseCollections.vehicles.root, vehicles, 'id')
+  // await addCollectionData(firebaseCollections.drivers.root, drivers, 'id')
+  // await addCollectionData(firebaseCollections.documents.root, documents, 'id')
+  // await addCollectionData(firebaseCollections.transactions.root, transactions, 'id')
+  // await addCollectionData(firebaseCollections.notifications.root, notifications, 'id')
+  await addCollectionData(firebaseCollections.rides.root, rides, 'id')
+  // await addCollectionData(firebaseCollections.rideRates.root, rideRates, 'id')
+  // await addCollectionData(
+  //   firebaseCollections.rideTrackings.root,
+  //   rideTrackings,
+  //   'id'
+  // )
+  // await addCollectionData(firebaseCollections.wallets.root, wallets, 'id')
+  // await addCollectionData(
+  //   firebaseCollections.requests.root,
+  //   walletTopupRequests,
+  //   'id'
+  // )
 }

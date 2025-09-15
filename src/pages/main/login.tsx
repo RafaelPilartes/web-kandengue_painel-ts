@@ -32,7 +32,7 @@ type loginUserType = z.infer<typeof loginUserSchema>
 export function Login() {
   const { addAdmin } = useAdminStore()
 
-  const { fetchAllAdminSByField } = useAdminsViewModel()
+  const { fetchAllAdminsByField } = useAdminsViewModel()
   const { login, isLoggingIn, loginError } = useAuthViewModel()
 
   const {
@@ -51,7 +51,7 @@ export function Login() {
       })
 
       if (authRes.user.uid) {
-        const response = await fetchAllAdminSByField(
+        const response = await fetchAllAdminsByField(
           'email',
           authRes.user.email
         )

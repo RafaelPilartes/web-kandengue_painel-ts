@@ -4,6 +4,8 @@ import { RideService } from '@/services/ride.service'
 import { RideEntity } from '@/core/entities/Ride'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
+import { useMemo } from 'react'
+import { getRideStatusLabel, getRideTypeLabel } from '@/utils/gettersLabels'
 
 const rideService = new RideService()
 
@@ -36,7 +38,7 @@ export function useRidesViewModel(
   })
 
   /** 🔹 Buscar lista de corridas por field */
-  const fetchAllRideSByField = async (
+  const fetchAllRidesByField = async (
     field: string,
     value: any,
     limit?: number,
@@ -100,6 +102,28 @@ export function useRidesViewModel(
       }, 0)
   }
 
+  // 🔹 transforma os dados em formato exportável
+  const dataToExport = useMemo(() => {
+    if (!ridesResponse?.data) return []
+    return ridesResponse?.data.map(doc => ({
+      Id: doc.id,
+      'Nome do Passageiro': doc.user.name,
+      'Telefone do Passageiro': doc.user.phone,
+      'Nome do Motorista': doc.driver?.name,
+      'Telefone do Motorista': doc.driver?.phone,
+      Status: getRideStatusLabel(doc.status),
+      Recolha: doc.pickup.description,
+      Destino: doc.dropoff.description,
+      'Tipo de corrida': getRideTypeLabel(doc.type),
+      'Ganhos do motorista': doc.fare?.payouts?.driver_earnings,
+      'Ganhos da empresa': doc.fare?.payouts?.company_earnings,
+      'Fundo de emergencia': doc.fare?.payouts?.pension_fund,
+      'Total da corrida': doc.fare?.total,
+      'Data de criação': doc.created_at,
+      'Última atualização': doc.updated_at
+    }))
+  }, [ridesResponse?.data])
+
   return {
     rides: ridesResponse?.data ?? [],
     pagination: ridesResponse?.pagination,
@@ -107,12 +131,14 @@ export function useRidesViewModel(
     error,
     refresh: refetch,
 
-    fetchAllRideSByField,
+    fetchAllRidesByField,
 
     createRide,
     updateRide,
     deleteRide,
     fetchRideById,
-    calculateCompanyProfit
+    calculateCompanyProfit,
+
+    dataToExport
   }
 }

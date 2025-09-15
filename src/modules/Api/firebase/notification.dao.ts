@@ -19,6 +19,7 @@ import {
 import { db } from '@/config/firebase.config'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
+import { generateId } from '@/helpers/generateId'
 
 export class FirebaseNotificationDAO implements INotificationRepository {
   private notificationsRef = collection(
@@ -48,7 +49,7 @@ export class FirebaseNotificationDAO implements INotificationRepository {
 
   /** 🔹 Listar notifications com paginação + pesquisa opcional */
   async getAll(
-    limitValue: number = 10,
+    limitValue: number = 500,
     offset = 0,
     searchTerm?: string,
     filters?: Partial<NotificationEntity>
@@ -56,15 +57,16 @@ export class FirebaseNotificationDAO implements INotificationRepository {
     // 1) constrói query base aplicando filtros
     let baseQuery: any = this.applyFilters(this.notificationsRef, filters)
 
-    // 2) se tiver searchTerm (aqui exemplo por email) -> usa range and orderBy on same field
+    // 2) se tiver searchTerm
     const search = searchTerm?.toString().trim()
     if (search) {
       const lower = search.toLowerCase()
+
       baseQuery = query(
         baseQuery,
-        orderBy('email'),
-        where('email', '>=', lower),
-        where('email', '<=', lower + '\uf8ff')
+        orderBy('created_at'),
+        where('title', '>=', lower),
+        where('title', '<=', lower + '\uf8ff')
       )
     } else {
       // padrão: ordena por createdAt (use o campo consistente no seu DB)
@@ -118,8 +120,6 @@ export class FirebaseNotificationDAO implements INotificationRepository {
         })
     )
 
-    console.log('notifications', snapshot.docs)
-
     return {
       data: notifications,
       pagination: {
@@ -152,8 +152,12 @@ export class FirebaseNotificationDAO implements INotificationRepository {
   async create(
     notification: Omit<NotificationEntity, 'id'>
   ): Promise<NotificationEntity> {
-    const notificationId = crypto.randomUUID()
-    const sanitized = this.sanitize(notification)
+    const notificationId = generateId('doc')
+    const sanitized = {
+      ...this.sanitize(notification),
+      id: notificationId,
+      created_at: new Date()
+    }
 
     await setDoc(doc(this.notificationsRef, notificationId), sanitized)
 
@@ -168,7 +172,10 @@ export class FirebaseNotificationDAO implements INotificationRepository {
     id: string,
     notification: Partial<NotificationEntity>
   ): Promise<NotificationEntity> {
-    const sanitized = this.sanitize(notification)
+    const sanitized = {
+      ...this.sanitize(notification),
+      updated_at: new Date()
+    }
     await updateDoc(doc(this.notificationsRef, id), sanitized)
 
     const updated = await this.getById(id)

@@ -4,11 +4,12 @@ import type { DriverInterface } from '@/interfaces/IDriver'
 import type { NotificationInterface } from '@/interfaces/INotification'
 import type { RideInterface } from '@/interfaces/IRide'
 import type { RideRatesInterface } from '@/interfaces/IRideRates'
-import type { RideTrackingInterface } from '@/interfaces/IRideTracking'
+import type { RideTrackingsInterface } from '@/interfaces/IRideTracking'
 import type { TransactionInterface } from '@/interfaces/ITransaction'
 import type { UserInterface } from '@/interfaces/IUser'
 import type { VehicleInterface } from '@/interfaces/IVehicle'
 import type { WalletInterface } from '@/interfaces/IWallet'
+import type { WalletTopupRequestInterface } from '@/interfaces/IWalletTopupRequest'
 
 // ====================== USERS ======================
 export const users: UserInterface[] = [
@@ -188,38 +189,41 @@ export const documents: DocumentInterface[] = [
 export const transactions: TransactionInterface[] = [
   {
     id: 't1',
-    driver: drivers[0],
+    wallet_id: 'w1',
     type: 'credit',
-    category: 'loading_wallet',
+    category: 'wallet_topup',
     amount: 5000,
-    description: 'Carregamento via referência',
+    description: 'Carregamento aprovado via referência bancária',
+    reference_id: 'req1', // relaciona com WalletTopupRequest
     created_at: new Date()
   },
   {
     id: 't2',
-    driver: drivers[1],
+    wallet_id: 'w2',
     type: 'debit',
-    category: 'service_fee',
+    category: 'ride_fee',
     amount: 1000,
-    description: 'Taxa de corrida',
+    description: 'Taxa de corrida (25% + 2% pensão)',
+    reference_id: 'ride123',
     created_at: new Date()
   },
   {
     id: 't3',
-    driver: drivers[1],
+    wallet_id: 'w2',
     type: 'credit',
     category: 'bonus',
     amount: 200,
-    description: 'Bónus semanal',
+    description: 'Bónus semanal por desempenho',
     created_at: new Date()
   },
   {
     id: 't4',
-    driver: drivers[0],
-    type: 'debit',
-    category: 'bonus',
+    wallet_id: 'w1',
+    type: 'refund',
+    category: 'refund',
     amount: 1500,
-    description: 'Bónus semanal',
+    description: 'Estorno por corrida cancelada',
+    reference_id: 'ride456',
     created_at: new Date()
   }
 ]
@@ -273,12 +277,14 @@ export const rides: RideInterface[] = [
     user: users[2],
     driver: drivers[0],
     pickup: {
+      name: 'Bengo, Luanda',
       description: 'Kinaxixi',
       place_id: 'loc123',
       latitude: -8.836,
       longitude: 13.234
     },
     dropoff: {
+      name: 'Angola, Luanda',
       description: 'Kilamba',
       place_id: 'loc124',
       latitude: -8.95,
@@ -308,12 +314,14 @@ export const rides: RideInterface[] = [
     user: users[3],
     driver: drivers[1],
     pickup: {
+      name: 'Luanda, Maianga',
       description: 'Maianga',
       place_id: 'loc125',
       latitude: -8.813,
       longitude: 13.25
     },
     dropoff: {
+      name: 'Cazenga, Luanda',
       description: 'Cazenga',
       place_id: 'loc126',
       latitude: -8.8,
@@ -343,12 +351,14 @@ export const rides: RideInterface[] = [
     user: users[3],
     driver: drivers[0],
     pickup: {
+      name: 'Rua Samba, Luanda',
       description: 'Samba',
       place_id: 'loc127',
       latitude: -8.85,
       longitude: 13.29
     },
     dropoff: {
+      name: 'Benfica, Talatona',
       description: 'Talatona',
       place_id: 'loc128',
       latitude: -8.9,
@@ -379,12 +389,14 @@ export const rides: RideInterface[] = [
     user: users[2],
     driver: drivers[1],
     pickup: {
+      name: 'Rua Mutamba, Luanda',
       description: 'Mutamba',
       place_id: 'loc129',
       latitude: -8.81,
       longitude: 13.24
     },
     dropoff: {
+      name: 'Primeiro de Maio, Luanda',
       description: 'Aeroporto',
       place_id: 'loc130',
       latitude: -8.85,
@@ -420,7 +432,7 @@ export const rideRates: RideRatesInterface[] = [
       start_time: '06:00',
       end_time: '18:00',
       base_fare: 500,
-      price_per_Km: 150,
+      price_per_km: 150,
       wait_time_free_minutes: 5,
       price_per_minute: 50
     },
@@ -428,7 +440,7 @@ export const rideRates: RideRatesInterface[] = [
       start_time: '18:00',
       end_time: '06:00',
       base_fare: 700,
-      price_per_Km: 200,
+      price_per_km: 200,
       wait_time_free_minutes: 3,
       price_per_minute: 70
     },
@@ -443,31 +455,89 @@ export const rideRates: RideRatesInterface[] = [
 ]
 
 // ====================== RIDE TRACKING ======================
-export const rideTracking: RideTrackingInterface[] = [
+export const rideTrackings: RideTrackingsInterface[] = [
   {
-    id: 'track1',
-    rideId: 'ride1',
+    id: 'rt1',
+    ride_id: 'r1',
     path: [
-      { latitude: -8.8383, longitude: 13.2344 },
-      { latitude: -8.839, longitude: 13.235 },
-      { latitude: -8.84, longitude: 13.236 }
-    ]
+      {
+        latitude: -8.836,
+        longitude: 13.234,
+        timestamp: new Date('2025-09-12T10:00:00Z')
+      },
+      {
+        latitude: -8.87,
+        longitude: 13.26,
+        timestamp: new Date('2025-09-12T10:10:00Z')
+      },
+      {
+        latitude: -8.9,
+        longitude: 13.3,
+        timestamp: new Date('2025-09-12T10:20:00Z')
+      },
+      {
+        latitude: -8.95,
+        longitude: 13.315,
+        timestamp: new Date('2025-09-12T10:30:00Z')
+      }
+    ],
+    created_at: new Date()
   },
   {
-    id: 'track2',
-    rideId: 'ride2',
+    id: 'rt2',
+    ride_id: 'r2',
     path: [
-      { latitude: -8.8422, longitude: 13.2456 },
-      { latitude: -8.843, longitude: 13.2465 },
-      { latitude: -8.8445, longitude: 13.2478 }
-    ]
+      {
+        latitude: -8.813,
+        longitude: 13.25,
+        timestamp: new Date('2025-09-12T11:00:00Z')
+      },
+      {
+        latitude: -8.805,
+        longitude: 13.3,
+        timestamp: new Date('2025-09-12T11:08:00Z')
+      },
+      {
+        latitude: -8.8,
+        longitude: 13.35,
+        timestamp: new Date('2025-09-12T11:15:00Z')
+      }
+    ],
+    created_at: new Date()
+  },
+  {
+    id: 'rt3',
+    ride_id: 'r4',
+    path: [
+      {
+        latitude: -8.81,
+        longitude: 13.24,
+        timestamp: new Date('2025-09-12T12:00:00Z')
+      },
+      {
+        latitude: -8.825,
+        longitude: 13.265,
+        timestamp: new Date('2025-09-12T12:07:00Z')
+      },
+      {
+        latitude: -8.84,
+        longitude: 13.285,
+        timestamp: new Date('2025-09-12T12:14:00Z')
+      },
+      {
+        latitude: -8.85,
+        longitude: 13.3,
+        timestamp: new Date('2025-09-12T12:20:00Z')
+      }
+    ],
+    created_at: new Date()
   }
 ]
 
 // ====================== WALLET ======================
 export const wallets: WalletInterface[] = [
   {
-    id: 'wallet1',
+    id: 'w1',
     user: drivers[0],
     balance: 120500,
     status: 'active',
@@ -475,11 +545,44 @@ export const wallets: WalletInterface[] = [
     created_at: new Date()
   },
   {
-    id: 'wallet2',
+    id: 'w2',
     user: drivers[1],
     balance: 80500,
     status: 'active',
     currency: 'AOA',
     created_at: new Date()
+  }
+]
+
+export const walletTopupRequests: WalletTopupRequestInterface[] = [
+  {
+    id: 'req1',
+    wallet_id: 'w1',
+    amount: 5000,
+    method: 'bank_transfer',
+    proof_url: 'https://cdn.app.com/proofs/proof1.png',
+    status: 'approved',
+    created_at: new Date('2025-09-01T10:00:00Z'),
+    updated_at: new Date('2025-09-01T12:00:00Z'),
+    reviewed_by: admin[0]
+  },
+  {
+    id: 'req2',
+    wallet_id: 'w2',
+    amount: 3000,
+    method: 'bank_transfer',
+    proof_url: 'https://cdn.app.com/proofs/proof2.png',
+    status: 'pending',
+    created_at: new Date('2025-09-12T15:30:00Z')
+  },
+  {
+    id: 'req3',
+    wallet_id: 'w1',
+    amount: 2000,
+    method: 'bank_transfer',
+    status: 'rejected',
+    created_at: new Date('2025-09-10T11:00:00Z'),
+    updated_at: new Date('2025-09-10T13:00:00Z'),
+    reviewed_by: admin[1]
   }
 ]

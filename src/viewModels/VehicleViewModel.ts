@@ -36,7 +36,7 @@ export function useVehiclesViewModel(
   })
 
   /** 🔹 Buscar lista de veículos por field */
-  const fetchAllVehicleSByField = async (
+  const fetchAllVehiclesByField = async (
     field: string,
     value: any,
     limit?: number,
@@ -104,7 +104,7 @@ export function useVehiclesViewModel(
     error,
     refresh: refetch,
 
-    fetchAllVehicleSByField,
+    fetchAllVehiclesByField,
 
     createVehicle,
     updateVehicle,

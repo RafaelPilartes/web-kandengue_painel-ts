@@ -30,7 +30,7 @@ export function useNotificationsViewModel(
   })
 
   /** 🔹 Buscar lista de taxa de viagens por field */
-  const fetchAllNotificationSByField = async (
+  const fetchAllNotificationsByField = async (
     field: string,
     value: any,
     limit?: number,
@@ -93,11 +93,11 @@ export function useNotificationsViewModel(
   return {
     notifications: notificationsResponse?.data ?? [],
     pagination: notificationsResponse?.pagination,
-    loading,
+    isLoadingNotifications: loading,
     error,
     refresh: refetch,
 
-    fetchAllNotificationSByField,
+    fetchAllNotificationsByField,
 
     createNotification,
     updateNotification,

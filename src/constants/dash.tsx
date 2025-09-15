@@ -9,7 +9,8 @@ import {
   Settings,
   ShieldCheck,
   Map,
-  CarFront
+  CarFront,
+  Wallet
 } from 'lucide-react'
 import { routsNameMain } from './routsName'
 
@@ -88,8 +89,14 @@ const dashItem = [
       },
       {
         label: 'Carteira & Transações',
-        icon: <CreditCard size={16} />,
+        icon: <Wallet size={16} />,
         to: routsNameMain.finance.wallet,
+        notification: 0
+      },
+      {
+        label: 'Solicitação de Recarga',
+        icon: <CreditCard size={16} />,
+        to: routsNameMain.finance.walletTopupRequest,
         notification: 0
       },
       {

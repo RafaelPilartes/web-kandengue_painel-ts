@@ -67,6 +67,13 @@ export const firebaseCollections = {
     single: (walletId: string) => `wallets/${walletId}`
   },
 
+  // =============================================
+  // WALLET TOPUP REQUESTS
+  requests: {
+    root: 'topupRequests',
+    single: (requestId: string) => `topupRequests/${requestId}`
+  },
+
   // ============================================
   // DOCUMENTS
   documents: {

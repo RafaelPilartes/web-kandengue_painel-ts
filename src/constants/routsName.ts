@@ -55,6 +55,7 @@ export const routsNameMain = {
   finance: {
     index: '/finance',
     wallet: '/wallet',
+    walletTopupRequest: '/wallet/topup/request',
 
     reports: {
       index: '/finance/reports'

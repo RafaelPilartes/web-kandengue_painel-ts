@@ -19,6 +19,7 @@ import {
 import { db } from '@/config/firebase.config'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
+import { generateId } from '@/helpers/generateId'
 
 export class FirebaseRideTrackingDAO implements IRideTrackingRepository {
   private rideTrackingsRef = collection(
@@ -48,7 +49,7 @@ export class FirebaseRideTrackingDAO implements IRideTrackingRepository {
 
   /** 🔹 Listar rideTrackings com paginação + pesquisa opcional */
   async getAll(
-    limitValue: number = 10,
+    limitValue: number = 500,
     offset = 0,
     searchTerm?: string,
     filters?: Partial<RideTrackingEntity>
@@ -56,15 +57,15 @@ export class FirebaseRideTrackingDAO implements IRideTrackingRepository {
     // 1) constrói query base aplicando filtros
     let baseQuery: any = this.applyFilters(this.rideTrackingsRef, filters)
 
-    // 2) se tiver searchTerm (aqui exemplo por email) -> usa range and orderBy on same field
+    // 2) se tiver searchTerm
     const search = searchTerm?.toString().trim()
     if (search) {
       const lower = search.toLowerCase()
       baseQuery = query(
         baseQuery,
-        orderBy('email'),
-        where('email', '>=', lower),
-        where('email', '<=', lower + '\uf8ff')
+        orderBy('ride_id'),
+        where('ride_id', '>=', lower),
+        where('ride_id', '<=', lower + '\uf8ff')
       )
     } else {
       // padrão: ordena por createdAt (use o campo consistente no seu DB)
@@ -118,8 +119,6 @@ export class FirebaseRideTrackingDAO implements IRideTrackingRepository {
         })
     )
 
-    console.log('rideTrackings', snapshot.docs)
-
     return {
       data: rideTrackings,
       pagination: {
@@ -152,8 +151,12 @@ export class FirebaseRideTrackingDAO implements IRideTrackingRepository {
   async create(
     rideTracking: Omit<RideTrackingEntity, 'id'>
   ): Promise<RideTrackingEntity> {
-    const rideTrackingId = crypto.randomUUID()
-    const sanitized = this.sanitize(rideTracking)
+    const rideTrackingId = generateId('rtck')
+    const sanitized = {
+      ...this.sanitize(rideTracking),
+      id: rideTrackingId,
+      created_at: new Date()
+    }
 
     await setDoc(doc(this.rideTrackingsRef, rideTrackingId), sanitized)
 
@@ -168,7 +171,10 @@ export class FirebaseRideTrackingDAO implements IRideTrackingRepository {
     id: string,
     rideTracking: Partial<RideTrackingEntity>
   ): Promise<RideTrackingEntity> {
-    const sanitized = this.sanitize(rideTracking)
+    const sanitized = {
+      ...this.sanitize(rideTracking),
+      updated_at: new Date()
+    }
     await updateDoc(doc(this.rideTrackingsRef, id), sanitized)
 
     const updated = await this.getById(id)

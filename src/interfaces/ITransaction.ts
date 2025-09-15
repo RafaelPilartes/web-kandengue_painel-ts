@@ -1,12 +1,13 @@
 import type { TransactionType, TransactionCategoryType } from '@/types/enum'
-import type { DriverInterface } from './IDriver'
 
 export interface TransactionInterface {
   id: string
-  driver: DriverInterface
+  wallet_id: string
   type: TransactionType
   category: TransactionCategoryType
-  description?: string
+  reference_id?: string // id de corrida, topup
   amount: number
-  created_at: Date
+  description?: string
+  created_at?: Date
+  updated_at?: Date
 }

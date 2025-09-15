@@ -15,7 +15,7 @@ export class DocumentEntity implements DocumentInterface {
   reviewed_at?: Date
   feedback?: string
 
-  created_at: Date
+  created_at?: Date
   updated_at?: Date
 
   constructor(params: DocumentInterface) {

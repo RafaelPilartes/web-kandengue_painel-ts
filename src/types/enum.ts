@@ -2,13 +2,14 @@ export type GenderEnumType = 'male' | 'female'
 export type StatusEnumType = 'active' | 'inactive' | 'pending'
 export type GenderType = 'male' | 'female' | 'other'
 export type MonthEnumType = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12
-
+export type currencyEnumType = 'AOA' | 'USD'
 // =========================================================================
 export type UserStatus = 'active' | 'inactive' | 'pending' | 'banned'
 
 // =========================================================================
 
 export type VehicleType = 'car' | 'motorcycle' | 'bicycle' | 'truck' | 'scooter'
+export type WalletStatusEnumType = 'active' | 'blocked'
 
 // =========================================================================
 
@@ -27,7 +28,17 @@ export type RideType = 'car' | 'motorcycle' | 'bicycle' | 'delivery'
 export type DocumentStatus = 'pending' | 'approved' | 'rejected'
 
 export type TransactionType = 'credit' | 'debit' | 'refund'
-export type TransactionCategoryType = 'loading_wallet' | 'service_fee' | 'bonus'
+export type TransactionCategoryType =
+  | 'wallet_topup'
+  | 'ride_fee'
+  | 'pension'
+  | 'bonus'
+  | 'refund'
+
+export type TransactionStatus = 'pending' | 'approved' | 'rejected'
+export type RequestStatus = 'pending' | 'approved' | 'rejected'
+
+export type WalletTopupMethodType = 'bank_transfer' | 'automated' | 'cash'
 
 export type NotificationType = 'ride' | 'wallet' | 'document' | 'system'
 export type NotificationCategory = 'driver' | 'passenger' | 'admin' | 'all'

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { DotsThree } from 'phosphor-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
-interface ActionItem {
+export interface ActionItem {
   icon?: React.ReactNode
   label: string
   onClick: () => void
@@ -55,23 +55,28 @@ export function ActionsMenu({ actions }: ActionsMenuProps) {
             className="absolute right-0 z-50 mt-2 w-44 origin-top-right rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black/5"
           >
             <div className="py-1 text-sm transition-all duration-200">
-              {actions.map((action, index) => (
-                <button
-                  key={index}
-                  onClick={() => {
-                    action.onClick()
-                    setOpen(false)
-                  }}
-                  className={`w-full text-left px-4 py-2 flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 transition-colors ${
-                    action.className || ''
-                  }`}
-                >
-                  {action.icon && (
-                    <span className="w-4 h-4">{action.icon}</span>
-                  )}
-                  {action.label}
-                </button>
-              ))}
+              {actions.map((action, index) => {
+                if (!action.label) {
+                  return null
+                }
+                return (
+                  <button
+                    key={index}
+                    onClick={() => {
+                      action.onClick()
+                      setOpen(false)
+                    }}
+                    className={`w-full text-left px-4 py-2 flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 transition-colors ${
+                      action.className || ''
+                    }`}
+                  >
+                    {action.icon && (
+                      <span className="w-4 h-4">{action.icon}</span>
+                    )}
+                    {action.label}
+                  </button>
+                )
+              })}
             </div>
           </motion.div>
         )}

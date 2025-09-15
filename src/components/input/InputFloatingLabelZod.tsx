@@ -24,8 +24,13 @@ export function InputFloatingLabelZod({
   return (
     <>
       <div className="w-full flex flex-col justify-center items-start">
-        <div className="relative flex flex-row justify-start items-center border px-2.5 pb-2 pt-2 w-full  text-gray-900 bg-transparent rounded-lg border-1 border-gray-300 appearance-none">
-          <span>{Icon && <Icon size={18} className="text-primary-200" />}</span>
+        <div className="relative flex flex-row justify-start items-center border px-2.5 pb-2 pt-2 w-full text-gray-900 dark:text-gray-300 bg-transparent rounded-lg border-gray-300 dark:border-gray-500 appearance-none">
+          {Icon && (
+            <span className="text-primary-200">
+              <Icon size={18} />
+            </span>
+          )}
+
           <Controller
             name={name}
             control={control}
@@ -34,23 +39,29 @@ export function InputFloatingLabelZod({
               <input
                 {...field}
                 {...inputProps}
-                value={field.value || ''}
+                value={field.value ?? ''}
                 className={cn(
                   `text-sm w-full ${
-                    Icon ? 'ml-2' : 'ml-0'
-                  } border-none focus:ring-0 outline-none peer`
+                    Icon ? 'ml-8' : 'ml-0'
+                  } border-none focus:ring-0 outline-none peer dark:bg-gray-700 dark:text-gray-300`
                 )}
                 placeholder=" "
               />
             )}
           />
-          <span>{IconRight && <IconRight size={18} />}</span>
+
+          {IconRight && (
+            <span>
+              <IconRight size={18} />
+            </span>
+          )}
 
           <label
             htmlFor={inputProps.id || 'floating_outlined'}
-            className={`absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-1 z-10 origin-[0] bg-white dark:bg-gray-900 px-2 peer-focus:px-2 peer-focus:text-primary-200 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-1 peer-focus:scale-75 peer-focus:-translate-y-4 ${
-              Icon ? 'left-10' : 'left-1'
-            } `}
+            className={cn(
+              `absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-1 z-10 origin-[0] bg-white dark:bg-gray-900 px-2 peer-focus:px-2 peer-focus:text-primary-200 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-1 peer-focus:scale-75 peer-focus:-translate-y-4`,
+              { 'left-10': Icon, 'left-1': !Icon }
+            )}
           >
             {label}
           </label>

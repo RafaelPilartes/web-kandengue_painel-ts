@@ -19,6 +19,7 @@ import {
 import { db } from '@/config/firebase.config'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
+import { generateId } from '@/helpers/generateId'
 
 export class FirebaseDocumentDAO implements IDocumentRepository {
   private documentsRef = collection(db, firebaseCollections.documents.root)
@@ -45,7 +46,7 @@ export class FirebaseDocumentDAO implements IDocumentRepository {
 
   /** 🔹 Listar documents com paginação + pesquisa opcional */
   async getAll(
-    limitValue: number = 10,
+    limitValue: number = 500,
     offset = 0,
     searchTerm?: string,
     filters?: Partial<DocumentEntity>
@@ -53,7 +54,7 @@ export class FirebaseDocumentDAO implements IDocumentRepository {
     // 1) constrói query base aplicando filtros
     let baseQuery: any = this.applyFilters(this.documentsRef, filters)
 
-    // 2) se tiver searchTerm (aqui exemplo por email) -> usa range and orderBy on same field
+    // 2) se tiver searchTerm
     const search = searchTerm?.toString().trim()
     if (search) {
       const lower = search.toLowerCase()
@@ -115,8 +116,6 @@ export class FirebaseDocumentDAO implements IDocumentRepository {
         })
     )
 
-    console.log('documents', snapshot.docs)
-
     return {
       data: documents,
       pagination: {
@@ -147,8 +146,12 @@ export class FirebaseDocumentDAO implements IDocumentRepository {
   }
 
   async create(document: Omit<DocumentEntity, 'id'>): Promise<DocumentEntity> {
-    const documentId = crypto.randomUUID()
-    const sanitized = this.sanitize(document)
+    const documentId = generateId('doc')
+    const sanitized = {
+      ...this.sanitize(document),
+      id: documentId,
+      created_at: new Date()
+    }
 
     await setDoc(doc(this.documentsRef, documentId), sanitized)
 
@@ -160,7 +163,10 @@ export class FirebaseDocumentDAO implements IDocumentRepository {
     id: string,
     document: Partial<DocumentEntity>
   ): Promise<DocumentEntity> {
-    const sanitized = this.sanitize(document)
+    const sanitized = {
+      ...this.sanitize(document),
+      updated_at: new Date()
+    }
     await updateDoc(doc(this.documentsRef, id), sanitized)
 
     const updated = await this.getById(id)

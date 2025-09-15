@@ -1,15 +1,16 @@
 // core/entities/Wallet.ts
 
 import type { WalletInterface } from '@/interfaces/IWallet'
-import type { UserInterface } from '@/interfaces/IUser'
+import type { DriverInterface } from '@/interfaces/IDriver'
+import type { currencyEnumType, StatusEnumType } from '@/types/enum'
 
 export class WalletEntity implements WalletInterface {
   id?: string
-  user: UserInterface
+  user: DriverInterface
   balance: number
-  status: 'active' | 'inactive'
-  currency: 'AOA' | 'USD'
-  created_at: Date
+  status: StatusEnumType
+  currency: currencyEnumType
+  created_at?: Date
   updated_at?: Date
 
   constructor(params: WalletInterface) {

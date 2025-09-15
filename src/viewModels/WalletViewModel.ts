@@ -4,6 +4,7 @@ import { WalletService } from '@/services/wallet.service'
 import { WalletEntity } from '@/core/entities/Wallet'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
+import { useMemo } from 'react'
 
 const walletService = new WalletService()
 
@@ -35,8 +36,21 @@ export function useWalletsViewModel(
     staleTime: 1000 * 60 // cache 1min
   })
 
+  // 🔹 transforma os dados em formato exportável
+  const dataToExport = useMemo(() => {
+    if (!walletsResponse?.data) return []
+    return walletsResponse?.data.map(doc => ({
+      Id: doc.id,
+      Nome: doc.user.name,
+      Email: doc.user.email,
+      Telefone: doc.user.phone,
+      'Data de criação': doc.created_at,
+      'Última atualização': doc.updated_at
+    }))
+  }, [walletsResponse?.data])
+
   /** 🔹 Buscar lista de Carteiras por field */
-  const fetchAllWalletSByField = async (
+  const fetchAllWalletsByField = async (
     field: string,
     value: any,
     limit?: number,
@@ -52,8 +66,9 @@ export function useWalletsViewModel(
 
   /** 🔹 Criar carteira */
   const createWallet = useMutation({
-    mutationFn: (wallet: Omit<WalletEntity, 'id'>) =>
-      walletService.create(wallet),
+    mutationFn: async (wallet: Omit<WalletEntity, 'id'>) => {
+      return walletService.create(wallet)
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [firebaseCollections.wallets.root]
@@ -79,7 +94,9 @@ export function useWalletsViewModel(
 
   /** 🔹 Deletar carteira */
   const deleteWallet = useMutation({
-    mutationFn: (id: string) => walletService.delete(id),
+    mutationFn: async (id: string) => {
+      return walletService.delete(id)
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [firebaseCollections.wallets.root]
@@ -100,15 +117,17 @@ export function useWalletsViewModel(
   return {
     wallets: walletsResponse?.data ?? [],
     pagination: walletsResponse?.pagination,
-    loading,
+    isLoadingWallets: loading,
     error,
     refresh: refetch,
 
-    fetchAllWalletSByField,
+    fetchAllWalletsByField,
 
     createWallet,
     updateWallet,
     deleteWallet,
-    fetchWalletById
+    fetchWalletById,
+
+    dataToExport
   }
 }

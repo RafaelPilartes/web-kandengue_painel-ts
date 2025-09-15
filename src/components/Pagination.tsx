@@ -45,10 +45,10 @@ export const Pagination: React.FC<PaginationProps> = ({
       {visiblePages.map(page => (
         <button
           key={page}
-          className={`px-3 h-10 border border-gray-300 
+          className={`px-3 h-10 border border-gray-300 dark:border-gray-700
             ${
               currentPage === page
-                ? 'bg-blue-600 text-white dark:bg-blue-500'
+                ? 'bg-primary-200 text-white dark:bg-primary-400'
                 : 'bg-white text-gray-700 hover:bg-gray-100 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600'
             }`}
           onClick={() => onPageChange(page)}

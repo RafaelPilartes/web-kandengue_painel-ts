@@ -38,7 +38,7 @@ export function TextAreaLabel({
               id={htmlFor}
               {...field}
               cols={10}
-              value={field.value || ''}
+              value={field.value ?? ''}
               className={`w-full p-2.5 dark:bg-gray-700/60 bg-gray-100/10  dark:border-gray-500/60 border-gray-300/60 dark:placeholder-gray-400 dark:text-gray-300 placeholder-gray-500 text-gray-400 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block`}
               placeholder={placeholder}
               required={required}

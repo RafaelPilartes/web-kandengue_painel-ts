@@ -4,6 +4,8 @@ import { UserService } from '@/services/users.service'
 import { UserEntity } from '@/core/entities/User'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
+import { useMemo } from 'react'
+import { getUserStatusLabel } from '@/utils/gettersLabels'
 
 const userService = new UserService()
 
@@ -17,7 +19,7 @@ export function useUsersViewModel(
 
   const filtersKey = filters ? JSON.stringify(filters) : ''
 
-  /** 🔹 Buscar lista de usuarios */
+  /** 🔹 Buscar lista de usuários */
   const {
     data: usersResponse,
     isLoading: loading,
@@ -35,8 +37,22 @@ export function useUsersViewModel(
     staleTime: 1000 * 60 // cache 1min
   })
 
-  /** 🔹 Buscar lista de usuarios por field */
-  const fetchAllUserSByField = async (
+  // 🔹 transforma os dados em formato exportável
+  const dataToExport = useMemo(() => {
+    if (!usersResponse?.data) return []
+    return usersResponse?.data.map(doc => ({
+      Id: doc.id,
+      Nome: doc.name,
+      Email: doc.email,
+      Telefone: doc.phone,
+      Status: getUserStatusLabel(doc.status),
+      'Data de criação': doc.created_at,
+      'Última atualização': doc.updated_at
+    }))
+  }, [usersResponse?.data])
+
+  /** 🔹 Buscar lista de usuários por field */
+  const fetchAllUsersByField = async (
     field: string,
     value: any,
     limit?: number,
@@ -45,12 +61,12 @@ export function useUsersViewModel(
     try {
       return await userService.getAllByField(field, value, limit, offset)
     } catch (err) {
-      console.error('Erro ao buscar usuarios por campo:', err)
+      console.error('Erro ao buscar usuários por campo:', err)
       return null
     }
   }
 
-  /** 🔹 Criar usuario */
+  /** 🔹 Criar usuário */
   const createUser = useMutation({
     mutationFn: (user: Omit<UserEntity, 'id'>) => userService.create(user),
     onSuccess: () => {
@@ -60,7 +76,7 @@ export function useUsersViewModel(
     }
   })
 
-  /** 🔹 Atualizar usuario */
+  /** 🔹 Atualizar usuário */
   const updateUser = useMutation({
     mutationFn: ({ id, user }: { id: string; user: Partial<UserEntity> }) =>
       userService.update(id, user),
@@ -71,7 +87,7 @@ export function useUsersViewModel(
     }
   })
 
-  /** 🔹 Deletar usuario */
+  /** 🔹 Deletar usuário */
   const deleteUser = useMutation({
     mutationFn: (id: string) => userService.delete(id),
     onSuccess: () => {
@@ -81,22 +97,22 @@ export function useUsersViewModel(
     }
   })
 
-  /** 🔹 Buscar usuario único (on-demand) */
+  /** 🔹 Buscar usuário único (on-demand) */
   const fetchUserById = async (id: string) => {
     try {
       return await userService.getById(id)
     } catch (err) {
-      console.error('Erro ao buscar usuario:', err)
+      console.error('Erro ao buscar usuário:', err)
       return null
     }
   }
 
-  /** 🔹 Buscar usuario único (on-demand) */
+  /** 🔹 Buscar usuário único (on-demand) */
   const fetchUserByEmail = async (email: string) => {
     try {
       return await userService.getByEmail(email)
     } catch (err) {
-      console.error('Erro ao buscar usuario:', err)
+      console.error('Erro ao buscar usuário:', err)
       return null
     }
   }
@@ -108,12 +124,14 @@ export function useUsersViewModel(
     error,
     refresh: refetch,
 
-    fetchAllUserSByField,
+    fetchAllUsersByField,
     fetchUserByEmail,
 
     createUser,
     updateUser,
     deleteUser,
-    fetchUserById
+    fetchUserById,
+
+    dataToExport
   }
 }

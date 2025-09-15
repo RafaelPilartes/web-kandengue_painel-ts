@@ -61,7 +61,13 @@ const TableRow: React.FC<TableRowProps> = ({
       </td>
       <td className="px-3 py-3 min-w-[6rem]">
         <BadgeSimple
-          color={rowItem.status == 'active' ? 'blue' : 'red'}
+          color={
+            rowItem.status == 'active'
+              ? 'blue'
+              : rowItem.status == 'inactive'
+              ? 'yellow'
+              : 'red'
+          }
           label={getUserStatusLabel(rowItem.status)}
         />
       </td>

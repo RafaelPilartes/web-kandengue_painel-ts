@@ -10,5 +10,5 @@ export interface NotificationInterface {
   specific_user?: boolean
   user?: UserInterface
   is_read?: boolean
-  created_at: Date
+  created_at?: Date
 }

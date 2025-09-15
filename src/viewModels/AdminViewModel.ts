@@ -4,6 +4,8 @@ import { AdminService } from '@/services/admins.service'
 import { AdminEntity } from '@/core/entities/Admin'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
+import { useMemo } from 'react'
+import { getAdminRoleLabel, getUserStatusLabel } from '@/utils/gettersLabels'
 
 const adminService = new AdminService()
 
@@ -35,8 +37,23 @@ export function useAdminsViewModel(
     staleTime: 1000 * 60 // cache 1min
   })
 
+  // 🔹 transforma os dados em formato exportável
+  const dataToExport = useMemo(() => {
+    if (!adminsResponse?.data) return []
+    return adminsResponse?.data.map(doc => ({
+      Id: doc.id,
+      Nome: doc.name,
+      Email: doc.email,
+      Telefone: doc.phone,
+      Status: getUserStatusLabel(doc.status),
+      Permissão: getAdminRoleLabel(doc.role),
+      'Data de criação': doc.created_at,
+      'Última atualização': doc.updated_at
+    }))
+  }, [adminsResponse?.data])
+
   /** 🔹 Buscar lista de administradores por field */
-  const fetchAllAdminSByField = async (
+  const fetchAllAdminsByField = async (
     field: string,
     value: any,
     limit?: number,
@@ -119,7 +136,9 @@ export function useAdminsViewModel(
     error,
     refresh: refetch,
 
-    fetchAllAdminSByField,
+    dataToExport,
+
+    fetchAllAdminsByField,
     fetchAdminByEmail,
 
     createAdmin,

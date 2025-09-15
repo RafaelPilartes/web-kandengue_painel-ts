@@ -56,8 +56,8 @@ export class UserService {
     try {
       return await userRepository.getByEmail(email)
     } catch (error: any) {
-      console.error(`Erro ao buscar usuario ${email}:`, error)
-      throw new Error(error.message || 'Erro ao buscar usuario')
+      console.error(`Erro ao buscar usuário ${email}:`, error)
+      throw new Error(error.message || 'Erro ao buscar usuário')
     }
   }
 

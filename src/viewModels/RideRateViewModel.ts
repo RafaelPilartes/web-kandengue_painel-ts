@@ -36,7 +36,7 @@ export function useRideRatesViewModel(
   })
 
   /** 🔹 Buscar lista de taxa de viagem por field */
-  const fetchAllRideRateSByField = async (
+  const fetchAllRideRatesByField = async (
     field: string,
     value: any,
     limit?: number,
@@ -50,7 +50,7 @@ export function useRideRatesViewModel(
     }
   }
 
-  /** 🔹 Criar rideRateistrador */
+  /** 🔹 Criar ride */
   const createRideRate = useMutation({
     mutationFn: (rideRate: Omit<RideRateEntity, 'id'>) =>
       rideRateService.create(rideRate),
@@ -61,7 +61,7 @@ export function useRideRatesViewModel(
     }
   })
 
-  /** 🔹 Atualizar rideRateistrador */
+  /** 🔹 Atualizar ride */
   const updateRideRate = useMutation({
     mutationFn: ({
       id,
@@ -77,7 +77,7 @@ export function useRideRatesViewModel(
     }
   })
 
-  /** 🔹 Deletar rideRateistrador */
+  /** 🔹 Deletar ride */
   const deleteRideRate = useMutation({
     mutationFn: (id: string) => rideRateService.delete(id),
     onSuccess: () => {
@@ -87,12 +87,12 @@ export function useRideRatesViewModel(
     }
   })
 
-  /** 🔹 Buscar rideRateistrador único (on-demand) */
+  /** 🔹 Buscar ride único (on-demand) */
   const fetchRideRateById = async (id: string) => {
     try {
       return await rideRateService.getById(id)
     } catch (err) {
-      console.error('Erro ao buscar rideRateistrador:', err)
+      console.error('Erro ao buscar corrida:', err)
       return null
     }
   }
@@ -100,11 +100,11 @@ export function useRideRatesViewModel(
   return {
     rideRates: rideRatesResponse?.data ?? [],
     pagination: rideRatesResponse?.pagination,
-    loading,
+    isLoadingRideRates: loading,
     error,
     refresh: refetch,
 
-    fetchAllRideRateSByField,
+    fetchAllRideRatesByField,
 
     createRideRate,
     updateRideRate,

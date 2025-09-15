@@ -36,7 +36,7 @@ export function useDocumentsViewModel(
   })
 
   /** 🔹 Buscar lista de documentos por field */
-  const fetchAllDocumentSByField = async (
+  const fetchAllDocumentsByField = async (
     field: string,
     value: any,
     limit?: number,
@@ -104,7 +104,7 @@ export function useDocumentsViewModel(
     error,
     refresh: refetch,
 
-    fetchAllDocumentSByField,
+    fetchAllDocumentsByField,
 
     createDocument,
     updateDocument,

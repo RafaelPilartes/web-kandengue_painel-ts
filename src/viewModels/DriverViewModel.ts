@@ -4,6 +4,8 @@ import { DriverService } from '@/services/driver.service'
 import { DriverEntity } from '@/core/entities/Driver'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
+import { useMemo } from 'react'
+import { getUserStatusLabel } from '@/utils/gettersLabels'
 
 const driverService = new DriverService()
 
@@ -35,8 +37,22 @@ export function useDriversViewModel(
     staleTime: 1000 * 60 // cache 1min
   })
 
+  // 🔹 transforma os dados em formato exportável
+  const dataToExport = useMemo(() => {
+    if (!driversResponse?.data) return []
+    return driversResponse?.data.map(doc => ({
+      Id: doc.id,
+      Nome: doc.name,
+      Email: doc.email,
+      Telefone: doc.phone,
+      Status: getUserStatusLabel(doc.status),
+      'Data de criação': doc.created_at,
+      'Última atualização': doc.updated_at
+    }))
+  }, [driversResponse?.data])
+
   /** 🔹 Buscar lista de motoristas por field */
-  const fetchAllDriverSByField = async (
+  const fetchAllDriversByField = async (
     field: string,
     value: any,
     limit?: number,
@@ -104,11 +120,13 @@ export function useDriversViewModel(
     error,
     refresh: refetch,
 
-    fetchAllDriverSByField,
+    fetchAllDriversByField,
 
     createDriver,
     updateDriver,
     deleteDriver,
-    fetchDriverById
+    fetchDriverById,
+
+    dataToExport
   }
 }

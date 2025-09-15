@@ -11,6 +11,26 @@ export function formatDateFromFirestore(timestamp: Timestamp): string {
   })
 }
 
+export function formatDateTimeFromFirestore(timestamp: Timestamp) {
+  const date = timestamp.toDate()
+
+  const formattedDate = date.toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  })
+
+  const formattedTime = date.toLocaleTimeString('pt-BR', {
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+
+  return {
+    date: formattedDate,
+    time: formattedTime
+  }
+}
+
 export const toDay = new Date().toISOString().split('T')[0]
 
 // Função para converter o horário para minutos totais

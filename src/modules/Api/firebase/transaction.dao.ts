@@ -19,6 +19,7 @@ import {
 import { db } from '@/config/firebase.config'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
+import { generateId } from '@/helpers/generateId'
 
 export class FirebaseTransactionDAO implements ITransactionRepository {
   private transactionsRef = collection(
@@ -48,7 +49,7 @@ export class FirebaseTransactionDAO implements ITransactionRepository {
 
   /** 🔹 Listar transactions com paginação + pesquisa opcional */
   async getAll(
-    limitValue: number = 10,
+    limitValue: number = 500,
     offset = 0,
     searchTerm?: string,
     filters?: Partial<TransactionEntity>
@@ -56,15 +57,15 @@ export class FirebaseTransactionDAO implements ITransactionRepository {
     // 1) constrói query base aplicando filtros
     let baseQuery: any = this.applyFilters(this.transactionsRef, filters)
 
-    // 2) se tiver searchTerm (aqui exemplo por email) -> usa range and orderBy on same field
+    // 2) se tiver searchTerm
     const search = searchTerm?.toString().trim()
     if (search) {
       const lower = search.toLowerCase()
       baseQuery = query(
         baseQuery,
-        orderBy('email'),
-        where('email', '>=', lower),
-        where('email', '<=', lower + '\uf8ff')
+        orderBy('description'),
+        where('description', '>=', lower),
+        where('description', '<=', lower + '\uf8ff')
       )
     } else {
       // padrão: ordena por createdAt (use o campo consistente no seu DB)
@@ -118,8 +119,6 @@ export class FirebaseTransactionDAO implements ITransactionRepository {
         })
     )
 
-    console.log('transactions', snapshot.docs)
-
     return {
       data: transactions,
       pagination: {
@@ -152,8 +151,12 @@ export class FirebaseTransactionDAO implements ITransactionRepository {
   async create(
     transaction: Omit<TransactionEntity, 'id'>
   ): Promise<TransactionEntity> {
-    const transactionId = crypto.randomUUID()
-    const sanitized = this.sanitize(transaction)
+    const transactionId = generateId('wt')
+    const sanitized = {
+      ...this.sanitize(transaction),
+      id: transactionId,
+      created_at: new Date()
+    }
 
     await setDoc(doc(this.transactionsRef, transactionId), sanitized)
 
@@ -168,7 +171,10 @@ export class FirebaseTransactionDAO implements ITransactionRepository {
     id: string,
     transaction: Partial<TransactionEntity>
   ): Promise<TransactionEntity> {
-    const sanitized = this.sanitize(transaction)
+    const sanitized = {
+      ...this.sanitize(transaction),
+      updated_at: new Date()
+    }
     await updateDoc(doc(this.transactionsRef, id), sanitized)
 
     const updated = await this.getById(id)

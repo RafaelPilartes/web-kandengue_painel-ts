@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import swal from 'sweetalert'
 import { IoSearchSharp } from 'react-icons/io5'
@@ -10,39 +10,41 @@ import { Breadcrumbs } from '@/components/Breadcrumbs'
 import ExportToExcel from '@/components/ExportToExcel'
 import { Pagination } from '@/components/Pagination'
 import { InputWithButton } from '@/components/input/InputWithButton'
-// import { SelectCustom } from '@/components/selects/SelectCustom'
-// import { SelectSearchableCustom } from '@/components/selects/SelectSearchableCustom'
+import { SelectCustom } from '@/components/selects/SelectCustom'
+import { SelectSearchableCustom } from '@/components/selects/SelectSearchableCustom'
 // import { ModalCreateAdmin } from './components/modal/ModalCreate'
 // import { ModalEditAdmin } from './components/modal/ModalEdit'
 
 // Data
 import { routsNameMain } from '@/constants/routsName'
-import { rowPerPageOptions } from '@/data/selectOption'
+import { adminRoleOptions, rowPerPageOptions } from '@/data/selectOption'
 
 // Interfaces
 import type { AdminInterface } from '@/interfaces/IAdmin'
 
-// Utils
-import { getAdminRoleLabel } from '@/utils/gettersLabels'
-
 // ViewModel
 import { useAdminsViewModel } from '@/viewModels/AdminViewModel'
+import type { AdminEntity } from '@/core/entities/Admin'
 
-export function Admin() {
+export function AdminPage() {
   const navigate = useNavigate()
 
   // Filtros
   const [termForSearch, setTermForSearch] = useState<string>('')
+  // filters?: Partial<AdminEntity>
+  const [filters, setFilters] = useState<Partial<AdminEntity>>()
 
   // Paginação
   const [currentPage, setCurrentPage] = useState(0) // página atual (0-based)
-  const [docsPerPage, setDocsPerPage] = useState(10) // limite por página
+  const [docsPerPage, setDocsPerPage] = useState(8) // limite por página
 
-  const { admins, pagination, isLoadingAdmins, deleteAdmin } =
-    useAdminsViewModel(docsPerPage, currentPage * docsPerPage, termForSearch)
-
-  // Estado para exportação
-  const [dataToExport, setDataToExport] = useState<any[]>([])
+  const { admins, pagination, isLoadingAdmins, deleteAdmin, dataToExport } =
+    useAdminsViewModel(
+      docsPerPage,
+      currentPage * docsPerPage,
+      termForSearch,
+      filters
+    )
 
   // Estados para modais
   const [rowSelect, setRowSelect] = useState<AdminInterface | null>(null)
@@ -63,6 +65,25 @@ export function Admin() {
   // Navegação
   const handleNavigation = (page: string) => {
     navigate(page)
+  }
+
+  // Handle Select
+  const handleAdminRoleChange = (valueSelected: string) => {
+    if (valueSelected === '') {
+      setFilters(prev => ({ ...prev, role: undefined })) // limpa filtro
+    } else {
+      setFilters(prev => ({
+        ...prev,
+        role: valueSelected as AdminEntity['role']
+      }))
+    }
+    setCurrentPage(0) // sempre resetar para página inicial ao filtrar
+  }
+
+  // Change rows per page
+  const handleSelectChange = (value: number) => {
+    const rowsPerPage = value === -1 ? 8 : value
+    setDocsPerPage(rowsPerPage)
   }
 
   // Abrir modal de edição
@@ -93,22 +114,6 @@ export function Admin() {
     })
   }
 
-  // Dados para exportação
-  useEffect(() => {
-    if (!admins) return
-    const newData = admins.map(doc => ({
-      Id: doc.id,
-      Nome: doc.name,
-      Email: doc.email,
-      Telefone: doc.phone,
-      Status: doc.status,
-      Permissão: getAdminRoleLabel(doc.role),
-      'Data de criação': doc.created_at,
-      'Última atualização': doc.updated_at
-    }))
-    setDataToExport(newData)
-  }, [admins])
-
   // Tabela
   const rowsTable = useMemo(
     () =>
@@ -137,6 +142,15 @@ export function Admin() {
       </div>
 
       {/* Ações */}
+      <div className="w-full grid gap-6 md:grid-cols-5">
+        {/* Filtro por role */}
+        <SelectSearchableCustom
+          name="role"
+          label="Função de administrador"
+          options={adminRoleOptions}
+          onOptionChange={e => handleAdminRoleChange(e as string)}
+        />
+      </div>
       <div className="w-full flex flex-row justify-between items-end max-w-s-960:flex-col max-w-s-960:items-start gap-2">
         <div className="flex flex-row gap-4 items-center max-w-s-640:flex-col max-w-s-640:items-start">
           <button
@@ -151,7 +165,7 @@ export function Admin() {
             filename="admins"
             sheetName="Administradores"
             titlePage="Lista de Administradores"
-            imageSrc="/logo.png"
+            imageSrc="/logo/logo.png"
             orientation="landscape"
             scale={0.8}
           />
@@ -160,7 +174,7 @@ export function Admin() {
         <div className="w-full max-w-sm">
           <InputWithButton
             onChange={e => setTermForSearch(e.target.value)}
-            placeholder="Pesquisar..."
+            placeholder="Pesquisar email..."
             icon={<IoSearchSharp size={20} />}
             onButtonClick={() => setCurrentPage(0)} // resetar página ao buscar
           />
@@ -191,7 +205,10 @@ export function Admin() {
               {isLoadingAdmins ? (
                 <tr>
                   <td colSpan={7} className="text-center py-6">
-                    <Spinner />
+                    <Spinner
+                      size={28}
+                      className="text-primary-200 animate-spin"
+                    />
                   </td>
                 </tr>
               ) : admins?.length ? (
@@ -207,7 +224,7 @@ export function Admin() {
           </table>
 
           {/* Footer da tabela */}
-          <div className="pt-4 flex flex-row justify-between items-center max-w-s-960:flex-col max-w-s-960:items-start gap-3">
+          <div className="pt-4 flex flex-row max-w-s-960:flex-col justify-between items-center max-w-s-960:items-start gap-1 max-w-s-960:gap-3">
             <p className="text-xs flex flex-row gap-1 whitespace-nowrap">
               Mostrando
               <strong>
@@ -221,12 +238,26 @@ export function Admin() {
               <strong>{pagination?.count ?? 0}</strong> {namePageLowercase}
             </p>
 
-            <Pagination
-              currentPage={currentPage}
-              totalDocs={pagination?.count ?? 0}
-              docsPerPage={docsPerPage}
-              onPageChange={setCurrentPage}
-            />
+            <div className="flex flex-row justify-center items-center gap-4 mb-3 max-w-s-640:flex-wrap">
+              <div className="flex-1 flex flex-row justify-start items-center gap-4 max-w-s-520:flex-wrap">
+                <span className="">Registos por página: </span>
+
+                <span className="max-w-24">
+                  <SelectCustom
+                    options={rowPerPageOptions}
+                    selectedValue={docsPerPage}
+                    onChange={value => handleSelectChange(Number(value))}
+                    padding="2"
+                  />
+                </span>
+              </div>
+              <Pagination
+                currentPage={currentPage}
+                totalDocs={pagination?.count ?? 0}
+                docsPerPage={docsPerPage}
+                onPageChange={setCurrentPage}
+              />
+            </div>
           </div>
         </div>
       </div>
