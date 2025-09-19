@@ -23,6 +23,7 @@ import { mapUserToOptionsJson } from '@/utils/arrays'
 import { showToast } from '@/utils/toasts' // se existir
 import { useNotificationsViewModel } from '@/viewModels/NotificationViewModel'
 import type { NotificationInterface } from '@/interfaces/INotification'
+import { mapFirebaseError } from '@/helpers/mapFirebaseError'
 
 interface ModalSendNotificationProps {
   isOpen: boolean
@@ -136,6 +137,9 @@ export function ModalSendNotification({
       handleCloseModal()
     } catch (err) {
       console.error('Erro ao enviar notificação:', err)
+      const message = mapFirebaseError(err)
+
+      showToast('error', `Erro ao enviar notificação, ${String(message)}`)
       showToast?.('error', 'Erro ao enviar notificação.')
     }
   }

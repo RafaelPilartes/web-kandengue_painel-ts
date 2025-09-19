@@ -16,6 +16,7 @@ export interface IDocumentRepository {
     limit?: number,
     offset?: number
   ): Promise<ListResponseType<DocumentEntity[]>>
+  getOneByField(field: string, value: any): Promise<DocumentEntity | null>
   create(Document: Omit<DocumentEntity, 'id'>): Promise<DocumentEntity>
   update(id: string, Document: Partial<DocumentEntity>): Promise<DocumentEntity>
   delete(id: string): Promise<void>

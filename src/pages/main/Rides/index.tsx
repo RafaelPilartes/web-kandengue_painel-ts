@@ -47,14 +47,14 @@ export function RidesPage() {
     )
 
   // Estados para modais
-  const [rowSelect, setRowSelect] = useState<RideInterface | null>(null)
-  const [modalCreateRowIsOpen, setModalCreateRowIsOpen] = useState(false)
-  const [modalEditRowIsOpen, setModalEditRowIsOpen] = useState(false)
+  // const [rowSelect, setRowSelect] = useState<RideInterface | null>(null)
+  // const [modalCreateRowIsOpen, setModalCreateRowIsOpen] = useState(false)
+  // const [modalEditRowIsOpen, setModalEditRowIsOpen] = useState(false)
 
   // Consts
   const namePageUppercase = 'Corridas'
   const namePageLowercase = 'corridas'
-  const namePageSingular = 'corrida'
+  // const namePageSingular = 'corrida'
 
   const itemsBreadcrumbs = [
     { label: 'Início', to: routsNameMain.home },
@@ -86,10 +86,12 @@ export function RidesPage() {
     setDocsPerPage(rowsPerPage)
   }
 
-  // Abrir modal de edição
+  // // Abrir modal de edição
   function openModalEditRow(item: RideInterface) {
-    setRowSelect(item)
-    setModalEditRowIsOpen(true)
+    // setRowSelect(item)
+    // setModalEditRowIsOpen(true)
+    console.log(item);
+    
   }
 
   // Abrir página de detalhe
@@ -235,7 +237,7 @@ export function RidesPage() {
             </p>
 
             <div className="flex flex-row justify-center items-center gap-4 mb-3 max-w-s-640:flex-wrap">
-              <div className="flex-1 flex flex-row justify-start items-center gap-4 max-w-s-520:flex-wrap">
+              <div className="flex flex-row max-w-s-640:w-full max-w-s-640:flex-col justify-center items-center gap-4 mb-3 max-w-s-640:flex-wrap">
                 <span className="">Registos por página: </span>
 
                 <span className="max-w-24">

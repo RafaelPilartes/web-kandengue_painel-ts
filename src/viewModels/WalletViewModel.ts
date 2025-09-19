@@ -114,6 +114,19 @@ export function useWalletsViewModel(
     }
   }
 
+  /** 🔹 Buscar wallet por field */
+  const fetchOneWalletByField = async (
+    field: keyof WalletEntity,
+    value: string
+  ) => {
+    try {
+      return await walletService.getOneByField(field, value)
+    } catch (err) {
+      console.error('Erro ao buscar carteira por campo:', err)
+      return null
+    }
+  }
+
   return {
     wallets: walletsResponse?.data ?? [],
     pagination: walletsResponse?.pagination,
@@ -122,6 +135,7 @@ export function useWalletsViewModel(
     refresh: refetch,
 
     fetchAllWalletsByField,
+    fetchOneWalletByField,
 
     createWallet,
     updateWallet,

@@ -16,7 +16,7 @@ export function useNotificationsViewModel(
 
   const filtersKey = filters ? JSON.stringify(filters) : ''
 
-  /** 🔹 Buscar lista de taxa de viagens */
+  /** 🔹 Buscar lista de notificação */
   const {
     data: notificationsResponse,
     isLoading: loading,
@@ -29,7 +29,7 @@ export function useNotificationsViewModel(
     staleTime: 1000 * 60 // cache 1min
   })
 
-  /** 🔹 Buscar lista de taxa de viagens por field */
+  /** 🔹 Buscar lista de notificações por field */
   const fetchAllNotificationsByField = async (
     field: string,
     value: any,
@@ -44,12 +44,12 @@ export function useNotificationsViewModel(
         offset
       )
     } catch (err) {
-      console.error('Erro ao buscar taxa de viagens por campo:', err)
+      console.error('Erro ao buscar notificações por campo:', err)
       return null
     }
   }
 
-  /** 🔹 Criar taxa de viagem */
+  /** 🔹 Criar notificação */
   const createNotification = useMutation({
     mutationFn: (notification: Omit<NotificationEntity, 'id'>) =>
       notificationService.create(notification),
@@ -58,7 +58,7 @@ export function useNotificationsViewModel(
     }
   })
 
-  /** 🔹 Atualizar taxa de viagem */
+  /** 🔹 Atualizar notificação */
   const updateNotification = useMutation({
     mutationFn: ({
       id,
@@ -72,7 +72,7 @@ export function useNotificationsViewModel(
     }
   })
 
-  /** 🔹 Deletar taxa de viagem */
+  /** 🔹 Deletar notificação */
   const deleteNotification = useMutation({
     mutationFn: (id: string) => notificationService.delete(id),
     onSuccess: () => {
@@ -80,12 +80,25 @@ export function useNotificationsViewModel(
     }
   })
 
-  /** 🔹 Buscar taxa de viagem único (on-demand) */
+  /** 🔹 Buscar notificação único (on-demand) */
   const fetchNotificationById = async (id: string) => {
     try {
       return await notificationService.getById(id)
     } catch (err) {
-      console.error('Erro ao buscar taxa de viagem:', err)
+      console.error('Erro ao buscar notificação:', err)
+      return null
+    }
+  }
+
+  /** 🔹 Buscar notification por field */
+  const fetchOneNotificationByField = async (
+    field: keyof NotificationEntity,
+    value: string
+  ) => {
+    try {
+      return await notificationService.getOneByField(field, value)
+    } catch (err) {
+      console.error('Erro ao buscar notificações por campo:', err)
       return null
     }
   }
@@ -98,6 +111,7 @@ export function useNotificationsViewModel(
     refresh: refetch,
 
     fetchAllNotificationsByField,
+    fetchOneNotificationByField,
 
     createNotification,
     updateNotification,

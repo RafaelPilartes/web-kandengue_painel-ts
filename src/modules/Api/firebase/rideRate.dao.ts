@@ -149,6 +149,21 @@ export class FirebaseRideRateDAO implements IRideRateRepository {
     return this.getAll(limit, offset, undefined, filters)
   }
 
+  async getOneByField(
+    field: string,
+    value: any
+  ): Promise<RideRateEntity | null> {
+    const querySnapshot = await getDocs(
+      query(this.rideRatesRef, where(field, '==', value))
+    )
+    if (querySnapshot.empty) return null
+
+    const adminData = new RideRateEntity({
+      ...(querySnapshot.docs[0].data() as RideRateEntity)
+    })
+    return adminData
+  }
+
   async create(rideRate: Omit<RideRateEntity, 'id'>): Promise<RideRateEntity> {
     const rideRateId = generateId('rate')
     const sanitized = {

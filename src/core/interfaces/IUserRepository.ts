@@ -17,6 +17,7 @@ export interface IUserRepository {
     limit?: number,
     offset?: number
   ): Promise<ListResponseType<UserEntity[]>>
+  getOneByField(field: string, value: any): Promise<UserEntity | null>
   create(User: Omit<UserEntity, 'id'>): Promise<UserEntity>
   update(id: string, User: Partial<UserEntity>): Promise<UserEntity>
   delete(id: string): Promise<void>

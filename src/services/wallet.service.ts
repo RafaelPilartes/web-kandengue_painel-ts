@@ -27,6 +27,16 @@ export class WalletService {
     }
   }
 
+  // get one by custom field
+  async getOneByField(field: string, value: any): Promise<WalletEntity | null> {
+    try {
+      return await walletRepository.getOneByField(field, value)
+    } catch (error: any) {
+      console.error(`Erro ao buscar wallet por ${field}-${value}:`, error)
+      throw new Error(error.message || 'Erro ao buscar wallet')
+    }
+  }
+
   // get by custom field
   async getAllByField(
     field: string,

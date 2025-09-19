@@ -16,6 +16,7 @@ export interface IRideTrackingRepository {
     limit?: number,
     offset?: number
   ): Promise<ListResponseType<RideTrackingEntity[]>>
+  getOneByField(field: string, value: any): Promise<RideTrackingEntity | null>
   create(
     RideTracking: Omit<RideTrackingEntity, 'id'>
   ): Promise<RideTrackingEntity>

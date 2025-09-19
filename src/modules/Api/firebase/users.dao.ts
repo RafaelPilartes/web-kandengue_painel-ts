@@ -145,6 +145,18 @@ export class FirebaseUserDAO implements IUserRepository {
     return this.getAll(limit, offset, undefined, filters)
   }
 
+  async getOneByField(field: string, value: any): Promise<UserEntity | null> {
+    const querySnapshot = await getDocs(
+      query(this.usersRef, where(field, '==', value))
+    )
+    if (querySnapshot.empty) return null
+
+    const adminData = new UserEntity({
+      ...(querySnapshot.docs[0].data() as UserEntity)
+    })
+    return adminData
+  }
+
   async getByEmail(email: string): Promise<UserEntity | null> {
     const querySnapshot = await getDocs(
       query(this.usersRef, where('email', '==', email))

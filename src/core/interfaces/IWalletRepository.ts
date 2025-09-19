@@ -16,6 +16,7 @@ export interface IWalletRepository {
     limit?: number,
     offset?: number
   ): Promise<ListResponseType<WalletEntity[]>>
+  getOneByField(field: string, value: any): Promise<WalletEntity | null>
   create(Wallet: Omit<WalletEntity, 'id'>): Promise<WalletEntity>
   update(id: string, Wallet: Partial<WalletEntity>): Promise<WalletEntity>
   delete(id: string): Promise<void>

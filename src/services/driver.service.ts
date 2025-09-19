@@ -27,6 +27,16 @@ export class DriverService {
     }
   }
 
+  // get one by custom field
+  async getOneByField(field: string, value: any): Promise<DriverEntity | null> {
+    try {
+      return await driverRepository.getOneByField(field, value)
+    } catch (error: any) {
+      console.error(`Erro ao buscar driver por ${field}-${value}:`, error)
+      throw new Error(error.message || 'Erro ao buscar driver')
+    }
+  }
+
   // get by custom field
   async getAllByField(
     field: string,

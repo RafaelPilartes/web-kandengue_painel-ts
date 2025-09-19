@@ -97,6 +97,19 @@ export function useRideRatesViewModel(
     }
   }
 
+  /** 🔹 Buscar rideRate por field */
+  const fetchOneRideRateByField = async (
+    field: keyof RideRateEntity,
+    value: string
+  ) => {
+    try {
+      return await rideRateService.getOneByField(field, value)
+    } catch (err) {
+      console.error('Erro ao buscar corrida por campo:', err)
+      return null
+    }
+  }
+
   return {
     rideRates: rideRatesResponse?.data ?? [],
     pagination: rideRatesResponse?.pagination,
@@ -105,6 +118,7 @@ export function useRideRatesViewModel(
     refresh: refetch,
 
     fetchAllRideRatesByField,
+    fetchOneRideRateByField,
 
     createRideRate,
     updateRideRate,

@@ -1,0 +1,919 @@
+import { useEffect, useState } from 'react'
+import {
+  useParams
+  // useNavigate
+} from 'react-router-dom'
+import { Spinner, Star } from 'phosphor-react'
+
+// Components do teu projeto (ajusta imports conforme necessário)
+import { Avatar } from '@/components/ui/avatar'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import {
+  Car,
+  Check,
+  CircleFadingArrowUp,
+  ClipboardList,
+  Download,
+  FileText,
+  Mail,
+  MapPin,
+  Phone,
+  Wallet,
+  Wallet2,
+  XIcon
+} from 'lucide-react'
+import { useDriversViewModel } from '@/viewModels/DriverViewModel'
+import { useWalletsViewModel } from '@/viewModels/WalletViewModel'
+import { useVehiclesViewModel } from '@/viewModels/VehicleViewModel'
+import { useDocumentsViewModel } from '@/viewModels/DocumentViewModel'
+import type { WalletInterface } from '@/interfaces/IWallet'
+import type { VehicleInterface } from '@/interfaces/IVehicle'
+import type { DocumentInterface } from '@/interfaces/IDocument'
+import type { DriverInterface } from '@/interfaces/IDriver'
+import { useRidesViewModel } from '@/viewModels/RideViewModel'
+import type { RideInterface } from '@/interfaces/IRide'
+import { formatDateTimeFromFirestore } from '@/utils/date'
+import { formatMoney } from '@/utils/number'
+import { Card } from '@/components/ui/card'
+import { useTransactionsViewModel } from '@/viewModels/TransactionViewModel'
+import { ToastContainer } from 'react-toastify'
+import { showToast } from '@/utils/toasts'
+import type { TransactionInterface } from '@/interfaces/ITransaction'
+import {
+  getDocumentStatusLabel,
+  getDocumentTypeLabel,
+  getRideStatusLabel,
+  getTransactionTypeLabel,
+  getVehicleStatusLabel
+} from '@/utils/gettersLabels'
+import { ActionsMenu } from '@/components/ActionsMenu'
+import { IoColorPaletteSharp } from 'react-icons/io5'
+import { BadgeSimple } from '@/components/badge/BadgeSimple'
+import { mapFirebaseError } from '@/helpers/mapFirebaseError'
+import type { DocumentStatus } from '@/types/enum'
+
+export function DriverViewPage() {
+  const { driverId } = useParams<{ driverId: string }>()
+  // const navigate = useNavigate()
+
+  const [isLoading, setIsLoading] = useState(true)
+
+  const { fetchDriverById, updateDriver } = useDriversViewModel()
+  const { fetchOneWalletByField } = useWalletsViewModel()
+  const { fetchAllTransactionsByField } = useTransactionsViewModel()
+  const { fetchAllRidesByField, calculateDriverEarnings } = useRidesViewModel()
+  const { fetchAllVehiclesByField, updateVehicle } = useVehiclesViewModel()
+  const { fetchAllDocumentsByField, filterDocsBy, updateDocument } =
+    useDocumentsViewModel()
+
+  // Data
+  const [rowDataDriver, setRowDataDriver] = useState<DriverInterface | null>(
+    null
+  )
+  const [rowDataWallet, setRowDataWallet] = useState<WalletInterface | null>(
+    null
+  )
+  const [rowsDataTransactions, setRowsDataTransactions] = useState<
+    TransactionInterface[] | null
+  >(null)
+  const [rowsDataRides, setRowsDataRides] = useState<RideInterface[] | null>(
+    null
+  )
+  const [rowsDataVehicles, setRowsDataVehicles] = useState<
+    VehicleInterface[] | null
+  >(null)
+  const [rowsDataDocuments, setRowsDataDocuments] = useState<
+    DocumentInterface[] | null
+  >(null)
+
+  const [driverEarnings, setDriverEarnings] = useState<number>(0)
+  const [documentsPending, setDocumentsPending] = useState<
+    DocumentInterface[] | null
+  >(null)
+
+  const [docDriverLicense, setDocDriverLicense] =
+    useState<DocumentInterface | null>(null)
+  const [docIdFront, setDocIdFront] = useState<DocumentInterface | null>(null)
+  const [docIdBack, setDocIdBack] = useState<DocumentInterface | null>(null)
+
+  async function getTransitionsByWallet() {
+    const result = await fetchAllTransactionsByField(
+      'wallet_id',
+      rowDataWallet?.id
+    )
+
+    if (result && result?.data.length >= 1) {
+      setRowsDataTransactions(result.data)
+    }
+  }
+
+  // Handler
+  const handleDefaultVehicle = async (vehicle: VehicleInterface) => {
+    if (!rowDataDriver) {
+      return
+    }
+
+    if (vehicle.status == 'under_analysis' || vehicle.status == 'rejected') {
+      showToast('error', `Não é possível predefinir esse veiculo`)
+      return
+    }
+
+    const isSelected = rowDataDriver.vehicle?.id === vehicle.id
+
+    if (isSelected) {
+      showToast('info', `Este veiculo já foi predefinido`)
+      return
+    }
+
+    try {
+      const dataToUpdate: Partial<DriverInterface> = {
+        vehicle: {
+          ...vehicle
+        }
+      }
+
+      await updateDriver.mutateAsync({
+        id: rowDataDriver?.id as string,
+        driver: dataToUpdate
+      })
+
+      showToast('success', `Veiculo ${vehicle.brand}, definido com principal`)
+
+      setRowDataDriver({
+        ...rowDataDriver,
+        vehicle
+      })
+    } catch (err) {
+      const message = mapFirebaseError(err)
+
+      showToast('error', message)
+    }
+  }
+
+  const handleValidateVehicle = async (
+    vehicle: VehicleInterface,
+    type: 'validated' | 'rejected'
+  ) => {
+    try {
+      const dataToUpdate: Partial<VehicleInterface> = {
+        status: type
+      }
+
+      const vehicleUpdated = await updateVehicle.mutateAsync({
+        id: vehicle.id as string,
+        vehicle: dataToUpdate
+      })
+
+      const resultVehicle = await fetchAllVehiclesByField('user_id', driverId)
+
+      if (resultVehicle?.data) {
+        setRowsDataVehicles(resultVehicle?.data)
+      }
+
+      showToast(
+        'success',
+        `Veiculo ${vehicleUpdated.brand}, foi ${
+          type === 'validated' ? 'aprovado' : 'rejeitado'
+        }`
+      )
+    } catch (err) {
+      const message = mapFirebaseError(err)
+
+      showToast('error', message)
+    }
+  }
+
+  const handleDownloadDocument = async (doc: DocumentInterface) => {
+    try {
+      const url = doc.url
+      const filename = `${getDocumentTypeLabel(doc.type)}-${
+        rowDataDriver?.name
+      }`
+
+      // Faz o fetch para obter o arquivo
+      const response = await fetch(url)
+
+      // Verifica se a resposta foi bem-sucedida
+      if (!response.ok) {
+        throw new Error('Falha ao baixar o documento.')
+      }
+
+      // Converte a resposta para um blob
+      const blob = await response.blob()
+
+      // Cria uma URL para o arquivo blob
+      const blobUrl = URL.createObjectURL(blob)
+
+      // Cria um link temporário para disparar o download
+      const a = document.createElement('a')
+      a.href = blobUrl
+      a.download = filename
+
+      // Aciona o clique no link para iniciar o download
+      a.click()
+
+      // Libera o objeto URL após o download
+      URL.revokeObjectURL(blobUrl)
+    } catch (error) {
+      console.error('Erro ao baixar o documento:', error)
+    }
+  }
+
+  const handleValidateDocument = async (
+    document: DocumentInterface,
+    type: DocumentStatus
+  ) => {
+    try {
+      const dataToUpdate: Partial<DocumentInterface> = {
+        status: type
+      }
+
+      const documentUpdated = await updateDocument.mutateAsync({
+        id: document.id as string,
+        document: dataToUpdate
+      })
+
+      const resultDocument = await fetchAllDocumentsByField('user.id', driverId)
+
+      if (resultDocument?.data) {
+        setRowsDataDocuments(resultDocument?.data)
+      }
+
+      showToast(
+        'success',
+        `Documento ${getDocumentTypeLabel(documentUpdated.type)}, foi ${
+          type === 'approved' ? 'aprovado' : 'rejeitado'
+        }`
+      )
+    } catch (err) {
+      const message = mapFirebaseError(err)
+
+      showToast('error', message)
+    }
+  }
+
+  // Function
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true)
+
+      if (!driverId) {
+        alert('Não foi fornecido id do motorista')
+        return
+      }
+
+      try {
+        // Executa ambas as requisições em paralelo
+        const [dataDriver, dataWallet, dataRides, dataVehicles, dataDocuments] =
+          await Promise.all([
+            fetchDriverById(driverId),
+            fetchOneWalletByField('user.id' as any, driverId),
+            fetchAllRidesByField('driver.id', driverId),
+            fetchAllVehiclesByField('user_id', driverId),
+            fetchAllDocumentsByField('user.id', driverId)
+          ])
+
+        // Lida com Driver
+        if (!dataDriver) {
+          console.error('Erro ao buscar motoristas')
+        } else {
+          setRowDataDriver(dataDriver)
+        }
+        // Lida com Wallet
+        if (!dataWallet) {
+          showToast('error', 'Erro ao identificar a carteira')
+        } else {
+          setRowDataWallet(dataWallet)
+        }
+        // Lida com Rides
+        if (!dataRides) {
+          console.error('Erro ao buscar corridas')
+        } else {
+          setRowsDataRides(dataRides.data)
+        }
+        // Lida com Vehicles
+        if (!dataVehicles) {
+          console.error('Erro ao buscar veiculos')
+        } else {
+          setRowsDataVehicles(dataVehicles.data)
+        }
+        // Lida com Documents
+        if (!dataDocuments) {
+          console.error('Erro ao buscar documentos')
+        } else {
+          setRowsDataDocuments(dataDocuments.data)
+        }
+      } catch (error) {
+        console.error('Erro ao buscar dados:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [])
+
+  useEffect(() => {
+    if (rowsDataRides) {
+      const earnings = calculateDriverEarnings(rowsDataRides)
+      setDriverEarnings(earnings)
+    }
+    if (rowsDataDocuments) {
+      const documentsPending = filterDocsBy(
+        rowsDataDocuments,
+        'status',
+        'pending'
+      )
+      setDocumentsPending(documentsPending)
+
+      const driverLicenseFiltered = filterDocsBy(
+        rowsDataDocuments,
+        'type',
+        'driver_license'
+      )
+      const driverLicenseFounded = driverLicenseFiltered.find(
+        doc => doc.status === 'approved'
+      )
+      setDocDriverLicense(driverLicenseFounded ?? null)
+
+      // driver_license
+      const idFrontFiltered = filterDocsBy(
+        rowsDataDocuments,
+        'type',
+        'id_front'
+      )
+      const idFrontFounded = idFrontFiltered.find(
+        doc => doc.status === 'approved'
+      )
+      setDocIdFront(idFrontFounded ?? null)
+
+      // id_front
+      const idBackFiltered = filterDocsBy(rowsDataDocuments, 'type', 'id_back')
+      const idBackFounded = idBackFiltered.find(
+        doc => doc.status === 'approved'
+      )
+      setDocIdBack(idBackFounded ?? null)
+
+      // id_back
+    }
+  }, [rowsDataRides, rowsDataDocuments])
+
+  useEffect(() => {
+    if (rowDataWallet) {
+      getTransitionsByWallet()
+    }
+  }, [rowDataWallet])
+
+  if (isLoading) {
+    return (
+      <div className="w-full min-h-[60vh] flex flex-row items-center justify-center gap-4">
+        <span className="text-2xl text-gray-700 dark:text-gray-200">
+          Carregando dados do motorista
+        </span>
+        <Spinner size={36} className="animate-spin text-primary-500" />
+      </div>
+    )
+  }
+
+  if (!rowDataDriver) {
+    return (
+      <div className="p-8 text-center text-sm text-gray-600 dark:text-gray-300">
+        Motorista não encontrado.
+      </div>
+    )
+  }
+
+  const actionsVehicle = (vehicle: VehicleInterface) => {
+    // const isInvalid =
+    //   vehicle.status === 'under_analysis' || vehicle.status === 'rejected'
+    const isUnderAnalysis = vehicle.status === 'under_analysis'
+
+    const actions = []
+
+    // Adiciona a ação de "Predefinir" se o veículo não for selecionado e não for inválido
+    if (!isUnderAnalysis) {
+      actions.push({
+        icon: <CircleFadingArrowUp size={16} />,
+        label: 'Predefinir',
+        onClick: () => handleDefaultVehicle(vehicle)
+      })
+    }
+
+    // Adiciona as ações de "Aprovar" e "Rejeitar" se o veículo estiver "under_analysis"
+    if (isUnderAnalysis) {
+      actions.push(
+        {
+          icon: <Check size={16} />,
+          label: 'Aprovar',
+          onClick: () => handleValidateVehicle(vehicle, 'validated'),
+          className:
+            'text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900'
+        },
+        {
+          icon: <XIcon size={16} />,
+          label: 'Rejeitar',
+          onClick: () => handleValidateVehicle(vehicle, 'rejected'),
+          className:
+            'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900'
+        }
+      )
+    }
+
+    return actions
+  }
+
+  const actionsDocument = (doc: DocumentInterface) => {
+    const actions = []
+
+    actions.push({
+      icon: <Download size={16} />,
+      label: 'Baixar',
+      onClick: () => handleDownloadDocument(doc)
+    })
+
+    if (doc.status === 'pending') {
+      actions.push(
+        {
+          icon: <Check size={16} />,
+          label: 'Aprovar',
+          onClick: () => handleValidateDocument(doc, 'approved'),
+          className:
+            'text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900'
+        },
+        {
+          icon: <XIcon size={16} />,
+          label: 'Rejeitar',
+          onClick: () => handleValidateDocument(doc, 'rejected'),
+          className:
+            'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900'
+        }
+      )
+    }
+
+    return actions
+  }
+
+  return (
+    <div className="w-full flex flex-col gap-6">
+      <ToastContainer />
+
+      {/* Header */}
+      <div className="w-full flex items-center gap-4 border-b border-gray-400 dark:border-gray-600 pb-4 max-w-s-640:flex-col">
+        {/* Top */}
+        <div className="w-full flex items-center justify-between gap-6 max-w-s-520:flex-col max-w-s-520:gap-4">
+          {/* Avatar */}
+          <div className="">
+            <Avatar
+              src={rowDataDriver.photo}
+              fallback={rowDataDriver.name
+                .split(' ')
+                .map(n => n[0])
+                .slice(0, 2)
+                .join('')}
+              alt="Driver"
+              size="xl"
+            />
+          </div>
+
+          {/* Content */}
+          <div className="w-full flex flex-col max-w-s-520:items-center">
+            {/* Name */}
+            <div className="w-full flex flex-row items-center gap-4 mb-4 max-w-s-640:gap-2 max-w-s-640:flex-col max-w-s-640:items-start max-w-s-640:mb-4 max-w-s-520:items-center">
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
+                {rowDataDriver.name}
+              </h2>
+
+              <div className="flex flex-wrap gap-2 justify-center items-center">
+                <span
+                  className={`px-2 py-0.5 rounded-md ${
+                    rowDataDriver.is_online
+                      ? 'bg-green-50 text-green-700 dark:bg-green-900/40'
+                      : 'bg-red-50 text-red-700 dark:bg-red-900/40'
+                  }`}
+                >
+                  {rowDataDriver.is_online ? 'Online' : 'Offline'}
+                </span>
+
+                <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-yellow-50 dark:bg-yellow-900/30 text-yellow-800 text-sm">
+                  <Star size={14} />{' '}
+                  <span className="ml-1 font-medium">{'5.0'}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Contact */}
+            <div className="w-full text-xs flex flex-row flex-wrap gap-2 max-w-s-520:justify-center text-gray-600 dark:text-gray-300">
+              <div className="flex flex-row justify-start items-center gap-1">
+                <Phone size={14} /> {rowDataDriver.phone}
+              </div>
+              <span className="hidden text-sm xs:inline">|</span>
+              <div className="flex flex-row justify-start items-center gap-1">
+                <Mail size={14} /> {rowDataDriver.email}
+              </div>
+              <span className="hidden text-sm xs:inline">|</span>
+              <div className="flex flex-row justify-start items-center gap-1">
+                <MapPin size={14} /> 775 Rolling Green Rd.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Member */}
+        <div
+          className={`w-44 flex flex-col justify-center items-center py-2 px-3 text-xs font-normal rounded-full bg-red-200 text-red-600`}
+        >
+          Membro desde:
+          <span className="font-semibold">
+            {formatDateTimeFromFirestore(rowDataDriver.created_at as any).date}
+          </span>
+        </div>
+      </div>
+
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card
+          title="Saldo Carteira"
+          icon={<Wallet />}
+          value={`AOA ${formatMoney(rowDataWallet?.balance as number)}`}
+        />
+        <Card
+          title="Corridas Concluídas"
+          icon={<ClipboardList />}
+          value={`${rowsDataRides?.length}`}
+        />
+        <Card
+          title="Veículos"
+          icon={<Car />}
+          value={`${rowsDataVehicles?.length} disponiveis`}
+        />
+        <Card
+          title="Documentos"
+          icon={<FileText />}
+          value={`${documentsPending?.length} Pendentes`}
+        />
+        <Card title="Ganhos" icon={<Wallet2 />} value={`${driverEarnings}`} />
+      </div>
+
+      {/* Main content: responsive grid */}
+      <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left/center: main tabs (span 2 on lg) */}
+        <div className="lg:col-span-2 flex flex-col gap-4">
+          <div className="w-full bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg p-4">
+            <Tabs defaultValue="wallet">
+              <TabsList>
+                <TabsTrigger value="wallet">Carteira</TabsTrigger>
+                <TabsTrigger value="rides">Corridas</TabsTrigger>
+                <TabsTrigger value="vehicles">Veículos</TabsTrigger>
+                <TabsTrigger value="docs">Documentos</TabsTrigger>
+              </TabsList>
+
+              {/* Carteira */}
+              <TabsContent value="wallet">
+                <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-md  dark:border-gray-700">
+                  <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-100">
+                    Movimentos na Carteira
+                  </h4>
+                  <div className="mt-4 overflow-x-auto">
+                    <table className="w-full text-sm text-left">
+                      <thead className="text-xs text-gray-500 dark:text-gray-400">
+                        <tr>
+                          <th className="px-3 py-2">Data</th>
+                          <th className="px-3 py-2">Tipo</th>
+                          <th className="px-3 py-2">Descrição</th>
+                          <th className="px-3 py-2">Valor</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {rowsDataTransactions?.length ? (
+                          rowsDataTransactions.map(trans => (
+                            <tr
+                              key={trans.id}
+                              className="border-b border-gray-100 dark:border-gray-700"
+                            >
+                              <td className="px-3 py-2 text-gray-700 dark:text-gray-200">
+                                {
+                                  formatDateTimeFromFirestore(
+                                    trans.created_at as any
+                                  ).date
+                                }
+                              </td>
+                              <td className="px-3 py-2 text-sm">
+                                {getTransactionTypeLabel(trans.type)}
+                              </td>
+                              <td className="px-3 py-2 text-sm text-gray-600 dark:text-gray-300">
+                                {trans.description ?? '-'}
+                              </td>
+                              <td className="px-3 py-2">
+                                {formatMoney(trans.amount)}
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td
+                              colSpan={5}
+                              className="text-center py-6 text-sm text-gray-500 dark:text-gray-400"
+                            >
+                              Nenhuma transação
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </TabsContent>
+
+              {/* Corridas */}
+              <TabsContent value="rides">
+                <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-md  dark:border-gray-700">
+                  <h4 className="text-sm font-semibold">Lista de Corridas</h4>
+                  <div className="mt-3 overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="text-xs text-gray-500 dark:text-gray-400">
+                        <tr>
+                          <th className="px-3 py-2">#</th>
+                          <th className="px-3 py-2">Passageiro</th>
+                          <th className="px-3 py-2">Origem</th>
+                          <th className="px-3 py-2">Destino</th>
+                          <th className="px-3 py-2">Valor</th>
+                          <th className="px-3 py-2">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {rowsDataRides?.map((ride, idx) => (
+                          <tr
+                            key={ride.id}
+                            className="border-b border-gray-100 dark:border-gray-700"
+                          >
+                            <td className="px-3 py-2 text-gray-700 dark:text-gray-200">
+                              {idx + 1}
+                            </td>
+                            <td className="px-3 py-2">{ride.user.name}</td>
+                            <td className="px-3 py-2">
+                              {ride.pickup.name ?? '-'}
+                            </td>
+                            <td className="px-3 py-2">
+                              {ride.dropoff.name ?? '-'}
+                            </td>
+                            <td className="px-3 py-2">
+                              {formatMoney(ride.fare.total)}
+                            </td>
+                            <td className="px-3 py-2">
+                              {getRideStatusLabel(ride.status)}
+                            </td>
+                          </tr>
+                        )) || (
+                          <tr>
+                            <td colSpan={6} className="text-center py-6">
+                              Nenhuma corrida encontrada.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </TabsContent>
+
+              {/* Veículos */}
+              <TabsContent value="vehicles">
+                <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-md  dark:border-gray-700">
+                  <h4 className="text-sm font-semibold">Veículos</h4>
+                  <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {rowsDataVehicles?.map(vehicle => (
+                      <div
+                        key={vehicle.id}
+                        className={`p-4 flex flex-col gap-2 rounded-md border ${
+                          rowDataDriver.vehicle?.id === vehicle.id
+                            ? 'border-primary-400 ring-2 ring-primary-200/30'
+                            : 'border-gray-100 dark:border-gray-700'
+                        } bg-white dark:bg-gray-800`}
+                      >
+                        {/* Image */}
+                        <div className="h-28 w-full bg-gray-100 dark:bg-gray-700 rounded-md overflow-hidden flex items-center justify-center">
+                          <img
+                            src={vehicle.image}
+                            alt={vehicle.type}
+                            className="object-cover w-full h-full"
+                          />
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex flex-col items-center justify-between">
+                          {/* Brand & Actions */}
+                          <div className="w-full flex flex-row items-center justify-between">
+                            {/* Brand */}
+                            <div className="w-full flex flex-col items-start gap-0">
+                              <div className="font-medium text-gray-900 dark:text-gray-100">
+                                {vehicle.brand} - {vehicle.model}
+                              </div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400">
+                                Placa: {vehicle.plate}
+                              </div>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex flex-row justify-start items-center gap-4">
+                              <ActionsMenu actions={actionsVehicle(vehicle)} />
+                            </div>
+                          </div>
+
+                          {/* Info */}
+                          <div className="w-full flex flex-col items-start justify-start gap-4">
+                            {/* Color */}
+                            <div className="w-full flex flex-row items-center justify-start">
+                              <IoColorPaletteSharp
+                                size={16}
+                                className="text-xs text-gray-500 dark:text-gray-400 mr-1"
+                              />
+
+                              <span className="text-xs text-gray-500 dark:text-gray-400 mr-1">
+                                Cor:{' '}
+                              </span>
+                              <span className="text-xs text-gray-400 dark:text-white">
+                                {vehicle.color}
+                              </span>
+                            </div>
+
+                            {/* Status */}
+                            <div
+                              className={`w-auto flex flex-col justify-center items-center py-1 px-3 text-xs font-normal rounded-full ${
+                                vehicle.status === 'validated'
+                                  ? 'bg-green-100 text-green-700'
+                                  : vehicle.status === 'rejected'
+                                  ? 'bg-red-200 text-red-700'
+                                  : 'bg-orange-100 text-orange-700'
+                              }`}
+                            >
+                              <span className="text-xs font-medium">
+                                {getVehicleStatusLabel(vehicle.status)}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )) || (
+                      <div className="text-sm text-gray-500">
+                        Nenhum veículo cadastrado
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </TabsContent>
+
+              {/* Documentos */}
+              <TabsContent value="docs">
+                <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-md  dark:border-gray-700">
+                  <h4 className="text-sm font-semibold">
+                    Documentos submetidos
+                  </h4>
+                  <div className="mt-4 overflow-x-auto">
+                    <table className="w-full text-sm text-left">
+                      <thead className="text-xs text-gray-500 dark:text-gray-400">
+                        <tr>
+                          <th className="px-3 py-2">Id</th>
+                          <th className="px-3 py-2">Tipo</th>
+                          <th className="px-3 py-2">Status</th>
+                          <th className="px-3 py-2">Data</th>
+                          <th className="px-3 py-2"></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {rowsDataDocuments?.length ? (
+                          rowsDataDocuments.map(doc => (
+                            <tr
+                              key={doc.id}
+                              className="border-b border-gray-100 dark:border-gray-700"
+                            >
+                              <td className="px-3 py-2 text-sm">{doc.id}</td>
+                              <td className="px-3 py-2 text-sm">
+                                {getDocumentTypeLabel(doc.type)}
+                              </td>
+                              <td className="px-3 py-2 text-sm text-gray-600 dark:text-gray-300">
+                                <BadgeSimple
+                                  color={
+                                    doc.status === 'approved'
+                                      ? 'green'
+                                      : doc.status === 'pending'
+                                      ? 'orange'
+                                      : 'red'
+                                  }
+                                  label={getDocumentStatusLabel(doc.status)}
+                                />
+                              </td>
+                              <td className="px-3 py-2 text-gray-700 dark:text-gray-200">
+                                {
+                                  formatDateTimeFromFirestore(
+                                    doc.created_at as any
+                                  ).date
+                                }
+                              </td>
+                              <td className="px-3 py-2 text-gray-700 dark:text-gray-200">
+                                {/* Actions */}
+                                <div className="flex flex-row justify-start items-center gap-4">
+                                  <ActionsMenu actions={actionsDocument(doc)} />
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td
+                              colSpan={5}
+                              className="text-center py-6 text-sm text-gray-500 dark:text-gray-400"
+                            >
+                              Nenhum documento
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </div>
+        </div>
+
+        {/* Right column: perfil rápido e ações */}
+        <aside className="flex flex-col gap-4">
+          {/* Resume */}
+          {/* <div className="w-full bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg p-4">
+            <div className="text-sm font-medium text-gray-800 dark:text-gray-100">
+              Resumo Rápido
+            </div>
+            <div className="mt-3 flex flex-col gap-2 text-sm text-gray-600 dark:text-gray-300">
+              <div>
+                <strong>Último acesso:</strong>{' '}
+              </div>
+              <div>
+                <strong>Nº de corridas:</strong>{' '}
+                {'driverMock.stats?.ridesCompleted ?? 0'}
+              </div>
+              <div>
+                <strong>Último pagamento:</strong>{' '}
+                {
+                  "driverMock.lastPayout ? formatCurrency(driverMock.lastPayout) : '-'"
+                }
+              </div>
+            </div>
+            <div className="mt-4 flex gap-2">
+              <Button
+                // size="sm"
+                onClick={() => alert('Enviar notificação')}
+              >
+                Notificar
+              </Button>
+              <Button
+                // size="sm"
+                onClick={() => alert('Bloquear motorista')}
+              >
+                Bloquear
+              </Button>
+            </div>
+          </div> */}
+
+          {/* Documents */}
+          <div className="w-full bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg p-4">
+            <div className="text-sm font-medium text-gray-800 dark:text-gray-100">
+              Documentos principais
+            </div>
+            <div className="mt-3 space-y-2 text-sm">
+              <div className="flex flex-row items-center justify-start gap-2">
+                Carta de condução:{' '}
+                {docDriverLicense ? (
+                  <span className="text-green-600 dark:text-green-400">
+                    Validado
+                  </span>
+                ) : (
+                  <Spinner size={20} className="text-red-600 animate-spin" />
+                )}
+              </div>
+              <div className="flex flex-row items-center justify-start gap-2">
+                BI Frente:{' '}
+                {docIdFront ? (
+                  <span className="text-green-600 dark:text-green-400">
+                    Validado
+                  </span>
+                ) : (
+                  <Spinner size={20} className="text-red-600 animate-spin" />
+                )}
+              </div>
+              <div className="flex flex-row items-center justify-start gap-2">
+                BI verso:{' '}
+                {docIdBack ? (
+                  <span className="text-green-600 dark:text-green-400">
+                    Validado
+                  </span>
+                ) : (
+                  <Spinner size={20} className="text-red-600 animate-spin" />
+                )}
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  )
+}

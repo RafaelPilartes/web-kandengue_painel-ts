@@ -23,6 +23,7 @@ import {
 } from '@/data/selectOption'
 import TableRow from '@/components/table/TableRowNotification'
 import { SelectCustom } from '@/components/selects/SelectCustom'
+import { mapFirebaseError } from '@/helpers/mapFirebaseError'
 
 export function NotificationsPage() {
   const [
@@ -74,8 +75,10 @@ export function NotificationsPage() {
             icon: 'success'
           })
         } catch (error) {
+          const message = mapFirebaseError(error)
+
           swal('Erro ao excluir notificação', {
-            text: `Houve um erro: ${String(error)}`,
+            text: `Houve um erro: ${String(message)}`,
             icon: 'error'
           })
         }
@@ -210,7 +213,7 @@ export function NotificationsPage() {
           </p>
 
           <div className="flex flex-row justify-center items-center gap-4 mb-3 max-w-s-640:flex-wrap">
-            <div className="flex-1 flex flex-row justify-start items-center gap-4 max-w-s-520:flex-wrap">
+            <div className="flex flex-row max-w-s-640:w-full max-w-s-640:flex-col justify-center items-center gap-4 mb-3 max-w-s-640:flex-wrap">
               <span className="">Registos por página: </span>
 
               <span className="max-w-24">

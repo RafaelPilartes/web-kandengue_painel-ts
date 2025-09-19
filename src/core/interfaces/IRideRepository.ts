@@ -16,6 +16,7 @@ export interface IRideRepository {
     limit?: number,
     offset?: number
   ): Promise<ListResponseType<RideEntity[]>>
+  getOneByField(field: string, value: any): Promise<RideEntity | null>
   create(Ride: Omit<RideEntity, 'id'>): Promise<RideEntity>
   update(id: string, Ride: Partial<RideEntity>): Promise<RideEntity>
   delete(id: string): Promise<void>

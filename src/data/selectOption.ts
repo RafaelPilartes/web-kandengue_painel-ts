@@ -53,6 +53,35 @@ export const notificationCategoryOptions: OptionType[] = [
   { value: 'all', label: 'Todos' }
 ]
 
+export const documentTypeOptions: OptionType[] = [
+  { value: 'driver_license', label: 'Carta de condução' },
+  { value: 'id_front', label: 'BI frente' },
+  { value: 'id_back', label: 'BI Verso' },
+  { value: 'vehicle_ownership', label: 'Titulo de propriedade' },
+  { value: 'vehicle_booklet', label: 'Livrete' },
+  { value: 'other', label: 'Offline' }
+]
+
+export const documentStatusOptions: OptionType[] = [
+  { value: 'pending', label: 'Pendente' },
+  { value: 'approved', label: 'Aprovado' },
+  { value: 'rejected', label: 'Rejeitado' }
+]
+
+export const vehicleTypeOptions: OptionType[] = [
+  { value: 'car', label: 'Carro' },
+  { value: 'motorcycle', label: 'Motorizada' },
+  { value: 'bicycle', label: 'Bicicleta' },
+  { value: 'truck', label: 'Caminhão' },
+  { value: 'scooter', label: 'Scooter' }
+]
+
+export const vehicleStatusOptions: OptionType[] = [
+  { value: 'under_analysis', label: 'Em análise' },
+  { value: 'validated', label: 'Validado' },
+  { value: 'rejected', label: 'Rejeitado' }
+]
+
 export const isOnlineOptions: OptionType[] = [
   { value: 'true', label: 'Online' },
   { value: 'false', label: 'Offline' }
@@ -115,7 +144,7 @@ export const weekdayOptions: OptionType[] = [
 export const rideStatusOptions: OptionType[] = [
   { value: 'pending', label: 'Pendente' },
   { value: 'accepting_pending', label: 'Aceitando/Pendente' },
-  { value: 'driver_on_the_way', label: 'Motorista em Caminho' },
+  { value: 'driver_on_the_way', label: 'Motorista a Caminho' },
   { value: 'arrived_pickup', label: 'Chegou no Pick-up' },
   { value: 'picked_up', label: 'Pegou o Passageiro' },
   { value: 'arrived_dropoff', label: 'Chegou no Drop-off' },

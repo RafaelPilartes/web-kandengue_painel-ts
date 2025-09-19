@@ -27,6 +27,19 @@ export class DocumentService {
     }
   }
 
+  // get one by custom field
+  async getOneByField(
+    field: string,
+    value: any
+  ): Promise<DocumentEntity | null> {
+    try {
+      return await documentRepository.getOneByField(field, value)
+    } catch (error: any) {
+      console.error(`Erro ao buscar document por ${field}-${value}:`, error)
+      throw new Error(error.message || 'Erro ao buscar document')
+    }
+  }
+
   // get by custom field
   async getAllByField(
     field: string,

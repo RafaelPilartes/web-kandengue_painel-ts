@@ -16,6 +16,10 @@ export interface IWalletTopupRequestRepository {
     limit?: number,
     offset?: number
   ): Promise<ListResponseType<WalletTopupRequestEntity[]>>
+  getOneByField(
+    field: string,
+    value: any
+  ): Promise<WalletTopupRequestEntity | null>
   create(
     WalletTopupRequest: Omit<WalletTopupRequestEntity, 'id'>
   ): Promise<WalletTopupRequestEntity>

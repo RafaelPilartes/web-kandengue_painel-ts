@@ -158,6 +158,18 @@ export class FirebaseDriverDAO implements IDriverRepository {
     return this.getAll(limit, offset, undefined, filters)
   }
 
+  async getOneByField(field: string, value: any): Promise<DriverEntity | null> {
+    const querySnapshot = await getDocs(
+      query(this.driversRef, where(field, '==', value))
+    )
+    if (querySnapshot.empty) return null
+
+    const adminData = new DriverEntity({
+      ...(querySnapshot.docs[0].data() as DriverEntity)
+    })
+    return adminData
+  }
+
   async create(driver: Omit<DriverEntity, 'id'>): Promise<DriverEntity> {
     const driverId = generateId('dri')
     const sanitized = {

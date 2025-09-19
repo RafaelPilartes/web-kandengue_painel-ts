@@ -32,6 +32,22 @@ export class WalletTopupRequestService {
     }
   }
 
+  // get one by custom field
+  async getOneByField(
+    field: string,
+    value: any
+  ): Promise<WalletTopupRequestEntity | null> {
+    try {
+      return await walletTopupRequestRepository.getOneByField(field, value)
+    } catch (error: any) {
+      console.error(
+        `Erro ao buscar walletTopupRequest por ${field}-${value}:`,
+        error
+      )
+      throw new Error(error.message || 'Erro ao buscar walletTopupRequest')
+    }
+  }
+
   // get by custom field
   async getAllByField(
     field: string,

@@ -1,4 +1,4 @@
-export function validationFileImage(file: File, maxSizeMB: number) {
+export function validationFileImage(file?: File, maxSizeMB: number = 8) {
   const MAX_FILE_SIZE = maxSizeMB * 1024 * 1024
   const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/jpg']
 

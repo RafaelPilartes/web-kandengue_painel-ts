@@ -27,6 +27,16 @@ export class UserService {
     }
   }
 
+  // get one by custom field
+  async getOneByField(field: string, value: any): Promise<UserEntity | null> {
+    try {
+      return await userRepository.getOneByField(field, value)
+    } catch (error: any) {
+      console.error(`Erro ao buscar user por ${field}-${value}:`, error)
+      throw new Error(error.message || 'Erro ao buscar user')
+    }
+  }
+
   // get by custom field
   async getAllByField(
     field: string,

@@ -27,6 +27,7 @@ import type { DriverInterface } from '@/interfaces/IDriver'
 // Utils
 import { showToast } from '@/utils/toasts'
 import { ToastContainer } from 'react-toastify'
+import { mapFirebaseError } from '@/helpers/mapFirebaseError'
 
 // 🔹 Schema de validação
 const formSchema = z.object({
@@ -110,7 +111,9 @@ export function ModalEditWallet({
         }, 2000)
       }
     } catch (error) {
-      showToast('error', String(error))
+      const message = mapFirebaseError(error)
+
+      showToast('error', String(message))
       setIsSending(false)
     }
   }

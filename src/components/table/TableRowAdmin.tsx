@@ -10,7 +10,7 @@ import {
 } from '../../utils/gettersLabels'
 import { ActionsMenu } from '../ActionsMenu'
 import { Eye } from 'lucide-react'
-import { formatDateFromFirestore } from '@/utils/date'
+import { formatDateTimeFromFirestore } from '@/utils/date'
 
 interface TableRowProps {
   rowItem: AdminInterface
@@ -72,7 +72,7 @@ const TableRow: React.FC<TableRowProps> = ({
         />
       </td>
       <td className="px-3 py-3 min-w-[6rem]">
-        <p>{formatDateFromFirestore(rowItem.created_at as any)}</p>
+        <p>{formatDateTimeFromFirestore(rowItem.created_at as any).date}</p>
       </td>
       <td className="px-3 py-3 min-w-[6rem]">
         <div className="flex flex-row justify-start items-center gap-4">

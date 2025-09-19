@@ -3,6 +3,8 @@ import type { RideRatesInterface } from '@/interfaces/IRideRates'
 import type { RateType, PayoutsType } from '@/types/ride'
 import {
   booleanOptions,
+  documentStatusOptions,
+  documentTypeOptions,
   genderOptions,
   notificationCategoryOptions,
   notificationTypeOptions,
@@ -12,10 +14,13 @@ import {
   statusOptions,
   TransactionTypeOptions,
   userStatusOptions,
+  vehicleStatusOptions,
+  vehicleTypeOptions,
   walletTopupMethodOptions
 } from '../data/selectOption'
 import type {
   AdminRole,
+  DocumentStatus,
   GenderType,
   NotificationCategory,
   NotificationType,
@@ -25,8 +30,11 @@ import type {
   StatusEnumType,
   TransactionType,
   UserStatus,
+  VehicleStatusEnumType,
+  VehicleType,
   WalletTopupMethodType
 } from '../types/enum'
+import type { DocumentType } from '@/types/document'
 
 export const getStatusLabel = (value: StatusEnumType): string => {
   const found = statusOptions.find(option => option.value === value)
@@ -72,10 +80,31 @@ export function getRideTypeLabel(type: RideType): string {
   return found ? found.label : type
 }
 
+export const getDocumentTypeLabel = (value: DocumentType): string => {
+  const found = documentTypeOptions.find(option => option.value === value)
+  return found ? found.label : value
+}
+
+export const getDocumentStatusLabel = (value: DocumentStatus): string => {
+  const found = documentStatusOptions.find(option => option.value === value)
+  return found ? found.label : value
+}
+
+export function getVehicleTypeLabel(type: VehicleType): string {
+  const found = vehicleTypeOptions.find(option => option.value === type)
+  return found ? found.label : type
+}
+
+export function getVehicleStatusLabel(type: VehicleStatusEnumType): string {
+  const found = vehicleStatusOptions.find(option => option.value === type)
+  return found ? found.label : type
+}
+
 export function getNotificationTypeLabel(type: NotificationType): string {
   const found = notificationTypeOptions.find(option => option.value === type)
   return found ? found.label : type
 }
+
 export function getNotificationCategoryLabel(
   type: NotificationCategory
 ): string {

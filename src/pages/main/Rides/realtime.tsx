@@ -1,47 +1,29 @@
 // pages/rides/RidesPage.tsx
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { MapContainer, TileLayer, Marker, Polyline, Popup } from 'react-leaflet'
-import L from 'leaflet'
-import polyline from '@mapbox/polyline'
 import { Mail, Phone, Package, User } from 'lucide-react'
 import { useRidesViewModel } from '@/viewModels/RideViewModel'
-import type { RideStatusType } from '@/types/enum'
 import { useRideTrackingsViewModel } from '@/viewModels/RideTrackingViewModel'
 import type { RideInterface } from '@/interfaces/IRide'
 import type { RideTrackingsInterface } from '@/interfaces/IRideTracking'
 import { getRideStatusLabel } from '@/utils/gettersLabels'
 import { CopyField } from '@/components/CopyField'
 import { formatDateTimeFromFirestore } from '@/utils/date'
-import SeedFirebaseButton from '@/components/buttons/seedFirebase'
 import { InputWithButton } from '@/components/input/InputWithButton'
 import { IoSearchSharp } from 'react-icons/io5'
 import { SelectSearchableCustom } from '@/components/selects/SelectSearchableCustom'
 import { rideStatusOptions, rowPerPageOptions } from '@/data/selectOption'
-import axios from 'axios'
-import type { GeoLocationType } from '@/types/geoLocation'
-import type { LatLngType } from '@/types/latLng'
 import useDirections from '@/hook/useDirections'
 import { snapToRoads } from '@/utils/snapToRoads'
 import { Spinner } from 'phosphor-react'
 import { colorRideStatus } from '@/utils/colorBy'
 import { Pagination } from '@/components/Pagination'
 import { SelectCustom } from '@/components/selects/SelectCustom'
-
-const customCarIcon = new L.Icon({
-  iconUrl: '/illustration/moto-marker.png',
-  iconSize: [32, 32],
-  iconAnchor: [16, 32]
-})
-const customPickupIcon = new L.Icon({
-  iconUrl: '/illustration/pickup-marker.png',
-  iconSize: [32, 32],
-  iconAnchor: [16, 32]
-})
-const customDropoffIcon = new L.Icon({
-  iconUrl: '/illustration/dropoff-marker.png',
-  iconSize: [32, 32],
-  iconAnchor: [16, 32]
-})
+import {
+  customCarIcon,
+  customDropoffIcon,
+  customPickupIcon
+} from '@/data/customPickupIcon'
 
 export function RealtimePage() {
   // Paginação
@@ -111,7 +93,7 @@ export function RealtimePage() {
         <div className="w-full max-w-sm">
           <InputWithButton
             onChange={e => setTermForSearch(e.target.value)}
-            placeholder="Pesquisar pelo id..."
+            placeholder="Pesquisar pelo email do motorista..."
             icon={<IoSearchSharp size={20} />}
             onButtonClick={() => null} // resetar página ao buscar
           />
@@ -330,8 +312,8 @@ export function RealtimePage() {
                   {coords.length > 0 && (
                     <Marker
                       position={[
-                        coords[coords.length - 1].latitude,
-                        coords[coords.length - 1].longitude
+                        coords[coords.length - 2].latitude,
+                        coords[coords.length - 2].longitude
                       ]}
                       icon={customCarIcon}
                     >

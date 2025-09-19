@@ -103,6 +103,19 @@ export function useRideTrackingsViewModel(
     }
   }
 
+  /** 🔹 Buscar rideTracking por field */
+  const fetchOneRideTrackingByField = async (
+    field: keyof RideTrackingEntity,
+    value: string
+  ) => {
+    try {
+      return await rideTrackingService.getOneByField(field, value)
+    } catch (err) {
+      console.error('Erro ao buscar trajetoria de viagem por campo:', err)
+      return null
+    }
+  }
+
   return {
     rideTrackings: rideTrackingsResponse?.data ?? [],
     pagination: rideTrackingsResponse?.pagination,
@@ -111,6 +124,7 @@ export function useRideTrackingsViewModel(
     refresh: refetch,
 
     fetchAllRideTrackingsByField,
+    fetchOneRideTrackingByField,
 
     createRideTracking,
     updateRideTracking,

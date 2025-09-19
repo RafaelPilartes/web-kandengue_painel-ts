@@ -52,6 +52,19 @@ export function useAdminsViewModel(
     }))
   }, [adminsResponse?.data])
 
+  /** 🔹 Buscar admin por field */
+  const fetchOneAdminByField = async (
+    field: keyof AdminEntity,
+    value: string
+  ) => {
+    try {
+      return await adminService.getOneByField(field, value)
+    } catch (err) {
+      console.error('Erro ao buscar admin por campo:', err)
+      return null
+    }
+  }
+
   /** 🔹 Buscar lista de administradores por field */
   const fetchAllAdminsByField = async (
     field: string,
@@ -139,6 +152,7 @@ export function useAdminsViewModel(
     dataToExport,
 
     fetchAllAdminsByField,
+    fetchOneAdminByField,
     fetchAdminByEmail,
 
     createAdmin,

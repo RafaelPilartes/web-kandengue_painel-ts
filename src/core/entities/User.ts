@@ -3,7 +3,7 @@ import type { UserStatus } from '@/types/enum'
 
 export class UserEntity implements UserInterface {
   id?: string
-  entity_code: string
+  entity_code?: string
   photo?: string
   name: string
   email: string
@@ -16,7 +16,7 @@ export class UserEntity implements UserInterface {
     id?: string
     name: string
     email: string
-    entity_code: string
+    entity_code?: string
     photo?: string
     phone: string
     status: UserStatus

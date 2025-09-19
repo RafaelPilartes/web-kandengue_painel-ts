@@ -16,6 +16,7 @@ export interface ITransactionRepository {
     limit?: number,
     offset?: number
   ): Promise<ListResponseType<TransactionEntity[]>>
+  getOneByField(field: string, value: any): Promise<TransactionEntity | null>
   create(Transaction: Omit<TransactionEntity, 'id'>): Promise<TransactionEntity>
   update(
     id: string,

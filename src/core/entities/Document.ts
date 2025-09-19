@@ -11,9 +11,8 @@ export class DocumentEntity implements DocumentInterface {
   type: DocumentType
   url: string
   status: DocumentStatus
-  uploaded_at: Date
-  reviewed_at?: Date
   feedback?: string
+  vehicle_id?: string
 
   created_at?: Date
   updated_at?: Date
@@ -25,9 +24,8 @@ export class DocumentEntity implements DocumentInterface {
     this.type = params.type
     this.url = params.url
     this.status = params.status
-    this.uploaded_at = params.uploaded_at
-    this.reviewed_at = params.reviewed_at
     this.feedback = params.feedback
+    this.vehicle_id = params.vehicle_id
 
     this.created_at = params.created_at
     this.updated_at = params.updated_at

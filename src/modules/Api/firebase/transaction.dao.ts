@@ -148,6 +148,21 @@ export class FirebaseTransactionDAO implements ITransactionRepository {
     return this.getAll(limit, offset, undefined, filters)
   }
 
+  async getOneByField(
+    field: string,
+    value: any
+  ): Promise<TransactionEntity | null> {
+    const querySnapshot = await getDocs(
+      query(this.transactionsRef, where(field, '==', value))
+    )
+    if (querySnapshot.empty) return null
+
+    const adminData = new TransactionEntity({
+      ...(querySnapshot.docs[0].data() as TransactionEntity)
+    })
+    return adminData
+  }
+
   async create(
     transaction: Omit<TransactionEntity, 'id'>
   ): Promise<TransactionEntity> {

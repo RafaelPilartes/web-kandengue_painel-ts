@@ -145,6 +145,21 @@ export class FirebaseVehicleDAO implements IVehicleRepository {
     return this.getAll(limit, offset, undefined, filters)
   }
 
+  async getOneByField(
+    field: string,
+    value: any
+  ): Promise<VehicleEntity | null> {
+    const querySnapshot = await getDocs(
+      query(this.vehiclesRef, where(field, '==', value))
+    )
+    if (querySnapshot.empty) return null
+
+    const adminData = new VehicleEntity({
+      ...(querySnapshot.docs[0].data() as VehicleEntity)
+    })
+    return adminData
+  }
+
   async create(vehicle: Omit<VehicleEntity, 'id'>): Promise<VehicleEntity> {
     const vehicleId = generateId('veh')
     const sanitized = {

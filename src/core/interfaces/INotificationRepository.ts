@@ -16,6 +16,7 @@ export interface INotificationRepository {
     limit?: number,
     offset?: number
   ): Promise<ListResponseType<NotificationEntity[]>>
+  getOneByField(field: string, value: any): Promise<NotificationEntity | null>
   create(
     Notification: Omit<NotificationEntity, 'id'>
   ): Promise<NotificationEntity>

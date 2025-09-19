@@ -4,7 +4,7 @@ import { AiFillDelete } from 'react-icons/ai'
 import { BadgeSimple } from '../badge/BadgeSimple'
 import type { NotificationInterface } from '../../interfaces/INotification'
 import { ActionsMenu } from '../ActionsMenu'
-import { formatDateFromFirestore } from '@/utils/date'
+import { formatDateTimeFromFirestore } from '@/utils/date'
 import {
   getNotificationCategoryLabel,
   getNotificationTypeLabel
@@ -45,7 +45,7 @@ const TableRow: React.FC<TableRowProps> = ({ rowItem, handleDeleteRow }) => {
       </td>
 
       <td className="px-3 py-3 min-w-[6rem]">
-        <p>{formatDateFromFirestore(rowItem.created_at as any)}</p>
+        <p>{formatDateTimeFromFirestore(rowItem.created_at as any).date}</p>
       </td>
       <td className="px-3 py-3 min-w-[6rem]">
         <div className="flex flex-row justify-start items-center gap-4">

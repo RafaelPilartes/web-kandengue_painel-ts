@@ -8,8 +8,7 @@ export interface DocumentInterface {
   type: DocumentType
   url: string
   status: DocumentStatus
-  uploaded_at: Date
-  reviewed_at?: Date
+  vehicle_id?: string
   feedback?: string
   created_at?: Date
   updated_at?: Date

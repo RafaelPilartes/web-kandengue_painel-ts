@@ -5,44 +5,48 @@ import { useRideRatesViewModel } from '@/viewModels/RideRateViewModel'
 import { useRideRatesStore } from '@/stores/rideRatesStore'
 import { useEffect } from 'react'
 import { useAdminsViewModel } from '@/viewModels/AdminViewModel'
+import { showToast } from '@/utils/toasts'
+import { routsNameMain } from '@/constants/routsName'
 
 export function Private({ children }: Props) {
   const { currentAdminData, removeAdmin } = useAdminStore()
   const { rideRates } = useRideRatesViewModel()
   const { addRideRatesData, currentRideRatesData } = useRideRatesStore()
-  const { admins, isLoadingAdmins, deleteAdmin, updateAdmin } =
-    useAdminsViewModel(100)
+  const { admins, isLoadingAdmins, fetchAdminByEmail } = useAdminsViewModel(100)
 
-  // Atualiza os dados de rideRates apenas quando necessário, fora da renderização.
   useEffect(() => {
+    // 🔹 Sincronizar rideRates
     if (rideRates[0] && rideRates[0] !== currentRideRatesData) {
       addRideRatesData(rideRates[0])
     }
 
-    // Verificação de admin
-    if (currentAdminData && !isLoadingAdmins) {
-      const adminFound = admins.some(
-        admin => admin.email === currentAdminData.email
-      )
+    // 🔹 Verificação de admin em tempo real
+    async function checkAdmin() {
+      if (currentAdminData && !isLoadingAdmins) {
+        const adminFound = await fetchAdminByEmail(currentAdminData.email)
 
-      if (!adminFound) {
-        alert('Este admin não encontra-se disponível, faça o login novamente!')
-        removeAdmin() // Remove o admin
+        if (!adminFound) {
+          showToast(
+            'error',
+            'Este admin não se encontra disponível. Faça login novamente.'
+          )
+          removeAdmin()
+        }
       }
     }
+
+    checkAdmin()
   }, [
     rideRates,
     currentRideRatesData,
     addRideRatesData,
     admins,
     currentAdminData,
-    removeAdmin,
-    deleteAdmin,
-    updateAdmin
-  ]) // Garantindo que todas as dependências sejam consideradas
+    removeAdmin
+  ])
 
   if (!currentAdminData) {
-    return <Navigate to={'/login'} />
+    return <Navigate to={routsNameMain.login} replace />
   }
 
   return children

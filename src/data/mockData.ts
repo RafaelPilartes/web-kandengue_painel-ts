@@ -73,37 +73,45 @@ export const users: UserInterface[] = [
 export const vehicles: VehicleInterface[] = [
   {
     id: 'v1',
+    user_id: 'u5',
     type: 'car',
     brand: 'Toyota',
     model: 'Corolla',
     color: 'Preto',
     plate: 'LD-34-AB',
+    status: 'under_analysis',
     image: 'https://placehold.co/200x100',
     created_at: new Date()
   },
   {
     id: 'v2',
+    user_id: 'u6',
     type: 'motorcycle',
     brand: 'Honda',
     model: 'Wave 125',
     color: 'Vermelha',
     plate: 'LD-11-CD',
+    status: 'validated',
     created_at: new Date()
   },
   {
     id: 'v3',
+    user_id: 'u5',
     type: 'truck',
     brand: 'Volvo',
     model: 'FH',
     color: 'Branco',
+    status: 'validated',
     plate: 'LD-55-EF'
   },
   {
     id: 'v4',
+    user_id: 'u6',
     type: 'bicycle',
     brand: 'Caloi',
     model: 'Elite',
     color: 'Azul',
+    status: 'rejected',
     plate: 'LD-99-GH'
   }
 ]
@@ -152,7 +160,6 @@ export const documents: DocumentInterface[] = [
     type: 'driver_license',
     url: 'https://placehold.co/300x200',
     status: 'approved',
-    uploaded_at: new Date(),
     created_at: new Date()
   },
   {
@@ -161,7 +168,6 @@ export const documents: DocumentInterface[] = [
     type: 'id_front',
     url: 'https://placehold.co/300x200',
     status: 'pending',
-    uploaded_at: new Date(),
     created_at: new Date()
   },
   {
@@ -171,7 +177,6 @@ export const documents: DocumentInterface[] = [
     url: 'https://placehold.co/300x200',
     status: 'rejected',
     feedback: 'Documento ilegível',
-    uploaded_at: new Date(),
     created_at: new Date()
   },
   {
@@ -179,8 +184,8 @@ export const documents: DocumentInterface[] = [
     user: users[5],
     type: 'vehicle_booklet',
     url: 'https://placehold.co/300x200',
+    vehicle_id: 'v1',
     status: 'approved',
-    uploaded_at: new Date(),
     created_at: new Date()
   }
 ]
@@ -586,3 +591,162 @@ export const walletTopupRequests: WalletTopupRequestInterface[] = [
     reviewed_by: admin[1]
   }
 ]
+
+// src/mocks/driver.mock.ts
+
+// src/mocks/driver.mock.ts
+export const driverMock = {
+  id: 'DRV123456',
+  name: 'Esther Howard',
+  avatar: 'https://randomuser.me/api/portraits/women/68.jpg',
+  email: 'e.howard@example.com',
+  phone: '+27 603 555 0123',
+  address: '775 Rolling Green Rd.',
+  memberSince: '2024-04-15',
+  status: 'Active',
+  createdAt: '20/07/2025',
+  isOnline: 'online',
+
+  // Dados da carteira
+  wallet: {
+    balance: 1500.75,
+    currency: 'EUR',
+    lastUpdated: '2025-09-15'
+  },
+
+  // Transações
+  transactions: [
+    {
+      id: 'TX001',
+      type: 'Deposit',
+      amount: 300,
+      date: '2025-09-12',
+      status: 'Completed'
+    },
+    {
+      id: 'TX002',
+      type: 'Withdrawal',
+      amount: 100,
+      date: '2025-09-10',
+      status: 'Pending'
+    },
+    {
+      id: 'TX003',
+      type: 'Ride Payment',
+      amount: 25.5,
+      date: '2025-09-09',
+      status: 'Completed'
+    }
+  ],
+
+  // Solicitações de carregamento
+  topUps: [
+    {
+      id: 'TOP001',
+      amount: 200,
+      method: 'Bank Transfer',
+      requestedAt: '2025-09-05',
+      status: 'Approved'
+    },
+    {
+      id: 'TOP002',
+      amount: 150,
+      method: 'Mobile Money',
+      requestedAt: '2025-08-30',
+      status: 'Rejected'
+    }
+  ],
+
+  // Corridas
+  rides: [
+    {
+      id: 'RIDE001',
+      passenger: 'John Doe',
+      start: 'Cape Town - CBD',
+      end: 'Claremont',
+      fare: 12.5,
+      date: '2025-09-12',
+      status: 'Completed'
+    },
+    {
+      id: 'RIDE002',
+      passenger: 'Maria Lopez',
+      start: 'Sea Point',
+      end: 'Camps Bay',
+      fare: 8.75,
+      date: '2025-09-10',
+      status: 'Cancelled'
+    }
+  ],
+
+  // Veículos
+  vehicles: [
+    {
+      id: 'VEH001',
+      brand: 'Mini',
+      model: 'Cooper S Clubman',
+      year: 2023,
+      fuel: 'Gas',
+      engine: '2.0L',
+      transmission: 'Automatic',
+      color: 'Grey',
+      plate: 'XYZ98765432109876',
+      active: true,
+      documents: [
+        {
+          id: 'DOC001',
+          type: 'Insurance',
+          issuedAt: '2025-01-10',
+          expiresAt: '2026-01-10',
+          status: 'Valid'
+        },
+        {
+          id: 'DOC002',
+          type: 'Registration',
+          issuedAt: '2024-12-20',
+          expiresAt: '2025-12-20',
+          status: 'Valid'
+        }
+      ]
+    },
+    {
+      id: 'VEH002',
+      brand: 'Toyota',
+      model: 'Corolla',
+      year: 2021,
+      fuel: 'Petrol',
+      engine: '1.8L',
+      transmission: 'Manual',
+      color: 'White',
+      plate: 'ABC1234567890',
+      active: false,
+      documents: [
+        {
+          id: 'DOC003',
+          type: 'Insurance',
+          issuedAt: '2024-03-15',
+          expiresAt: '2025-03-15',
+          status: 'Expired'
+        }
+      ]
+    }
+  ],
+
+  // Documentos do motorista
+  driverDocuments: [
+    {
+      id: 'DDOC001',
+      type: 'Driver License',
+      issuedAt: '2022-06-01',
+      expiresAt: '2027-06-01',
+      status: 'Valid'
+    },
+    {
+      id: 'DDOC002',
+      type: 'Background Check',
+      issuedAt: '2024-01-15',
+      expiresAt: '2026-01-15',
+      status: 'Valid'
+    }
+  ]
+}

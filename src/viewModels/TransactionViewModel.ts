@@ -118,7 +118,7 @@ export function useTransactionsViewModel(
     }) => {
       // 1. Buscar carteira atual
       const wallet = await walletService.getById(walletId)
-      if (!wallet) throw new Error('Carteira não encontrada')
+      if (!wallet) throw new Error('Transação não encontrada')
 
       // 2. Calcular novo saldo
       const newBalance =
@@ -144,6 +144,19 @@ export function useTransactionsViewModel(
     }
   })
 
+  /** 🔹 Buscar transaction por field */
+  const fetchOneTransactionByField = async (
+    field: keyof TransactionEntity,
+    value: string
+  ) => {
+    try {
+      return await transactionService.getOneByField(field, value)
+    } catch (err) {
+      console.error('Erro ao buscar transação por campo:', err)
+      return null
+    }
+  }
+
   return {
     transactions: transactionsResponse?.data ?? [],
     pagination: transactionsResponse?.pagination,
@@ -152,6 +165,7 @@ export function useTransactionsViewModel(
     refresh: refetch,
 
     fetchAllTransactionsByField,
+    fetchOneTransactionByField,
 
     createTransaction,
     updateTransaction,

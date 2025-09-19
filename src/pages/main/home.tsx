@@ -55,9 +55,9 @@ const customIcon = new L.Icon({
 export function Home() {
   const { users, isLoadingUsers } = useUsersViewModel()
   const { drivers, isLoadingDrivers } = useDriversViewModel()
-  const { rides, isLoadingRides, calculateCompanyProfit } = useRidesViewModel()
+  const { rides, isLoadingRides, ridesMetrics } = useRidesViewModel()
 
-  const companyProfit = calculateCompanyProfit(rides)
+  // const companyProfit = calculateCompanyProfit(rides)
 
   const itemsBreadcrumbs = [
     { label: 'Painel', to: routsNameMain.home },
@@ -138,7 +138,7 @@ export function Home() {
               <Spinner size={24} className="text-purple-500 animate-spin" />
             ) : (
               <span className="text-2xl font-semibold">
-                AOA {formatMoney(companyProfit)}
+                AOA {formatMoney(ridesMetrics.payoutsTotals.company)}
               </span>
             )}
           </div>

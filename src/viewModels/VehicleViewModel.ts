@@ -97,6 +97,19 @@ export function useVehiclesViewModel(
     }
   }
 
+  /** 🔹 Buscar vehicle por field */
+  const fetchOneVehicleByField = async (
+    field: keyof VehicleEntity,
+    value: string
+  ) => {
+    try {
+      return await vehicleService.getOneByField(field, value)
+    } catch (err) {
+      console.error('Erro ao buscar veículo por campo:', err)
+      return null
+    }
+  }
+
   return {
     vehicles: vehiclesResponse?.data ?? [],
     pagination: vehiclesResponse?.pagination,
@@ -105,6 +118,7 @@ export function useVehiclesViewModel(
     refresh: refetch,
 
     fetchAllVehiclesByField,
+    fetchOneVehicleByField,
 
     createVehicle,
     updateVehicle,

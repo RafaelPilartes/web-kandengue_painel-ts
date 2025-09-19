@@ -25,6 +25,7 @@ import { Pagination } from '@/components/Pagination'
 import type { paginationType } from '@/interfaces/IApiResponse'
 import { SelectCustom } from '@/components/selects/SelectCustom'
 import { rowPerPageOptions } from '@/data/selectOption'
+import { mapFirebaseError } from '@/helpers/mapFirebaseError'
 
 interface ModalViewTransactionsProps extends modalViewType<WalletInterface> {}
 
@@ -67,7 +68,9 @@ export function ModalViewTransactions({
         setTransactions(response.data as TransactionEntity[])
       }
     } catch (err) {
-      showToast('error', String(err))
+      const message = mapFirebaseError(err)
+
+      showToast('error', String(message))
     } finally {
       setIsLoading(false)
     }
@@ -181,7 +184,7 @@ export function ModalViewTransactions({
                   </p>
 
                   <div className="flex flex-row justify-center items-center gap-4 mb-3 max-w-s-640:flex-wrap">
-                    <div className="flex-1 flex flex-row justify-start items-center gap-4 max-w-s-520:flex-wrap">
+                    <div className="flex flex-row max-w-s-640:w-full max-w-s-640:flex-col justify-center items-center gap-4 mb-3 max-w-s-640:flex-wrap">
                       <span className="">Registos por página: </span>
 
                       <span className="max-w-24">

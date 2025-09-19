@@ -145,6 +145,21 @@ export class FirebaseDocumentDAO implements IDocumentRepository {
     return this.getAll(limit, offset, undefined, filters)
   }
 
+  async getOneByField(
+    field: string,
+    value: any
+  ): Promise<DocumentEntity | null> {
+    const querySnapshot = await getDocs(
+      query(this.documentsRef, where(field, '==', value))
+    )
+    if (querySnapshot.empty) return null
+
+    const adminData = new DocumentEntity({
+      ...(querySnapshot.docs[0].data() as DocumentEntity)
+    })
+    return adminData
+  }
+
   async create(document: Omit<DocumentEntity, 'id'>): Promise<DocumentEntity> {
     const documentId = generateId('doc')
     const sanitized = {

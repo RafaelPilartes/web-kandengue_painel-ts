@@ -19,7 +19,7 @@ export interface RideInterface {
   duration: number
 
   type: RideType
-  details?: RideDetailsType
+  details?: RideDetailsType // se RideType == delivery
 
   created_at?: Date
   updated_at?: Date

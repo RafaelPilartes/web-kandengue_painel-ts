@@ -24,6 +24,7 @@ import { NotificationsPage } from '@/pages/main/Notifications'
 import { MetricsPage } from '@/pages/main/Metrics'
 import { SettingsPage } from '@/pages/main/Settings'
 import { WalletTopupRequestsPage } from '@/pages/main/Finances/walletTopupRequest'
+import { DriverViewPage } from '@/pages/main/Drivers/DriverDetails'
 
 // Page
 
@@ -56,6 +57,27 @@ export function Router() {
             }
           />
           {/* Driver */}
+          <Route
+            path={routsNameMain.users.drivers.index}
+            element={
+              <React.Suspense fallback={<Loading />}>
+                <Private>
+                  <DriverPage />
+                </Private>
+              </React.Suspense>
+            }
+          />
+          {/* Details */}
+          <Route
+            path={routsNameMain.users.drivers.view}
+            element={
+              <React.Suspense fallback={<Loading />}>
+                <Private>
+                  <DriverViewPage />
+                </Private>
+              </React.Suspense>
+            }
+          />
           <Route
             path={routsNameMain.users.drivers.index}
             element={

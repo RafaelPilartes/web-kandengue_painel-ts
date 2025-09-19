@@ -4,7 +4,7 @@ import type { VehicleInterface } from '@/interfaces/IVehicle'
 
 export class DriverEntity extends UserEntity implements DriverInterface {
   is_online: boolean
-  vehicle: VehicleInterface
+  vehicle?: VehicleInterface
   rating?: number
 
   constructor(params: DriverInterface) {

@@ -22,6 +22,7 @@ import { SelectCustom } from '@/components/selects/SelectCustom'
 import { rowPerPageOptions } from '@/data/selectOption'
 import { ModalCreateWallet } from './components/ModalCreate'
 import { ModalViewWallet } from './components/ModalView'
+import { mapFirebaseError } from '@/helpers/mapFirebaseError'
 
 export function WalletsPage() {
   // Filtros
@@ -94,8 +95,10 @@ export function WalletsPage() {
             icon: 'success'
           })
         } catch (error) {
+          const message = mapFirebaseError(error)
+
           swal('Erro ao aprovar', {
-            text: `Houve algum erro durante a o processo, ${String(error)}`,
+            text: `Houve algum erro durante o processo, ${String(message)}`,
             icon: 'error'
           })
         }
@@ -242,7 +245,7 @@ export function WalletsPage() {
           </p>
 
           <div className="flex flex-row justify-center items-center gap-4 mb-3 max-w-s-640:flex-wrap">
-            <div className="flex-1 flex flex-row justify-start items-center gap-4 max-w-s-520:flex-wrap">
+            <div className="flex flex-row max-w-s-640:w-full max-w-s-640:flex-col justify-center items-center gap-4 mb-3 max-w-s-640:flex-wrap">
               <span className="">Registos por página: </span>
 
               <span className="max-w-24">

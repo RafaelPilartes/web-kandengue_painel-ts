@@ -239,7 +239,7 @@ export function AdminPage() {
             </p>
 
             <div className="flex flex-row justify-center items-center gap-4 mb-3 max-w-s-640:flex-wrap">
-              <div className="flex-1 flex flex-row justify-start items-center gap-4 max-w-s-520:flex-wrap">
+              <div className="flex flex-row max-w-s-640:w-full max-w-s-640:flex-col justify-center items-center gap-4 mb-3 max-w-s-640:flex-wrap">
                 <span className="">Registos por página: </span>
 
                 <span className="max-w-24">

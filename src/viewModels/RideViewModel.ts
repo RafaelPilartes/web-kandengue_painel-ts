@@ -6,6 +6,8 @@ import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
 import { useMemo } from 'react'
 import { getRideStatusLabel, getRideTypeLabel } from '@/utils/gettersLabels'
+import type { BreakdownType, RideFareInterface } from '@/interfaces/IRideFare'
+import type { PayoutsType } from '@/types/ride'
 
 const rideService = new RideService()
 
@@ -101,6 +103,14 @@ export function useRidesViewModel(
         return total + (ride.fare?.payouts?.company_earnings || 0)
       }, 0)
   }
+  // Calculate Driver Earnings
+  function calculateDriverEarnings(rides: RideEntity[]): number {
+    return rides
+      .filter(ride => ride.status === 'completed') // só corridas concluídas
+      .reduce((total, ride) => {
+        return total + (ride.fare?.payouts?.driver_earnings || 0)
+      }, 0)
+  }
 
   // 🔹 transforma os dados em formato exportável
   const dataToExport = useMemo(() => {
@@ -124,6 +134,86 @@ export function useRidesViewModel(
     }))
   }, [ridesResponse?.data])
 
+  const metrics = useMemo(() => {
+    const totalRides = ridesResponse?.data.length ?? 0
+    let completed = 0
+    let canceled = 0
+    let totalRevenue = 0
+    let totalDistance = 0
+    let sumBaseFare = 0
+    let sumDistanceCost = 0
+    let sumWaitCost = 0
+    let sumInsurance = 0
+    let sumDiscount = 0
+    let sumDriverEarnings = 0
+    let sumCompanyEarnings = 0
+    let sumPensionFund = 0
+
+    if (ridesResponse?.data) {
+      for (const rideFor of ridesResponse?.data) {
+        const fare = rideFor.fare ?? ({} as RideFareInterface)
+        const breakdown = fare.breakdown ?? ({} as BreakdownType)
+        const payouts = fare.payouts ?? ({} as PayoutsType)
+
+        // totals
+        const totalFor = Number(fare.total ?? 0)
+        totalRevenue += totalFor
+
+        totalDistance += Number(rideFor.distance ?? 0)
+
+        sumBaseFare += Number(breakdown.base_fare ?? 0)
+        sumDistanceCost += Number(breakdown.distance_cost ?? 0)
+        sumWaitCost += Number(breakdown.wait_cost ?? 0)
+        sumInsurance += Number(breakdown.insurance_fee ?? 0)
+        sumDiscount += Number(breakdown.discount ?? 0)
+
+        sumDriverEarnings += Number(payouts.driver_earnings ?? 0)
+        sumCompanyEarnings += Number(payouts.company_earnings ?? 0)
+        sumPensionFund += Number(payouts.pension_fund ?? 0)
+
+        if (rideFor.status === 'completed') completed++
+        if (rideFor.status === 'canceled') canceled++
+      }
+    }
+
+    const avgTicket = totalRides === 0 ? 0 : totalRevenue / totalRides
+    const avgDistance = totalRides === 0 ? 0 : totalDistance / totalRides
+
+    return {
+      totalRides,
+      completed,
+      canceled,
+      totalRevenue,
+      avgTicket,
+      avgDistance,
+      breakdownTotals: {
+        base: sumBaseFare,
+        distance: sumDistanceCost,
+        wait: sumWaitCost,
+        insurance: sumInsurance,
+        discount: sumDiscount
+      },
+      payoutsTotals: {
+        driver: sumDriverEarnings,
+        company: sumCompanyEarnings,
+        pension: sumPensionFund
+      }
+    }
+  }, [ridesResponse])
+
+  /** 🔹 Buscar ride por field */
+  const fetchOneRideByField = async (
+    field: keyof RideEntity,
+    value: string
+  ) => {
+    try {
+      return await rideService.getOneByField(field, value)
+    } catch (err) {
+      console.error('Erro ao buscar corrida por campo:', err)
+      return null
+    }
+  }
+
   return {
     rides: ridesResponse?.data ?? [],
     pagination: ridesResponse?.pagination,
@@ -131,13 +221,17 @@ export function useRidesViewModel(
     error,
     refresh: refetch,
 
+    ridesMetrics: metrics,
+
     fetchAllRidesByField,
+    fetchOneRideByField,
 
     createRide,
     updateRide,
     deleteRide,
     fetchRideById,
     calculateCompanyProfit,
+    calculateDriverEarnings,
 
     dataToExport
   }

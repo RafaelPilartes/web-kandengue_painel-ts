@@ -9,6 +9,8 @@ export type UserStatus = 'active' | 'inactive' | 'pending' | 'banned'
 // =========================================================================
 
 export type VehicleType = 'car' | 'motorcycle' | 'bicycle' | 'truck' | 'scooter'
+export type VehicleStatusEnumType = 'under_analysis' | 'validated' | 'rejected'
+
 export type WalletStatusEnumType = 'active' | 'blocked'
 
 // =========================================================================

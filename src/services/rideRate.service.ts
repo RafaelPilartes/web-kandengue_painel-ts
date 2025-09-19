@@ -27,6 +27,19 @@ export class RideRateService {
     }
   }
 
+  // get one by custom field
+  async getOneByField(
+    field: string,
+    value: any
+  ): Promise<RideRateEntity | null> {
+    try {
+      return await rideRateRepository.getOneByField(field, value)
+    } catch (error: any) {
+      console.error(`Erro ao buscar rideRate por ${field}-${value}:`, error)
+      throw new Error(error.message || 'Erro ao buscar rideRate')
+    }
+  }
+
   // get by custom field
   async getAllByField(
     field: string,

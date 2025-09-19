@@ -36,6 +36,16 @@ export class AdminService {
     }
   }
 
+  // get one by custom field
+  async getOneByField(field: string, value: any): Promise<AdminEntity | null> {
+    try {
+      return await adminRepository.getOneByField(field, value)
+    } catch (error: any) {
+      console.error(`Erro ao buscar admin por ${field}-${value}:`, error)
+      throw new Error(error.message || 'Erro ao buscar admin')
+    }
+  }
+
   // get by custom field
   async getAllByField(
     field: string,

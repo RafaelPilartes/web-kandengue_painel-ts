@@ -65,7 +65,7 @@ export function useWalletTopupRequestsViewModel(
         offset
       )
     } catch (err) {
-      console.error('Erro ao buscar carteiras por campo:', err)
+      console.error('Erro ao buscar solicitações por campo:', err)
       return null
     }
   }
@@ -114,7 +114,20 @@ export function useWalletTopupRequestsViewModel(
     try {
       return await walletTopupRequestService.getById(id)
     } catch (err) {
-      console.error('Erro ao buscar carteira:', err)
+      console.error('Erro ao buscar solicitação:', err)
+      return null
+    }
+  }
+
+  /** 🔹 Buscar walletTopupRequest por field */
+  const fetchOneWalletTopupByField = async (
+    field: keyof WalletTopupRequestEntity,
+    value: string
+  ) => {
+    try {
+      return await walletTopupRequestService.getOneByField(field, value)
+    } catch (err) {
+      console.error('Erro ao buscar solicitação por campo:', err)
       return null
     }
   }
@@ -127,6 +140,7 @@ export function useWalletTopupRequestsViewModel(
     refresh: refetch,
 
     fetchAllWalletTopupRequestsByField,
+    fetchOneWalletTopupByField,
 
     createWalletTopupRequest,
     updateWalletTopupRequest,

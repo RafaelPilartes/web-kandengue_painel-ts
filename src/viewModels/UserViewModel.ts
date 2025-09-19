@@ -117,6 +117,19 @@ export function useUsersViewModel(
     }
   }
 
+  /** 🔹 Buscar user por field */
+  const fetchOneUserByField = async (
+    field: keyof UserEntity,
+    value: string
+  ) => {
+    try {
+      return await userService.getOneByField(field, value)
+    } catch (err) {
+      console.error('Erro ao buscar usuario por campo:', err)
+      return null
+    }
+  }
+
   return {
     users: usersResponse?.data ?? [],
     pagination: usersResponse?.pagination,
@@ -125,6 +138,7 @@ export function useUsersViewModel(
     refresh: refetch,
 
     fetchAllUsersByField,
+    fetchOneUserByField,
     fetchUserByEmail,
 
     createUser,

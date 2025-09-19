@@ -32,6 +32,7 @@ import { showToast } from '@/utils/toasts'
 import { ToastContainer } from 'react-toastify'
 import { useDriversViewModel } from '@/viewModels/DriverViewModel'
 import { mapUserToOptionsJson } from '@/utils/arrays'
+import { mapFirebaseError } from '@/helpers/mapFirebaseError'
 
 // 🔹 Schema de validação
 // const requiredStringField = (message = 'Campo obrigatório') => z.string(message)
@@ -147,7 +148,9 @@ export function ModalCreateWallet({
         }, 2000)
       }
     } catch (error) {
-      showToast('error', String(error))
+      const message = mapFirebaseError(error)
+
+      showToast('error', String(message))
       setIsSending(false)
     }
   }

@@ -21,6 +21,7 @@ import type { WalletTopupRequestInterface } from '@/interfaces/IWalletTopupReque
 import { useAdminStore } from '@/stores/userStore'
 import { SelectCustom } from '@/components/selects/SelectCustom'
 import { rowPerPageOptions } from '@/data/selectOption'
+import { mapFirebaseError } from '@/helpers/mapFirebaseError'
 
 export function WalletTopupRequestsPage() {
   // Filtros
@@ -128,8 +129,10 @@ export function WalletTopupRequestsPage() {
               icon: 'success'
             })
           } catch (error) {
+            const message = mapFirebaseError(error)
+
             swal('Erro ao rejeitar', {
-              text: 'Houve algum erro durante a rejeição...',
+              text: `Houve algum erro durante a rejeição, ${String(message)}`,
               icon: 'error'
             })
           }
@@ -270,7 +273,7 @@ export function WalletTopupRequestsPage() {
             <strong>{pagination?.count ?? 0}</strong> {namePageLowercase}
           </p>
           <div className="flex flex-row justify-center items-center gap-4 mb-3 max-w-s-640:flex-wrap">
-            <div className="flex-1 flex flex-row justify-start items-center gap-4 max-w-s-520:flex-wrap">
+            <div className="flex flex-row max-w-s-640:w-full max-w-s-640:flex-col justify-center items-center gap-4 mb-3 max-w-s-640:flex-wrap">
               <span className="">Registos por página: </span>
 
               <span className="max-w-24">

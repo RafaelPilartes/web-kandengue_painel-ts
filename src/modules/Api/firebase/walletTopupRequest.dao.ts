@@ -153,6 +153,21 @@ export class FirebaseWalletTopupRequestDAO
     return this.getAll(limit, offset, undefined, filters)
   }
 
+  async getOneByField(
+    field: string,
+    value: any
+  ): Promise<WalletTopupRequestEntity | null> {
+    const querySnapshot = await getDocs(
+      query(this.walletTopupRequestsRef, where(field, '==', value))
+    )
+    if (querySnapshot.empty) return null
+
+    const adminData = new WalletTopupRequestEntity({
+      ...(querySnapshot.docs[0].data() as WalletTopupRequestEntity)
+    })
+    return adminData
+  }
+
   async create(
     walletTopupRequest: Omit<WalletTopupRequestEntity, 'id'>
   ): Promise<WalletTopupRequestEntity> {

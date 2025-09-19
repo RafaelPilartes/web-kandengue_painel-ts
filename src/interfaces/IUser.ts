@@ -2,7 +2,7 @@ import type { UserStatus } from '../types/enum'
 
 export interface UserInterface {
   id?: string
-  entity_code: string
+  entity_code?: string
   photo?: string
   name: string
   email: string

@@ -97,6 +97,28 @@ export function useDocumentsViewModel(
     }
   }
 
+  /** 🔹 Buscar document por field */
+  const fetchOneDocumentsByField = async (
+    field: keyof DocumentEntity,
+    value: string
+  ) => {
+    try {
+      return await documentService.getOneByField(field, value)
+    } catch (err) {
+      console.error('Erro ao buscar documento por campo:', err)
+      return null
+    }
+  }
+
+  // Calculate Driver Earnings
+  function filterDocsBy(
+    documents: DocumentEntity[],
+    key: keyof DocumentEntity,
+    prop: string
+  ): DocumentEntity[] {
+    return documents.filter(document => document?.[key] === prop)
+  }
+
   return {
     documents: documentsResponse?.data ?? [],
     pagination: documentsResponse?.pagination,
@@ -105,10 +127,12 @@ export function useDocumentsViewModel(
     refresh: refetch,
 
     fetchAllDocumentsByField,
+    fetchOneDocumentsByField,
+    fetchDocumentById,
+    filterDocsBy,
 
     createDocument,
     updateDocument,
-    deleteDocument,
-    fetchDocumentById
+    deleteDocument
   }
 }

@@ -148,6 +148,21 @@ export class FirebaseRideTrackingDAO implements IRideTrackingRepository {
     return this.getAll(limit, offset, undefined, filters)
   }
 
+  async getOneByField(
+    field: string,
+    value: any
+  ): Promise<RideTrackingEntity | null> {
+    const querySnapshot = await getDocs(
+      query(this.rideTrackingsRef, where(field, '==', value))
+    )
+    if (querySnapshot.empty) return null
+
+    const adminData = new RideTrackingEntity({
+      ...(querySnapshot.docs[0].data() as RideTrackingEntity)
+    })
+    return adminData
+  }
+
   async create(
     rideTracking: Omit<RideTrackingEntity, 'id'>
   ): Promise<RideTrackingEntity> {

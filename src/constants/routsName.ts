@@ -13,7 +13,7 @@ export const routsNameMain = {
   users: {
     passengers: {
       index: '/users/passengers',
-      view: '/users/passengers/:clientId',
+      view: '/users/passengers/view/:clientId',
       viewStr: '/users/passengers/view/',
       create: '/users/passengers/create',
       edit: '/users/passengers/edit/:clientId'
@@ -21,7 +21,7 @@ export const routsNameMain = {
 
     drivers: {
       index: '/users/drivers',
-      view: '/users/drivers/:driverId',
+      view: '/users/drivers/view/:driverId',
       viewStr: '/users/drivers/view/',
       create: '/users/drivers/create',
       edit: '/users/drivers/edit/:driverId'
@@ -29,7 +29,7 @@ export const routsNameMain = {
 
     admins: {
       index: '/users/admins',
-      view: '/users/admins/:adminId',
+      view: '/users/admins/view/:adminId',
       viewStr: '/users/admins/view/',
       create: '/users/admins/create',
       edit: '/users/admins/edit/:adminId'
@@ -46,8 +46,7 @@ export const routsNameMain = {
     view: '/rides/view/:deliveryId',
     viewStr: '/rides/view/',
 
-    realtime: '/rides/realtime',
-    reports: '/rides/reports'
+    realtime: '/rides/realtime'
   },
 
   // ============================================

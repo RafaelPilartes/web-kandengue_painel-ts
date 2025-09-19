@@ -149,10 +149,25 @@ export class FirebaseNotificationDAO implements INotificationRepository {
     return this.getAll(limit, offset, undefined, filters)
   }
 
+  async getOneByField(
+    field: string,
+    value: any
+  ): Promise<NotificationEntity | null> {
+    const querySnapshot = await getDocs(
+      query(this.notificationsRef, where(field, '==', value))
+    )
+    if (querySnapshot.empty) return null
+
+    const notificationData = new NotificationEntity({
+      ...(querySnapshot.docs[0].data() as NotificationEntity)
+    })
+    return notificationData
+  }
+
   async create(
     notification: Omit<NotificationEntity, 'id'>
   ): Promise<NotificationEntity> {
-    const notificationId = generateId('doc')
+    const notificationId = generateId('nft')
     const sanitized = {
       ...this.sanitize(notification),
       id: notificationId,

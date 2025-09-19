@@ -113,6 +113,19 @@ export function useDriversViewModel(
     }
   }
 
+  /** 🔹 Buscar driver por field */
+  const fetchOneAdminByField = async (
+    field: keyof DriverEntity,
+    value: string
+  ) => {
+    try {
+      return await driverService.getOneByField(field, value)
+    } catch (err) {
+      console.error('Erro ao buscar motorista por campo:', err)
+      return null
+    }
+  }
+
   return {
     drivers: driversResponse?.data ?? [],
     pagination: driversResponse?.pagination,
@@ -121,6 +134,7 @@ export function useDriversViewModel(
     refresh: refetch,
 
     fetchAllDriversByField,
+    fetchOneAdminByField,
 
     createDriver,
     updateDriver,

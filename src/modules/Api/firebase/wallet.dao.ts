@@ -145,6 +145,18 @@ export class FirebaseWalletDAO implements IWalletRepository {
     return this.getAll(limit, offset, undefined, filters)
   }
 
+  async getOneByField(field: string, value: any): Promise<WalletEntity | null> {
+    const querySnapshot = await getDocs(
+      query(this.walletsRef, where(field, '==', value))
+    )
+    if (querySnapshot.empty) return null
+
+    const adminData = new WalletEntity({
+      ...(querySnapshot.docs[0].data() as WalletEntity)
+    })
+    return adminData
+  }
+
   async create(wallet: Omit<WalletEntity, 'id'>): Promise<WalletEntity> {
     const walletId = generateId('wt')
     const sanitized = {

@@ -17,6 +17,7 @@ export interface IAdminRepository {
     limit?: number,
     offset?: number
   ): Promise<ListResponseType<AdminEntity[]>>
+  getOneByField(field: string, value: any): Promise<AdminEntity | null>
   create(Admin: Omit<AdminEntity, 'id'>): Promise<AdminEntity>
   update(id: string, Admin: Partial<AdminEntity>): Promise<AdminEntity>
   delete(id: string): Promise<void>

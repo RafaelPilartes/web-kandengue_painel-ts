@@ -16,6 +16,7 @@ export interface IVehicleRepository {
     limit?: number,
     offset?: number
   ): Promise<ListResponseType<VehicleEntity[]>>
+  getOneByField(field: string, value: any): Promise<VehicleEntity | null>
   create(Vehicle: Omit<VehicleEntity, 'id'>): Promise<VehicleEntity>
   update(id: string, Vehicle: Partial<VehicleEntity>): Promise<VehicleEntity>
   delete(id: string): Promise<void>

@@ -32,6 +32,19 @@ export class NotificationService {
     }
   }
 
+  // get one by custom field
+  async getOneByField(
+    field: string,
+    value: any
+  ): Promise<NotificationEntity | null> {
+    try {
+      return await notificationRepository.getOneByField(field, value)
+    } catch (error: any) {
+      console.error(`Erro ao buscar notification por ${field}-${value}:`, error)
+      throw new Error(error.message || 'Erro ao buscar notification')
+    }
+  }
+
   // get by custom field
   async getAllByField(
     field: string,

@@ -25,6 +25,9 @@ import type { DriverInterface } from '@/interfaces/IDriver'
 // ViewModel
 import { useDriversViewModel } from '@/viewModels/DriverViewModel'
 import type { DriverEntity } from '@/core/entities/Driver'
+import { ModalCreateDriver } from './components/ModalCreateDriver'
+import { mapFirebaseError } from '@/helpers/mapFirebaseError'
+import { ModalEditDriver } from './components/ModalEditDriver'
 
 export function DriverPage() {
   const navigate = useNavigate()
@@ -86,6 +89,10 @@ export function DriverPage() {
     setDocsPerPage(rowsPerPage)
   }
 
+  // Abrir modal de Criação
+  function openModalCreateRow() {
+    setModalCreateRowIsOpen(true)
+  }
   // Abrir modal de edição
   function openModalEditRow(item: DriverInterface) {
     setRowSelect(item)
@@ -101,19 +108,32 @@ export function DriverPage() {
   function handleDeleteRow(id: string) {
     swal({
       title: 'Tem certeza?',
-      text: 'Uma vez excluído, você não poderá recuperar!',
+      text: 'Uma vez excluído, não poderá recuperar!',
       buttons: ['Cancelar', 'Confirmar'],
       icon: 'warning',
       dangerMode: true
     }).then(async willDelete => {
       if (willDelete) {
-        deleteDriver.mutate(id)
+        try {
+          await deleteDriver.mutateAsync(id)
+
+          swal('Excluído com sucesso', {
+            title: 'Usuario com sucesso',
+            icon: 'success'
+          })
+        } catch (error) {
+          const message = mapFirebaseError(error)
+
+          swal('Erro ao excluir', {
+            text: `Houve algum erro durante a exclusão, ${String(message)}`,
+            icon: 'error'
+          })
+        }
       } else {
-        swal('O registro está seguro!', { icon: 'error' })
+        swal('O usuario está seguro!', { icon: 'error' })
       }
     })
   }
-
   // Tabela
   const rowsTable = useMemo(
     () =>
@@ -154,7 +174,7 @@ export function DriverPage() {
       <div className="w-full flex flex-row justify-between items-end max-w-s-960:flex-col max-w-s-960:items-start gap-2">
         <div className="flex flex-row gap-4 items-center max-w-s-640:flex-col max-w-s-640:items-start">
           <button
-            onClick={() => setModalCreateRowIsOpen(true)}
+            onClick={openModalCreateRow}
             className="py-2 px-4 rounded-lg bg-primary-200 text-white hover:bg-primary-500 active:bg-primary-700 flex items-center gap-4 transition-all"
           >
             Cadastrar {namePageSingular}
@@ -238,7 +258,7 @@ export function DriverPage() {
               <strong>{pagination?.count ?? 0}</strong> {namePageLowercase}
             </p>
 
-            <div className="flex flex-row justify-center items-center gap-4 mb-3 max-w-s-640:flex-wrap">
+            <div className="flex flex-row max-w-s-640:w-full max-w-s-640:flex-col justify-center items-center gap-4 mb-3 max-w-s-640:flex-wrap">
               <div className="flex-1 flex flex-row justify-start items-center gap-4 max-w-s-520:flex-wrap">
                 <span className="">Registos por página: </span>
 
@@ -262,8 +282,19 @@ export function DriverPage() {
         </div>
       </div>
 
-      {/* {modalCreateRowIsOpen && <ModalCreateDriver ... />} */}
-      {/* {modalEditRowIsOpen && <ModalEditDriver ... />} */}
+      {modalCreateRowIsOpen && (
+        <ModalCreateDriver
+          modalCreateRowIsOpen={modalCreateRowIsOpen}
+          setModalCreateRowIsOpen={setModalCreateRowIsOpen}
+        />
+      )}
+      {modalEditRowIsOpen && rowSelect && (
+        <ModalEditDriver
+          modalEditRowIsOpen={modalEditRowIsOpen}
+          setModalEditRowIsOpen={setModalEditRowIsOpen}
+          baseInfo={rowSelect}
+        />
+      )}
     </div>
   )
 }

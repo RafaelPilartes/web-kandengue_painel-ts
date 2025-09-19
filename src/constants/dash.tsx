@@ -65,12 +65,6 @@ const dashItem = [
         icon: <Map size={16} />,
         to: routsNameMain.rides.realtime,
         notification: 0
-      },
-      {
-        label: 'Relatórios de Entregas',
-        icon: <BarChart2 size={16} />,
-        to: routsNameMain.rides.reports,
-        notification: 0
       }
     ],
     notification: 0,

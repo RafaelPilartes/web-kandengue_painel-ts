@@ -60,9 +60,9 @@ export class FirebaseRideDAO implements IRideRepository {
       const lower = search.toLowerCase()
       baseQuery = query(
         baseQuery,
-        orderBy('id'),
-        where('id', '>=', lower),
-        where('id', '<=', lower + '\uf8ff')
+        orderBy('created_at'),
+        where('driver.email', '>=', lower),
+        where('driver.email', '<=', lower + '\uf8ff')
       )
     } else {
       // padrão: ordena por createdAt (use o campo consistente no seu DB)
@@ -143,6 +143,18 @@ export class FirebaseRideDAO implements IRideRepository {
   ): Promise<ListResponseType<RideEntity[]>> {
     const filters: Partial<RideEntity> = { [field]: value } as any
     return this.getAll(limit, offset, undefined, filters)
+  }
+
+  async getOneByField(field: string, value: any): Promise<RideEntity | null> {
+    const querySnapshot = await getDocs(
+      query(this.ridesRef, where(field, '==', value))
+    )
+    if (querySnapshot.empty) return null
+
+    const rideData = new RideEntity({
+      ...(querySnapshot.docs[0].data() as RideEntity)
+    })
+    return rideData
   }
 
   async create(ride: Omit<RideEntity, 'id'>): Promise<RideEntity> {

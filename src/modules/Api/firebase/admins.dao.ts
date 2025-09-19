@@ -93,7 +93,7 @@ export class FirebaseAdminDAO implements IAdminRepository {
       const lower = search.toLowerCase()
       baseQuery = query(
         baseQuery,
-        orderBy('email'),
+        orderBy('created_at'),
         where('email', '>=', lower),
         where('email', '<=', lower + '\uf8ff')
       )
@@ -172,6 +172,19 @@ export class FirebaseAdminDAO implements IAdminRepository {
   async getByEmail(email: string): Promise<AdminEntity | null> {
     const querySnapshot = await getDocs(
       query(this.adminsRef, where('email', '==', email))
+    )
+    if (querySnapshot.empty) return null
+
+    const adminData = new AdminEntity({
+      id: querySnapshot.docs[0].id,
+      ...(querySnapshot.docs[0].data() as AdminEntity)
+    })
+    return adminData
+  }
+
+  async getOneByField(field: string, value: any): Promise<AdminEntity | null> {
+    const querySnapshot = await getDocs(
+      query(this.adminsRef, where(field, '==', value))
     )
     if (querySnapshot.empty) return null
 

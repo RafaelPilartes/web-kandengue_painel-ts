@@ -32,6 +32,19 @@ export class RideTrackingService {
     }
   }
 
+  // get one by custom field
+  async getOneByField(
+    field: string,
+    value: any
+  ): Promise<RideTrackingEntity | null> {
+    try {
+      return await rideTrackingRepository.getOneByField(field, value)
+    } catch (error: any) {
+      console.error(`Erro ao buscar rideTracking por ${field}-${value}:`, error)
+      throw new Error(error.message || 'Erro ao buscar rideTracking')
+    }
+  }
+
   // get by custom field
   async getAllByField(
     field: string,
