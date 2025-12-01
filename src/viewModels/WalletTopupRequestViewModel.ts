@@ -18,7 +18,7 @@ export function useWalletTopupRequestsViewModel(
 
   const filtersKey = filters ? JSON.stringify(filters) : ''
 
-  /** 🔹 Buscar lista de Carteiras */
+  /** Buscar lista de Carteiras */
   const {
     data: walletTopupRequestsResponse,
     isLoading: loading,
@@ -37,7 +37,7 @@ export function useWalletTopupRequestsViewModel(
     staleTime: 1000 * 60 // cache 1min
   })
 
-  // 🔹 transforma os dados em formato exportável
+  // transforma os dados em formato exportável
   const dataToExport = useMemo(() => {
     if (!walletTopupRequestsResponse?.data) return []
     return walletTopupRequestsResponse?.data.map(doc => ({
@@ -50,7 +50,7 @@ export function useWalletTopupRequestsViewModel(
     }))
   }, [walletTopupRequestsResponse?.data])
 
-  /** 🔹 Buscar lista de Carteiras por field */
+  /** Buscar lista de Carteiras por field */
   const fetchAllWalletTopupRequestsByField = async (
     field: string,
     value: any,
@@ -70,7 +70,7 @@ export function useWalletTopupRequestsViewModel(
     }
   }
 
-  /** 🔹 Criar carteira */
+  /** Criar carteira */
   const createWalletTopupRequest = useMutation({
     mutationFn: (walletTopupRequest: Omit<WalletTopupRequestEntity, 'id'>) =>
       walletTopupRequestService.create(walletTopupRequest),
@@ -81,7 +81,7 @@ export function useWalletTopupRequestsViewModel(
     }
   })
 
-  /** 🔹 Atualizar carteira */
+  /** Atualizar carteira */
   const updateWalletTopupRequest = useMutation({
     mutationFn: async ({
       id,
@@ -99,7 +99,7 @@ export function useWalletTopupRequestsViewModel(
     }
   })
 
-  /** 🔹 Deletar carteira */
+  /** Deletar carteira */
   const deleteWalletTopupRequest = useMutation({
     mutationFn: (id: string) => walletTopupRequestService.delete(id),
     onSuccess: () => {
@@ -109,7 +109,7 @@ export function useWalletTopupRequestsViewModel(
     }
   })
 
-  /** 🔹 Buscar carteira único (on-demand) */
+  /** Buscar carteira único (on-demand) */
   const fetchWalletTopupRequestById = async (id: string) => {
     try {
       return await walletTopupRequestService.getById(id)
@@ -119,7 +119,7 @@ export function useWalletTopupRequestsViewModel(
     }
   }
 
-  /** 🔹 Buscar walletTopupRequest por field */
+  /** Buscar walletTopupRequest por field */
   const fetchOneWalletTopupByField = async (
     field: keyof WalletTopupRequestEntity,
     value: string

@@ -1,11 +1,17 @@
 // pages/rides/RidesPage.tsx
-import { useState } from 'react'
-import { MapContainer, TileLayer, Marker, Polyline, Popup } from 'react-leaflet'
-import { Mail, Phone, Package, User } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Polyline,
+  Popup,
+  useMapEvents
+} from 'react-leaflet'
+import { Mail, Phone, Package, User, X } from 'lucide-react'
 import { useRidesViewModel } from '@/viewModels/RideViewModel'
 import { useRideTrackingsViewModel } from '@/viewModels/RideTrackingViewModel'
 import type { RideInterface } from '@/interfaces/IRide'
-import type { RideTrackingsInterface } from '@/interfaces/IRideTracking'
 import { getRideStatusLabel } from '@/utils/gettersLabels'
 import { CopyField } from '@/components/CopyField'
 import { formatDateTimeFromFirestore } from '@/utils/date'
@@ -15,19 +21,21 @@ import { SelectSearchableCustom } from '@/components/selects/SelectSearchableCus
 import { rideStatusOptions, rowPerPageOptions } from '@/data/selectOption'
 import useDirections from '@/hook/useDirections'
 import { snapToRoads } from '@/utils/snapToRoads'
-import { Spinner } from 'phosphor-react'
 import { colorRideStatus } from '@/utils/colorBy'
-import { Pagination } from '@/components/Pagination'
 import { SelectCustom } from '@/components/selects/SelectCustom'
 import {
   customCarIcon,
   customDropoffIcon,
   customPickupIcon
 } from '@/data/customPickupIcon'
+import { formatMoney } from '@/utils/number'
+import { RideSkeleton } from './components/RideSkeleton'
+import { StatusBadge } from './components/StatusBadge'
+import type { GeoLocationType } from '@/types/geoLocation'
+import { MapController } from './components/MapController'
 
 export function RealtimePage() {
   // Paginação
-  const [currentPage, setCurrentPage] = useState(0) // página atual (0-based)
   const [docsPerPage, setDocsPerPage] = useState(8) // limite por página
 
   // Filtros
@@ -35,35 +43,76 @@ export function RealtimePage() {
 
   const [filters, setFilters] = useState<Partial<RideInterface>>()
 
-  const { rides, pagination, isLoadingRides } = useRidesViewModel(
-    docsPerPage,
-    currentPage * docsPerPage,
-    termForSearch,
-    filters
-  )
+  const [ridesList, setRidesList] = useState<RideInterface[]>([])
+  const [isLoadingRides, setIsLoadingRides] = useState(true)
+
+  const { listenAll } = useRidesViewModel()
   const { rideTrackings } = useRideTrackingsViewModel()
   const { routeCoords, fetchRoute } = useDirections()
 
-  const [coords, setCoords] = useState<
+  const [coordsTracking, setCoordsTracking] = useState<
     { latitude: number; longitude: number }[]
   >([])
 
   const [selectedRide, setSelectedRide] = useState<RideInterface | null>(null)
-  const [selectedRideTracking, setSelectedRideTracking] =
-    useState<RideTrackingsInterface | null>(null)
 
-  const namePageLowercase = 'corridas'
+  const [mapCenter, setMapCenter] = useState<{
+    latitude: number
+    longitude: number
+  } | null>(null)
+  const [mapBounds, setMapBounds] = useState<{
+    pickup: GeoLocationType
+    dropoff: GeoLocationType
+  } | null>(null)
 
   const handleSelectRide = async (ride: RideInterface) => {
     setSelectedRide(ride)
 
-    fetchRoute(ride.pickup, ride.dropoff)
+    try {
+      // Centralizar no ponto médio entre pickup e dropoff
+      const centerLat = (ride.pickup.latitude + ride.dropoff.latitude) / 2
+      const centerLng = (ride.pickup.longitude + ride.dropoff.longitude) / 2
 
-    const tracking = rideTrackings.find(t => t.ride_id === ride.id)
-    setSelectedRideTracking(tracking || null)
+      setMapCenter({
+        latitude: centerLat,
+        longitude: centerLng
+      })
 
-    const snapped = await snapToRoads(tracking?.path || [])
-    setCoords(snapped)
+      // Definir bounds para mostrar ambos os pontos
+      setMapBounds({
+        pickup: ride.pickup,
+        dropoff: ride.dropoff
+      })
+
+      await fetchRoute(ride.pickup, ride.dropoff)
+
+      const tracking = rideTrackings.find(t => t.ride_id === ride.id)
+
+      const snapped = await snapToRoads(tracking?.path || [])
+      setCoordsTracking(snapped)
+    } catch (error) {
+      console.error('Erro ao carregar rota:', error)
+    }
+  }
+
+  // Componente para interações do mapa
+  const MapEvents = () => {
+    const map = useMapEvents({
+      zoomend: () => {
+        console.log('Zoom alterado para:', map.getZoom())
+      },
+      moveend: () => {
+        console.log('Mapa movido para:', map.getCenter())
+      }
+    })
+    return null
+  }
+
+  // Função para resetar a visualização
+  const handleResetView = () => {
+    setSelectedRide(null)
+    setMapCenter(null)
+    setMapBounds(null)
   }
 
   // Handle Select
@@ -84,11 +133,57 @@ export function RealtimePage() {
     setDocsPerPage(rowsPerPage)
   }
 
+  // Dados filtrados com useMemo
+  const filteredRides = useMemo(() => {
+    if (!termForSearch.trim()) return ridesList
+
+    const searchTerm = termForSearch.toLowerCase().trim()
+
+    return ridesList.filter(ride => {
+      // Busca em múltiplos campos
+      return (
+        // Email do motorista
+        ride.driver?.email?.toLowerCase().includes(searchTerm) ||
+        // Nome do motorista
+        ride.driver?.name?.toLowerCase().includes(searchTerm) ||
+        // Email do cliente
+        ride.user?.email?.toLowerCase().includes(searchTerm) ||
+        // Nome do cliente
+        ride.user?.name?.toLowerCase().includes(searchTerm) ||
+        // ID da corrida
+        ride.id?.toLowerCase().includes(searchTerm) ||
+        // Local de pickup
+        ride.pickup.name?.toLowerCase().includes(searchTerm) ||
+        ride.pickup.description?.toLowerCase().includes(searchTerm) ||
+        // Local de dropoff
+        ride.dropoff.name?.toLowerCase().includes(searchTerm) ||
+        ride.dropoff.description?.toLowerCase().includes(searchTerm)
+      )
+    })
+  }, [ridesList, termForSearch])
+
+  // Rides
+  useEffect(() => {
+    setIsLoadingRides(true)
+
+    const unsubscribeRides = listenAll(
+      rides => {
+        setRidesList(rides)
+        setIsLoadingRides(false)
+      },
+      {
+        filters,
+        limit: docsPerPage
+      }
+    )
+
+    return unsubscribeRides
+  }, [docsPerPage, filters])
   return (
     <div className="flex h-full w-full relative">
       {/* <SeedFirebaseButton /> */}
       {/* Sidebar Lista de Corridas */}
-      <div className="w-1/2 max-w-sm p-4 flex flex-col gap-3 overflow-y-auto">
+      <div className="w--full lg:w-1/2 xl:max-w-sm p-4 flex flex-col gap-3 overflow-y-auto">
         <h2 className="font-semibold text-lg mb-2">Lista de Corridas</h2>
         <div className="w-full max-w-sm">
           <InputWithButton
@@ -101,21 +196,24 @@ export function RealtimePage() {
         {/* Filtro por status */}
         <SelectSearchableCustom
           name="status"
-          label="Status"
+          label="Filtrar por Status"
           options={rideStatusOptions}
           onOptionChange={e => handleRideStatusChange(e as string)}
         />
 
-        {isLoadingRides && (
-          <div className="flex flex-row items-center justify-center w-full h-full">
-            <span className="text-gray-700 dark:text-gray-200 mr-4">
-              Carregando corridas...
-            </span>
-            <Spinner size={20} className="animate-spin text-primary-200" />
+        {isLoadingRides &&
+          Array.from({ length: 3 }).map((_, i) => <RideSkeleton key={i} />)}
+
+        {filteredRides.length === 0 && (
+          <div className="text-center py-8">
+            <p className="text-gray-500 dark:text-gray-400">
+              {termForSearch
+                ? `Nenhuma corrida encontrada para "${termForSearch}"`
+                : 'Nenhuma corrida disponível'}
+            </p>
           </div>
         )}
-
-        {rides.map(ride => (
+        {filteredRides.map(ride => (
           <div
             key={ride.id}
             onClick={() => handleSelectRide(ride)}
@@ -155,19 +253,23 @@ export function RealtimePage() {
                 <div className="w-full flex flex-row justify-between items-start gap-3">
                   <div className="flex-1 flex flex-col">
                     <span className="text-sm text-gray-500 dark:text-white">
-                      {ride.pickup.name}
+                      {ride.pickup.name ?? 'N/A'}
                     </span>
                     <span className="text-xs text-gray-400 dark:text-gray-300">
-                      {ride.pickup.description}
+                      {ride.pickup.description ?? 'N/A'}
                     </span>
                   </div>
 
                   <div className="flex flex-col">
                     <span className="text-sm text-gray-500 dark:text-white">
-                      {formatDateTimeFromFirestore(ride.created_at as any).date}
+                      {ride.created_at &&
+                        formatDateTimeFromFirestore(ride.created_at as any)
+                          .date}
                     </span>
                     <span className="text-xs text-gray-400 dark:text-gray-300">
-                      {formatDateTimeFromFirestore(ride.created_at as any).time}
+                      {ride.created_at &&
+                        formatDateTimeFromFirestore(ride.created_at as any)
+                          .time}
                     </span>
                   </div>
                 </div>
@@ -182,19 +284,23 @@ export function RealtimePage() {
                 <div className="w-full flex flex-row justify-between items-start gap-2">
                   <div className="flex-1 flex flex-col">
                     <span className="text-sm text-gray-500 dark:text-white">
-                      {ride.dropoff.name}
+                      {ride.dropoff.name ?? 'N/A'}
                     </span>
                     <span className="text-xs text-gray-400 dark:text-gray-300">
-                      {ride.dropoff.description}
+                      {ride.dropoff.description ?? 'N/A'}
                     </span>
                   </div>
 
                   <div className="flex flex-col">
                     <span className="text-sm text-gray-500 dark:text-white">
-                      {formatDateTimeFromFirestore(ride.updated_at as any).date}
+                      {ride.updated_at &&
+                        formatDateTimeFromFirestore(ride.updated_at as any)
+                          .date}
                     </span>
                     <span className="text-xs text-gray-400 dark:text-gray-300">
-                      {formatDateTimeFromFirestore(ride.updated_at as any).time}
+                      {ride.updated_at &&
+                        formatDateTimeFromFirestore(ride.updated_at as any)
+                          .time}
                     </span>
                   </div>
                 </div>
@@ -224,13 +330,6 @@ export function RealtimePage() {
         ))}
 
         <div className="pt-4 flex flex-col justify-between items-center gap-4 max-w-s-960:gap-3">
-          <p className="text-xs flex flex-row gap-1 whitespace-nowrap">
-            Mostrando
-            <strong>{rides?.length ? currentPage * docsPerPage + 1 : 0}</strong>
-            a<strong>{currentPage * docsPerPage + (rides?.length ?? 0)}</strong>
-            de
-            <strong>{pagination?.count ?? 0}</strong> {namePageLowercase}
-          </p>
           <div className="flex flex-col justify-center items-center gap-4 mb-3">
             <div className="w-full flex-1 flex flex-row justify-between items-center gap-4 max-w-s-520:flex-wrap">
               <span className="">Registos por página: </span>
@@ -244,12 +343,6 @@ export function RealtimePage() {
                 />
               </span>
             </div>
-            <Pagination
-              currentPage={currentPage}
-              totalDocs={pagination?.count ?? 0}
-              docsPerPage={docsPerPage}
-              onPageChange={setCurrentPage}
-            />
           </div>
         </div>
       </div>
@@ -265,10 +358,20 @@ export function RealtimePage() {
               ]}
               zoom={13}
               style={{ height: '100%', width: '100%', zIndex: 0 }}
+              scrollWheelZoom={true}
+              zoomControl={true}
             >
               <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
-              {/* <Polyline positions={selectedRide.path as any} color="blue" /> */}
+              {/* Controlador da centralização */}
+              <MapController
+                center={mapCenter || undefined}
+                bounds={mapBounds || undefined}
+                zoom={mapCenter ? 14 : 13}
+              />
+
+              {/* Eventos do mapa */}
+              <MapEvents />
 
               {/* Pickup */}
               <Marker
@@ -278,7 +381,7 @@ export function RealtimePage() {
                 ]}
                 icon={customPickupIcon}
               >
-                <Popup>Pickup</Popup>
+                <Popup>Local de recolha</Popup>
               </Marker>
 
               {/* Dropoff color green */}
@@ -289,37 +392,44 @@ export function RealtimePage() {
                 ]}
                 icon={customDropoffIcon}
               >
-                <Popup>Dropoff</Popup>
+                <Popup>Local de entrega</Popup>
               </Marker>
 
+              <Polyline
+                positions={coordsTracking.map(p => [p.latitude, p.longitude])}
+                color="gray"
+              />
+              {Array.isArray(routeCoords) && routeCoords.length > 2 && (
+                <Polyline
+                  positions={routeCoords.map(coord => [
+                    coord.latitude,
+                    coord.longitude
+                  ])}
+                  color="#0096FF"
+                />
+              )}
+              {/* Última posição = veículo atual */}
+              {coordsTracking.length >= 2 && (
+                <Marker
+                  position={[
+                    coordsTracking[coordsTracking.length - 1].latitude,
+                    coordsTracking[coordsTracking.length - 1].longitude
+                  ]}
+                  icon={customCarIcon}
+                >
+                  <Popup>Veículo em tempo real</Popup>
+                </Marker>
+              )}
               {/* Path do tracking */}
-              {selectedRideTracking && (
+              {coordsTracking && coordsTracking.length > 2 && (
                 <>
                   <Polyline
-                    positions={coords.map(p => [p.latitude, p.longitude])}
-                    color="gray"
+                    positions={coordsTracking.map(c => [
+                      c.latitude,
+                      c.longitude
+                    ])}
+                    color="blue"
                   />
-                  {routeCoords && (
-                    <Polyline
-                      positions={routeCoords.map(coord => [
-                        coord.latitude,
-                        coord.longitude
-                      ])}
-                      color="#0096FF"
-                    />
-                  )}
-                  {/* Última posição = veículo atual */}
-                  {coords.length > 0 && (
-                    <Marker
-                      position={[
-                        coords[coords.length - 2].latitude,
-                        coords[coords.length - 2].longitude
-                      ]}
-                      icon={customCarIcon}
-                    >
-                      <Popup>Veículo em tempo real</Popup>
-                    </Marker>
-                  )}
                 </>
               )}
             </MapContainer>
@@ -329,47 +439,193 @@ export function RealtimePage() {
         {/* Painel Detalhes */}
         {selectedRide && (
           <div className="fixed z-[2] right-4 top-28 xl:right-24 xl:top-48 lg:right-8 lg:top-36 md:right-8 md:top-36 sm:right-6 sm:top-32">
-            <div className="flex flex-col justify-center items-start">
-              {/* Motorista */}
-              <div className="w-72 bg-white dark:bg-dark p-4 flex flex-col gap-4 rounded-xl">
-                <div className="flex flex-row justify-start items-center gap-2">
-                  <div className="relative w-9 h-9 overflow-hidden">
-                    <img
-                      className="w-full h-full object-cover rounded-full"
-                      src={selectedRide.driver?.photo || '/default-avatar.png'}
-                      alt={selectedRide.driver?.name}
-                    />
-                  </div>
-                  <div className="flex flex-col justify-center items-start">
-                    <span className="text-dark dark:text-light font-semibold text-sm">
-                      {selectedRide.driver?.name}
-                    </span>
-                    <div>
-                      <span className="text-xs">
-                        {selectedRide.driver?.entity_code}
-                      </span>{' '}
-                      -{' '}
-                      <span className="text-xs">
-                        {selectedRide.driver?.rating}
-                      </span>
+            <div className="flex flex-col bg-white dark:bg-dark p-4 rounded-xl gap-4">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="text-base font-bold text-gray-900 dark:text-white">
+                    Detalhes da Corrida
+                  </h3>
+                  <span className="mt-1 text-xs">#{selectedRide.id}</span>
+                </div>
+                <button
+                  onClick={handleResetView}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Informações do Motorista */}
+              <div className="gap-2">
+                <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-3 text-sm">
+                  Motorista
+                </h4>
+                <div className="flex items-center gap-3">
+                  <img
+                    src={selectedRide.driver?.photo || '/default-avatar.png'}
+                    alt={selectedRide.driver?.name}
+                    className="w-10 h-10 rounded-full object-cover"
+                  />
+                  <div className="flex-1">
+                    <h5 className="font-medium text-gray-900 dark:text-white text-xs">
+                      {selectedRide.driver?.name || 'Não atribuído'}
+                    </h5>
+                    <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                      <span>{selectedRide.driver?.entity_code}</span>
+                      <span>•</span>
+                      <span>⭐ {selectedRide.driver?.rating || 'N/A'}</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-3">
+                <div className="mt-3 space-y-2">
                   <CopyField
                     icon={<Mail size={16} />}
-                    value={selectedRide.driver?.email as string}
+                    value={selectedRide.driver?.email || 'Não disponível'}
                   />
                   <CopyField
                     icon={<Phone size={16} />}
-                    value={selectedRide.driver?.phone as string}
+                    value={selectedRide.driver?.phone || 'Não disponível'}
                   />
+                </div>
+              </div>
+
+              {/* Informações do Cliente */}
+              <div className="gap-2">
+                <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-3 text-sm">
+                  Cliente
+                </h4>
+                <div className="flex items-center gap-3">
+                  <img
+                    src={selectedRide.user?.photo || '/default-avatar.png'}
+                    alt={selectedRide.user?.name}
+                    className="w-10 h-10 rounded-full object-cover"
+                  />
+                  <div className="flex-1">
+                    <h5 className="text-sm font-medium text-gray-900 dark:text-white">
+                      {selectedRide.user?.name || 'Cliente'}
+                    </h5>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {selectedRide.user?.email}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {selectedRide?.type === 'delivery' && selectedRide.details && (
+                <div className="border-t border-gray-700 dark:border-gray-500 pt-4">
+                  <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-3">
+                    Detalhes da Entrega
+                  </h4>
+                  <div className="space-y-3">
+                    <div>
+                      <span className="text-sm text-gray-500 dark:text-gray-400">
+                        Destinatário:
+                      </span>
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-full flex items-center justify-center">
+                          <User
+                            size={24}
+                            className="text-blue-600 dark:text-blue-400"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium">
+                            {selectedRide.details.receiver.name}
+                          </p>
+                          <p className="text-sm">
+                            {selectedRide.details.receiver.phone}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    {/* Item */}
+                    <div>
+                      <span className="text-sm text-gray-500 dark:text-gray-400">
+                        Item:
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <Package size={16} />
+                        <span>{selectedRide.details.item.type}</span>
+                        <span className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
+                          {selectedRide.details.item.size}
+                        </span>
+                      </div>
+                      {selectedRide.details.item.description && (
+                        <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                          {selectedRide.details.item.description}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Status e Timeline */}
+              <div className="border-t border-gray-700 dark:border-gray-500 pt-4 space-y-4">
+                <div>
+                  <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-2 text-sm">
+                    Status da Corrida
+                  </h4>
+                  <div className="flex items-center justify-between">
+                    <StatusBadge status={selectedRide.status} />
+
+                    <div className="text-left">
+                      <div className="text-sm font-medium">
+                        AOA {formatMoney(selectedRide.fare.total || 0)}
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        Total
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Timeline simples */}
+                <div className="pt-4 border-t border-gray-700 dark:border-gray-500">
+                  <div className="mb-2">
+                    <div className="font-medium">Data</div>
+                    <div className="text-gray-500 dark:text-gray-400">
+                      {
+                        formatDateTimeFromFirestore(
+                          selectedRide.created_at as any
+                        ).date
+                      }
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between text-sm">
+                    <div>
+                      <div className="font-medium">Início</div>
+                      <div className="text-gray-500 dark:text-gray-400">
+                        {selectedRide.created_at &&
+                          formatDateTimeFromFirestore(
+                            selectedRide.created_at as any
+                          ).time}
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="font-medium">Duração</div>
+                      <div className="text-gray-500 dark:text-gray-400">
+                        {selectedRide.duration || '--'} min
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-medium">Atualização</div>
+                      <div className="text-gray-500 dark:text-gray-400">
+                        {selectedRide.updated_at &&
+                          formatDateTimeFromFirestore(
+                            selectedRide.updated_at as any
+                          ).time}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         )}
+
         {!selectedRide && (
           <div className="fixed z-[2] w-96 top-3/4 left-3/4 -translate-x-3/4 -translate-y-3/4">
             <div className="flex flex-col gap-2 items-center justify-center">

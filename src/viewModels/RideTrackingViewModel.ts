@@ -17,7 +17,7 @@ export function useRideTrackingsViewModel(
 
   const filtersKey = filters ? JSON.stringify(filters) : ''
 
-  /** 🔹 Buscar lista de trajetorias de viagens */
+  /** Buscar lista de trajetorias de viagens */
   const {
     data: rideTrackingsResponse,
     isLoading: loading,
@@ -36,7 +36,7 @@ export function useRideTrackingsViewModel(
     staleTime: 1000 * 60 // cache 1min
   })
 
-  /** 🔹 Buscar lista de trajetorias de viagens por field */
+  /** Buscar lista de trajetorias de viagens por field */
   const fetchAllRideTrackingsByField = async (
     field: string,
     value: any,
@@ -56,7 +56,7 @@ export function useRideTrackingsViewModel(
     }
   }
 
-  /** 🔹 Criar trajetoria de viagem */
+  /** Criar trajetoria de viagem */
   const createRideTracking = useMutation({
     mutationFn: (rideTracking: Omit<RideTrackingEntity, 'id'>) =>
       rideTrackingService.create(rideTracking),
@@ -67,7 +67,7 @@ export function useRideTrackingsViewModel(
     }
   })
 
-  /** 🔹 Atualizar trajetoria de viagem */
+  /** Atualizar trajetoria de viagem */
   const updateRideTracking = useMutation({
     mutationFn: ({
       id,
@@ -83,7 +83,7 @@ export function useRideTrackingsViewModel(
     }
   })
 
-  /** 🔹 Deletar trajetoria de viagem */
+  /** Deletar trajetoria de viagem */
   const deleteRideTracking = useMutation({
     mutationFn: (id: string) => rideTrackingService.delete(id),
     onSuccess: () => {
@@ -93,7 +93,7 @@ export function useRideTrackingsViewModel(
     }
   })
 
-  /** 🔹 Buscar trajetoria de viagem único (on-demand) */
+  /** Buscar trajetoria de viagem único (on-demand) */
   const fetchRideTrackingById = async (id: string) => {
     try {
       return await rideTrackingService.getById(id)
@@ -103,7 +103,7 @@ export function useRideTrackingsViewModel(
     }
   }
 
-  /** 🔹 Buscar rideTracking por field */
+  /** Buscar rideTracking por field */
   const fetchOneRideTrackingByField = async (
     field: keyof RideTrackingEntity,
     value: string

@@ -19,7 +19,7 @@ export function useUsersViewModel(
 
   const filtersKey = filters ? JSON.stringify(filters) : ''
 
-  /** 🔹 Buscar lista de usuários */
+  /** Buscar lista de usuários */
   const {
     data: usersResponse,
     isLoading: loading,
@@ -37,7 +37,7 @@ export function useUsersViewModel(
     staleTime: 1000 * 60 // cache 1min
   })
 
-  // 🔹 transforma os dados em formato exportável
+  // transforma os dados em formato exportável
   const dataToExport = useMemo(() => {
     if (!usersResponse?.data) return []
     return usersResponse?.data.map(doc => ({
@@ -51,7 +51,7 @@ export function useUsersViewModel(
     }))
   }, [usersResponse?.data])
 
-  /** 🔹 Buscar lista de usuários por field */
+  /** Buscar lista de usuários por field */
   const fetchAllUsersByField = async (
     field: string,
     value: any,
@@ -66,7 +66,7 @@ export function useUsersViewModel(
     }
   }
 
-  /** 🔹 Criar usuário */
+  /** Criar usuário */
   const createUser = useMutation({
     mutationFn: (user: Omit<UserEntity, 'id'>) => userService.create(user),
     onSuccess: () => {
@@ -76,7 +76,7 @@ export function useUsersViewModel(
     }
   })
 
-  /** 🔹 Atualizar usuário */
+  /** Atualizar usuário */
   const updateUser = useMutation({
     mutationFn: ({ id, user }: { id: string; user: Partial<UserEntity> }) =>
       userService.update(id, user),
@@ -87,7 +87,7 @@ export function useUsersViewModel(
     }
   })
 
-  /** 🔹 Deletar usuário */
+  /** Deletar usuário */
   const deleteUser = useMutation({
     mutationFn: (id: string) => userService.delete(id),
     onSuccess: () => {
@@ -97,7 +97,7 @@ export function useUsersViewModel(
     }
   })
 
-  /** 🔹 Buscar usuário único (on-demand) */
+  /** Buscar usuário único (on-demand) */
   const fetchUserById = async (id: string) => {
     try {
       return await userService.getById(id)
@@ -107,7 +107,7 @@ export function useUsersViewModel(
     }
   }
 
-  /** 🔹 Buscar usuário único (on-demand) */
+  /** Buscar usuário único (on-demand) */
   const fetchUserByEmail = async (email: string) => {
     try {
       return await userService.getByEmail(email)
@@ -117,7 +117,7 @@ export function useUsersViewModel(
     }
   }
 
-  /** 🔹 Buscar user por field */
+  /** Buscar user por field */
   const fetchOneUserByField = async (
     field: keyof UserEntity,
     value: string

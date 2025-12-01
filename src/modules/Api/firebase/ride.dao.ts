@@ -14,7 +14,14 @@ import {
   orderBy,
   limit as fbLimit,
   startAfter,
-  getCountFromServer
+  getCountFromServer,
+  onSnapshot
+} from 'firebase/firestore'
+import type {
+  DocumentChange,
+  Query,
+  QueryDocumentSnapshot,
+  QuerySnapshot
 } from 'firebase/firestore'
 import { db } from '@/config/firebase.config'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
@@ -24,7 +31,7 @@ import { generateId } from '@/helpers/generateId'
 export class FirebaseRideDAO implements IRideRepository {
   private ridesRef = collection(db, firebaseCollections.rides.root)
 
-  // 🔹 Remove campos undefined antes de salvar
+  // Remove campos undefined antes de salvar
   private sanitize<T extends Record<string, any>>(data: T): T {
     return Object.fromEntries(
       Object.entries(data).filter(([_, v]) => v !== undefined)
@@ -44,7 +51,7 @@ export class FirebaseRideDAO implements IRideRepository {
     return q
   }
 
-  /** 🔹 Listar rides com paginação + pesquisa opcional */
+  /** Listar rides com paginação + pesquisa opcional */
   async getAll(
     limitValue: number = 500,
     offset = 0,
@@ -186,5 +193,181 @@ export class FirebaseRideDAO implements IRideRepository {
 
   async delete(id: string): Promise<void> {
     await deleteDoc(doc(this.ridesRef, id))
+  }
+
+  // --------------------------------------------------------------------
+  // 🔥 REALTIME LISTENERS
+  // --------------------------------------------------------------------
+
+  listenById(
+    id: string,
+    onUpdate: (driver: RideEntity) => void,
+    onError?: (err: Error) => void
+  ) {
+    const ref = doc(this.ridesRef, id)
+    return onSnapshot(
+      ref,
+      snap => {
+        if (snap.exists()) {
+          const data = snap.data() as RideEntity
+          onUpdate(new RideEntity({ id: snap.id, ...data }))
+        }
+      },
+      err => onError?.(err)
+    )
+  }
+
+  listenByField(
+    field: keyof RideEntity,
+    value: string,
+    onUpdate: (driver: RideEntity) => void,
+    onError?: (err: Error) => void
+  ) {
+    const ref = query(this.ridesRef, where(field, '==', value))
+    return onSnapshot(
+      ref,
+      snap => {
+        snap.docChanges().forEach((change: DocumentChange) => {
+          if (change.type === 'added') {
+            const data = change.doc.data() as RideEntity
+            onUpdate(new RideEntity({ id: change.doc.id, ...data }))
+          }
+        })
+      },
+      err => onError?.(err)
+    )
+  }
+
+  /**
+   * 🔹 LISTEN ALL BY FIELD: Escuta TODAS as corridas que correspondem ao filtro
+   * Retorna o array completo a cada atualização
+   */
+  listenAllByField(
+    field: keyof RideEntity,
+    value: any,
+    onUpdate: (rides: RideEntity[]) => void,
+    onError?: (err: Error) => void,
+    options: {
+      limit?: number
+      orderBy?: keyof RideEntity
+      orderDirection?: 'asc' | 'desc'
+    } = {}
+  ): () => void {
+    const {
+      limit = 50,
+      orderBy: orderByField = 'created_at',
+      orderDirection = 'desc'
+    } = options
+
+    try {
+      // Construir query base
+      let baseQuery: Query = query(this.ridesRef, where(field, '==', value))
+
+      // Aplicar ordenação
+      baseQuery = query(
+        baseQuery,
+        orderBy(orderByField as string, orderDirection)
+      )
+
+      // Aplicar limite se especificado
+      if (limit > 0) {
+        baseQuery = query(baseQuery, fbLimit(limit))
+      }
+
+      return onSnapshot(
+        baseQuery,
+        (snapshot: QuerySnapshot) => {
+          const rides: RideEntity[] = []
+
+          snapshot.forEach((doc: QueryDocumentSnapshot) => {
+            const data = doc.data() as RideEntity
+            const ride = new RideEntity({ id: doc.id, ...data })
+            rides.push(ride)
+          })
+
+          console.log(
+            `📡 [listenAllByField] ${field}=${value}: ${rides.length} corridas`
+          )
+          onUpdate(rides)
+        },
+        err => {
+          console.error(`Erro no listenerAll por ${field}=${value}:`, err)
+          onError?.(err)
+        }
+      )
+    } catch (error) {
+      console.error(
+        `Erro ao configurar listenerAll por ${field}=${value}:`,
+        error
+      )
+      onError?.(error as Error)
+      return () => {} // Retorna função vazia em caso de erro
+    }
+  }
+
+  /**
+   * 🔹 LISTEN ALL: Escuta TODAS as corridas com filtros opcionais
+   */
+  listenAll(
+    onUpdate: (rides: RideEntity[]) => void,
+    onError?: (err: Error) => void,
+    options: {
+      filters?: Partial<RideEntity>
+      limit?: number
+      orderBy?: keyof RideEntity
+      orderDirection?: 'asc' | 'desc'
+    } = {}
+  ): () => void {
+    const {
+      filters,
+      limit = 100,
+      orderBy: orderByField = 'created_at',
+      orderDirection = 'desc'
+    } = options
+
+    try {
+      // Construir query base
+      let baseQuery: Query = this.ridesRef
+
+      // Aplicar filtros
+      if (filters) {
+        baseQuery = this.applyFilters(baseQuery, filters)
+      }
+
+      // Aplicar ordenação
+      baseQuery = query(
+        baseQuery,
+        orderBy(orderByField as string, orderDirection)
+      )
+
+      // Aplicar limite
+      if (limit > 0) {
+        baseQuery = query(baseQuery, fbLimit(limit))
+      }
+
+      return onSnapshot(
+        baseQuery,
+        (snapshot: QuerySnapshot) => {
+          const rides: RideEntity[] = []
+
+          snapshot.forEach((doc: QueryDocumentSnapshot) => {
+            const data = doc.data() as RideEntity
+            const ride = new RideEntity({ id: doc.id, ...data })
+            rides.push(ride)
+          })
+
+          console.log(`📡 [listenAll] ${rides.length} corridas`)
+          onUpdate(rides)
+        },
+        err => {
+          console.error('Erro no listenerAll de corridas:', err)
+          onError?.(err)
+        }
+      )
+    } catch (error) {
+      console.error('Erro ao configurar listenerAll:', error)
+      onError?.(error as Error)
+      return () => {}
+    }
   }
 }

@@ -24,7 +24,7 @@ import { generateId } from '@/helpers/generateId'
 export class FirebaseWalletDAO implements IWalletRepository {
   private walletsRef = collection(db, firebaseCollections.wallets.root)
 
-  // 🔹 Remove campos undefined antes de salvar
+  // Remove campos undefined antes de salvar
   private sanitize<T extends Record<string, any>>(data: T): T {
     return Object.fromEntries(
       Object.entries(data).filter(([_, v]) => v !== undefined)
@@ -44,7 +44,7 @@ export class FirebaseWalletDAO implements IWalletRepository {
     return q
   }
 
-  /** 🔹 Listar wallets com paginação + pesquisa opcional */
+  /** Listar wallets com paginação + pesquisa opcional */
   async getAll(
     limitValue: number = 500,
     offset = 0,

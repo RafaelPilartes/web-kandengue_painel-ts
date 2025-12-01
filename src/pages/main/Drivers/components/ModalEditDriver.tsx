@@ -10,10 +10,8 @@ import { z } from 'zod'
 
 import { useFileUploadViewModel } from '@/viewModels/FileUploadViewModel'
 import { useDriversViewModel } from '@/viewModels/DriverViewModel'
-import { statusOptions } from '@/data/selectOption'
 
 import { CustomInput } from '@/components/input/InputLabel'
-import { SelectCustomZod } from '@/components/selects/SelectCustomZod'
 import { customStylesModalCenter } from '@/styles/custom/modals'
 
 import type { modalEditType } from '@/types/modal'
@@ -27,9 +25,6 @@ const formSchema = z.object({
   name: z.string().min(3, 'O nome é obrigatório'),
   email: z.string().email('E-mail inválido'),
   phone: z.string().min(3, 'Telefone obrigatório'),
-  status: z.enum(['active', 'inactive', 'pending'], {
-    error: () => ({ message: "Selecione 'Ativo', 'Inativo' ou 'Pendente'" })
-  })
 })
 type formType = z.infer<typeof formSchema>
 
@@ -59,7 +54,6 @@ export function ModalEditDriver({
       name: baseInfo?.name || '',
       email: baseInfo?.email || '',
       phone: baseInfo?.phone || '',
-      status: (baseInfo?.status as any) || 'active'
     }
   })
 
@@ -69,7 +63,6 @@ export function ModalEditDriver({
         name: baseInfo.name,
         email: baseInfo.email,
         phone: baseInfo.phone,
-        status: baseInfo.status as any
       })
       setImagePreview(baseInfo.photo || '')
     }
@@ -253,15 +246,6 @@ export function ModalEditDriver({
                 error={errors.phone}
               />
             </div>
-
-            <SelectCustomZod
-              name="status"
-              label="Estado da conta"
-              control={control}
-              error={errors.status}
-              options={statusOptions}
-              onOptionChange={() => null}
-            />
 
             <div className="w-full pt-4 flex justify-between items-center border-t border-gray-600">
               <button

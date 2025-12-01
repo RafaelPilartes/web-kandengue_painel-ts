@@ -34,7 +34,7 @@ import { useDriversViewModel } from '@/viewModels/DriverViewModel'
 import { mapUserToOptionsJson } from '@/utils/arrays'
 import { mapFirebaseError } from '@/helpers/mapFirebaseError'
 
-// 🔹 Schema de validação
+// Schema de validação
 // const requiredStringField = (message = 'Campo obrigatório') => z.string(message)
 
 const formSchema = z.object({
@@ -111,7 +111,7 @@ export function ModalCreateWallet({
     }
   }
 
-  // 🔹 Função para enviar formulário
+  // Função para enviar formulário
   async function handleSubmitForm(dataForm: formType) {
     setIsSending(true)
 
@@ -155,7 +155,7 @@ export function ModalCreateWallet({
     }
   }
 
-  // 🔹 Buscar motoristas
+  // Buscar motoristas
   async function fetchDriverData() {
     if (drivers.length >= 1) {
       const arrayData = drivers

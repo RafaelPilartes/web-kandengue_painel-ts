@@ -11,7 +11,7 @@ import {
 import type { User, UserCredential } from 'firebase/auth'
 
 export class AuthService {
-  /** 🔹 Login */
+  /** Login */
   async login(email: string, password: string): Promise<UserCredential> {
     if (!email || !password) {
       throw new Error('E-mail e senha são obrigatórios')
@@ -34,7 +34,7 @@ export class AuthService {
     }
   }
 
-  /** 🔹 Registrar novo usuário */
+  /** Registrar novo usuário */
   async register(
     email: string,
     password: string,
@@ -63,7 +63,7 @@ export class AuthService {
     }
   }
 
-  /** 🔹 Resetar senha por email */
+  /** Resetar senha por email */
   async resetPassword(email: string): Promise<void> {
     try {
       await sendPasswordResetEmail(auth, email)
@@ -73,7 +73,7 @@ export class AuthService {
     }
   }
 
-  /** 🔹 Alterar senha logado */
+  /** Alterar senha logado */
   async changePassword(newPassword: string): Promise<void> {
     const user = auth.currentUser
     if (!user) throw new Error('Usuário não autenticado')
@@ -86,12 +86,12 @@ export class AuthService {
     }
   }
 
-  /** 🔹 Retorna usuário atual */
+  /** Retorna usuário atual */
   getCurrentUser(): User | null {
     return auth.currentUser
   }
 
-  /** 🔹 Listener para mudanças no estado da auth */
+  /** Listener para mudanças no estado da auth */
   onAuthChanged(callback: (user: User | null) => void) {
     return onAuthStateChanged(auth, callback)
   }

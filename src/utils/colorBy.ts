@@ -6,9 +6,9 @@ import type {
 
 export const colorRideStatus = (status: RideStatusType): string => {
   switch (status) {
-    case 'pending':
+    case 'idle':
       return 'bg-yellow-100 text-yellow-600'
-    case 'accepting_pending':
+    case 'pending':
       return 'bg-yellow-100 text-yellow-600'
     case 'driver_on_the_way':
       return 'bg-purple-100 text-purple-600'
@@ -26,9 +26,9 @@ export const colorRideStatus = (status: RideStatusType): string => {
 }
 export const colorRideStatusSimple = (status: RideStatusType): any => {
   switch (status) {
-    case 'pending':
+    case 'idle':
       return 'yellow'
-    case 'accepting_pending':
+    case 'pending':
       return 'yellow'
     case 'driver_on_the_way':
       return 'purple'

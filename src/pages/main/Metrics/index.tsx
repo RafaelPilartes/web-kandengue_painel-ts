@@ -227,6 +227,7 @@ export function MetricsPage() {
           data: counts,
           tension: 0.3,
           fill: false,
+          backgroundColor: 'rgba(235, 37, 37, 0.6)',
           borderWidth: 2
         }
       ]

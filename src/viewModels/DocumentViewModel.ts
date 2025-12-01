@@ -17,7 +17,7 @@ export function useDocumentsViewModel(
 
   const filtersKey = filters ? JSON.stringify(filters) : ''
 
-  /** 🔹 Buscar lista de documentos */
+  /** Buscar lista de documentos */
   const {
     data: documentsResponse,
     isLoading: loading,
@@ -35,7 +35,7 @@ export function useDocumentsViewModel(
     staleTime: 1000 * 60 // cache 1min
   })
 
-  /** 🔹 Buscar lista de documentos por field */
+  /** Buscar lista de documentos por field */
   const fetchAllDocumentsByField = async (
     field: string,
     value: any,
@@ -50,7 +50,7 @@ export function useDocumentsViewModel(
     }
   }
 
-  /** 🔹 Criar documento */
+  /** Criar documento */
   const createDocument = useMutation({
     mutationFn: (document: Omit<DocumentEntity, 'id'>) =>
       documentService.create(document),
@@ -61,7 +61,7 @@ export function useDocumentsViewModel(
     }
   })
 
-  /** 🔹 Atualizar documento */
+  /** Atualizar documento */
   const updateDocument = useMutation({
     mutationFn: ({
       id,
@@ -77,7 +77,7 @@ export function useDocumentsViewModel(
     }
   })
 
-  /** 🔹 Deletar documento */
+  /** Deletar documento */
   const deleteDocument = useMutation({
     mutationFn: (id: string) => documentService.delete(id),
     onSuccess: () => {
@@ -87,7 +87,7 @@ export function useDocumentsViewModel(
     }
   })
 
-  /** 🔹 Buscar documento único (on-demand) */
+  /** Buscar documento único (on-demand) */
   const fetchDocumentById = async (id: string) => {
     try {
       return await documentService.getById(id)
@@ -97,7 +97,7 @@ export function useDocumentsViewModel(
     }
   }
 
-  /** 🔹 Buscar document por field */
+  /** Buscar document por field */
   const fetchOneDocumentsByField = async (
     field: keyof DocumentEntity,
     value: string

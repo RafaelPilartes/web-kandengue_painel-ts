@@ -4,7 +4,7 @@ import { RideService } from '@/services/ride.service'
 import { RideEntity } from '@/core/entities/Ride'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { getRideStatusLabel, getRideTypeLabel } from '@/utils/gettersLabels'
 import type { BreakdownType, RideFareInterface } from '@/interfaces/IRideFare'
 import type { PayoutsType } from '@/types/ride'
@@ -21,7 +21,7 @@ export function useRidesViewModel(
 
   const filtersKey = filters ? JSON.stringify(filters) : ''
 
-  /** 🔹 Buscar lista de corridas */
+  /** Buscar lista de corridas */
   const {
     data: ridesResponse,
     isLoading: loading,
@@ -36,10 +36,11 @@ export function useRidesViewModel(
       filtersKey
     ],
     queryFn: () => rideService.getAll(limit, offset, searchTerm, filters),
-    staleTime: 1000 * 60 // cache 1min
+    staleTime: 2000 // cache 1min
+    // staleTime: 1000 * 60 // cache 1min
   })
 
-  /** 🔹 Buscar lista de corridas por field */
+  /** Buscar lista de corridas por field */
   const fetchAllRidesByField = async (
     field: string,
     value: any,
@@ -54,7 +55,7 @@ export function useRidesViewModel(
     }
   }
 
-  /** 🔹 Criar corrida */
+  /** Criar corrida */
   const createRide = useMutation({
     mutationFn: (ride: Omit<RideEntity, 'id'>) => rideService.create(ride),
     onSuccess: () => {
@@ -64,7 +65,7 @@ export function useRidesViewModel(
     }
   })
 
-  /** 🔹 Atualizar corrida */
+  /** Atualizar corrida */
   const updateRide = useMutation({
     mutationFn: ({ id, ride }: { id: string; ride: Partial<RideEntity> }) =>
       rideService.update(id, ride),
@@ -75,7 +76,7 @@ export function useRidesViewModel(
     }
   })
 
-  /** 🔹 Deletar corrida */
+  /** Deletar corrida */
   const deleteRide = useMutation({
     mutationFn: (id: string) => rideService.delete(id),
     onSuccess: () => {
@@ -85,7 +86,7 @@ export function useRidesViewModel(
     }
   })
 
-  /** 🔹 Buscar corrida único (on-demand) */
+  /** Buscar corrida único (on-demand) */
   const fetchRideById = async (id: string) => {
     try {
       return await rideService.getById(id)
@@ -103,6 +104,16 @@ export function useRidesViewModel(
         return total + (ride.fare?.payouts?.company_earnings || 0)
       }, 0)
   }
+
+  // Calculate Passenger Expenses
+  function calculatePassengerExpenses(rides: RideEntity[]): number {
+    return rides
+      .filter(ride => ride.status === 'completed') // só corridas concluídas
+      .reduce((total, ride) => {
+        return total + (ride.fare?.total || 0)
+      }, 0)
+  }
+
   // Calculate Driver Earnings
   function calculateDriverEarnings(rides: RideEntity[]): number {
     return rides
@@ -112,7 +123,7 @@ export function useRidesViewModel(
       }, 0)
   }
 
-  // 🔹 transforma os dados em formato exportável
+  // transforma os dados em formato exportável
   const dataToExport = useMemo(() => {
     if (!ridesResponse?.data) return []
     return ridesResponse?.data.map(doc => ({
@@ -201,7 +212,7 @@ export function useRidesViewModel(
     }
   }, [ridesResponse])
 
-  /** 🔹 Buscar ride por field */
+  /** Buscar ride por field */
   const fetchOneRideByField = async (
     field: keyof RideEntity,
     value: string
@@ -213,6 +224,91 @@ export function useRidesViewModel(
       return null
     }
   }
+
+  /** 🔹 Escutar corrida específico em tempo real */
+  const rideListenerRef = useRef<null | (() => void)>(null)
+  const listenRideRealtime = (
+    id: string,
+    onUpdate: (d: RideEntity) => void
+  ) => {
+    if (rideListenerRef.current) {
+      rideListenerRef.current() // remove anterior
+    }
+    const unsubscribe = rideService.listenRideRealtime(id, onUpdate, err =>
+      console.error('Erro listener corrida:', err)
+    )
+    rideListenerRef.current = unsubscribe
+  }
+
+  /** 🔹 Escutar corrida pelo campo em tempo real */
+  const fieldListenerRef = useRef<null | (() => void)>(null)
+  const listenByField = (
+    field: keyof RideEntity,
+    value: string,
+    onUpdate: (d: RideEntity) => void
+  ) => {
+    if (fieldListenerRef.current) {
+      fieldListenerRef.current() // remove anterior
+    }
+    const unsubscribe = rideService.listenByField(field, value, onUpdate, err =>
+      console.error('Erro listener corrida:', err)
+    )
+    fieldListenerRef.current = unsubscribe
+  }
+
+  // 🔹 Escutar corridas em tempo real
+  const allListenerRef = useRef<null | (() => void)>(null)
+  const listenAllByField = (
+    field: keyof RideEntity,
+    value: any,
+    onUpdate: (rides: RideEntity[]) => void,
+    options?: {
+      limit?: number
+      orderBy?: keyof RideEntity
+      orderDirection?: 'asc' | 'desc'
+    }
+  ) => {
+    if (allListenerRef.current) {
+      allListenerRef.current() // remove anterior
+    }
+    const unsubscribe = rideService.listenAllByField(
+      field,
+      value,
+      onUpdate,
+      err => console.error('Erro listener motorista:', err),
+      options
+    )
+    allListenerRef.current = unsubscribe
+  }
+
+  // 🔹 Escutar corridas em tempo real
+  const listenAll = (
+    onUpdate: (rides: RideEntity[]) => void,
+    options?: {
+      filters?: Partial<RideEntity>
+      limit?: number
+      orderBy?: keyof RideEntity
+      orderDirection?: 'asc' | 'desc'
+    }
+  ) => {
+    if (allListenerRef.current) {
+      allListenerRef.current() // remove anterior
+    }
+    const unsubscribe = rideService.listenAll(
+      onUpdate,
+      err => console.error('Erro listener motorista:', err),
+      options
+    )
+    allListenerRef.current = unsubscribe
+  }
+
+  useEffect(() => {
+    return () => {
+      if (rideListenerRef.current) rideListenerRef.current()
+      if (fieldListenerRef.current) fieldListenerRef.current()
+      if (allListenerRef.current) allListenerRef.current()
+    }
+  }, [])
 
   return {
     rides: ridesResponse?.data ?? [],
@@ -232,7 +328,14 @@ export function useRidesViewModel(
     fetchRideById,
     calculateCompanyProfit,
     calculateDriverEarnings,
+    calculatePassengerExpenses,
 
-    dataToExport
+    dataToExport,
+
+    // REALTIME
+    listenRideRealtime,
+    listenByField,
+    listenAllByField,
+    listenAll
   }
 }

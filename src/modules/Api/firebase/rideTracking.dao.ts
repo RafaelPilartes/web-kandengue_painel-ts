@@ -27,7 +27,7 @@ export class FirebaseRideTrackingDAO implements IRideTrackingRepository {
     firebaseCollections.rideTrackings.root
   )
 
-  // 🔹 Remove campos undefined antes de salvar
+  // Remove campos undefined antes de salvar
   private sanitize<T extends Record<string, any>>(data: T): T {
     return Object.fromEntries(
       Object.entries(data).filter(([_, v]) => v !== undefined)
@@ -47,7 +47,7 @@ export class FirebaseRideTrackingDAO implements IRideTrackingRepository {
     return q
   }
 
-  /** 🔹 Listar rideTrackings com paginação + pesquisa opcional */
+  /** Listar rideTrackings com paginação + pesquisa opcional */
   async getAll(
     limitValue: number = 500,
     offset = 0,

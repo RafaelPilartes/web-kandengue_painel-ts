@@ -14,7 +14,7 @@ import type { WalletInterface } from '@/interfaces/IWallet'
 import { formatMoney } from '@/utils/number'
 import { getStatusLabel } from '@/utils/gettersLabels'
 
-// 🔹 ModalViewWallet Component
+// ModalViewWallet Component
 interface ModalViewWalletProps extends modalViewType<WalletInterface> {}
 
 export function ModalViewWallet({

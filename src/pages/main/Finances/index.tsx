@@ -1,34 +1,24 @@
-import { useState, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
-import swal from 'sweetalert'
+import { useState } from 'react'
 import { IoSearchSharp } from 'react-icons/io5'
 import { Spinner } from 'phosphor-react'
 
 // Components
-import TableRow from '@/components/table/TableRowUser'
 import { Breadcrumbs } from '@/components/Breadcrumbs'
 import ExportToExcel from '@/components/ExportToExcel'
 import { Pagination } from '@/components/Pagination'
 import { InputWithButton } from '@/components/input/InputWithButton'
 import { SelectCustom } from '@/components/selects/SelectCustom'
 import { SelectSearchableCustom } from '@/components/selects/SelectSearchableCustom'
-// import { ModalCreateUser } from './components/modal/ModalCreate'
-// import { ModalEditUser } from './components/modal/ModalEdit'
 
 // Data
 import { routsNameMain } from '@/constants/routsName'
 import { rowPerPageOptions, userStatusOptions } from '@/data/selectOption'
-
-// Interfaces
-import type { UserInterface } from '@/interfaces/IUser'
 
 // ViewModel
 import { useUsersViewModel } from '@/viewModels/UserViewModel'
 import type { UserEntity } from '@/core/entities/User'
 
 export function FinancesPage() {
-  const navigate = useNavigate()
-
   // Filtros
   const [termForSearch, setTermForSearch] = useState<string>('')
 
@@ -38,18 +28,12 @@ export function FinancesPage() {
   const [currentPage, setCurrentPage] = useState(0) // página atual (0-based)
   const [docsPerPage, setDocsPerPage] = useState(8) // limite por página
 
-  const { users, pagination, isLoadingUsers, deleteUser, dataToExport } =
-    useUsersViewModel(
-      docsPerPage,
-      currentPage * docsPerPage,
-      termForSearch,
-      filters
-    )
-
-  // Estados para modais
-  const [rowSelect, setRowSelect] = useState<UserInterface | null>(null)
-  const [modalCreateRowIsOpen, setModalCreateRowIsOpen] = useState(false)
-  const [modalEditRowIsOpen, setModalEditRowIsOpen] = useState(false)
+  const { users, pagination, isLoadingUsers, dataToExport } = useUsersViewModel(
+    docsPerPage,
+    currentPage * docsPerPage,
+    termForSearch,
+    filters
+  )
 
   // Consts
   const namePageUppercase = 'Usuários'
@@ -61,11 +45,6 @@ export function FinancesPage() {
     { label: namePageUppercase, to: routsNameMain.users.passengers.index },
     { label: 'Listagem' }
   ]
-
-  // Navegação
-  const handleNavigation = (page: string) => {
-    navigate(page)
-  }
 
   // Handle Select
   const handleUserStatusChange = (valueSelected: string) => {
@@ -85,49 +64,6 @@ export function FinancesPage() {
     const rowsPerPage = value === -1 ? 8 : value
     setDocsPerPage(rowsPerPage)
   }
-
-  // Abrir modal de edição
-  function openModalEditRow(item: UserInterface) {
-    setRowSelect(item)
-    setModalEditRowIsOpen(true)
-  }
-
-  // Abrir página de detalhe
-  const openPageViewRow = (id: string) => {
-    handleNavigation(`${routsNameMain.users.passengers.viewStr}${id}`)
-  }
-
-  // Exclusão com confirmação
-  function handleDeleteRow(id: string) {
-    swal({
-      title: 'Tem certeza?',
-      text: 'Uma vez excluído, você não poderá recuperar!',
-      buttons: ['Cancelar', 'Confirmar'],
-      icon: 'warning',
-      dangerMode: true
-    }).then(async willDelete => {
-      if (willDelete) {
-        deleteUser.mutate(id)
-      } else {
-        swal('O registro está seguro!', { icon: 'error' })
-      }
-    })
-  }
-
-  // Tabela
-  const rowsTable = useMemo(
-    () =>
-      users?.map(item => (
-        <TableRow
-          key={item.id}
-          rowItem={item}
-          openModalEditRow={openModalEditRow}
-          handleDeleteRow={handleDeleteRow}
-          openPageViewRow={openPageViewRow}
-        />
-      )),
-    [users]
-  )
 
   return (
     <div className="w-full h-full flex flex-col gap-6">
@@ -154,7 +90,7 @@ export function FinancesPage() {
       <div className="w-full flex flex-row justify-between items-end max-w-s-960:flex-col max-w-s-960:items-start gap-2">
         <div className="flex flex-row gap-4 items-center max-w-s-640:flex-col max-w-s-640:items-start">
           <button
-            onClick={() => setModalCreateRowIsOpen(true)}
+            onClick={() => null}
             className="py-2 px-4 rounded-lg bg-primary-200 text-white hover:bg-primary-500 active:bg-primary-700 flex items-center gap-4 transition-all"
           >
             Cadastrar {namePageSingular}
@@ -211,7 +147,11 @@ export function FinancesPage() {
                   </td>
                 </tr>
               ) : users?.length ? (
-                rowsTable
+                users.map(user => (
+                  <div key={user.id}>
+                    <span>{user.id}</span>
+                  </div>
+                ))
               ) : (
                 <tr>
                   <td colSpan={7} className="text-center py-6">

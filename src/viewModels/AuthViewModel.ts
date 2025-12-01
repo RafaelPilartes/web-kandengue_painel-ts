@@ -4,18 +4,18 @@ import { AuthService } from '@/services/auth.service'
 export const useAuthViewModel = () => {
   const authService = new AuthService()
 
-  /** 🔹 Login */
+  /** Login */
   const loginMutation = useMutation({
     mutationFn: ({ email, password }: { email: string; password: string }) =>
       authService.login(email, password)
   })
 
-  /** 🔹 Logout */
+  /** Logout */
   const logoutMutation = useMutation({
     mutationFn: () => authService.logout()
   })
 
-  /** 🔹 Registrar novo usuário */
+  /** Registrar novo usuário */
   const registerMutation = useMutation({
     mutationFn: ({
       email,
@@ -28,43 +28,43 @@ export const useAuthViewModel = () => {
     }) => authService.register(email, password, displayName)
   })
 
-  /** 🔹 Reset de senha */
+  /** Reset de senha */
   const resetPasswordMutation = useMutation({
     mutationFn: (email: string) => authService.resetPassword(email)
   })
 
-  /** 🔹 Alterar senha */
+  /** Alterar senha */
   const changePasswordMutation = useMutation({
     mutationFn: (newPassword: string) => authService.changePassword(newPassword)
   })
 
   return {
-    // 🔹 Login
+    // Login
     login: loginMutation.mutateAsync,
     isLoggingIn: loginMutation.isPending,
     loginError: loginMutation.error,
 
-    // 🔹 Logout
+    // Logout
     logout: logoutMutation.mutateAsync,
     isLoggingOut: logoutMutation.isPending,
     logoutError: logoutMutation.error,
 
-    // 🔹 Register
+    // Register
     register: registerMutation.mutateAsync,
     isRegistering: registerMutation.isPending,
     registerError: registerMutation.error,
 
-    // 🔹 Reset Password
+    // Reset Password
     resetPassword: resetPasswordMutation.mutateAsync,
     isResettingPassword: resetPasswordMutation.isPending,
     resetPasswordError: resetPasswordMutation.error,
 
-    // 🔹 Change Password
+    // Change Password
     changePassword: changePasswordMutation.mutateAsync,
     isChangingPassword: changePasswordMutation.isPending,
     changePasswordError: changePasswordMutation.error,
 
-    // 🔹 Métodos diretos (sem mutation)
+    // Métodos diretos (sem mutation)
     currentUser: authService.getCurrentUser(),
     onAuthChanged: authService.onAuthChanged
   }

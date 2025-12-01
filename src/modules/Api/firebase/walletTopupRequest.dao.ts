@@ -29,7 +29,7 @@ export class FirebaseWalletTopupRequestDAO
     firebaseCollections.requests.root
   )
 
-  // 🔹 Remove campos undefined antes de salvar
+  // Remove campos undefined antes de salvar
   private sanitize<T extends Record<string, any>>(data: T): T {
     return Object.fromEntries(
       Object.entries(data).filter(([_, v]) => v !== undefined)
@@ -52,7 +52,7 @@ export class FirebaseWalletTopupRequestDAO
     return q
   }
 
-  /** 🔹 Listar walletTopupRequests com paginação + pesquisa opcional */
+  /** Listar walletTopupRequests com paginação + pesquisa opcional */
   async getAll(
     limitValue: number = 500,
     offset = 0,

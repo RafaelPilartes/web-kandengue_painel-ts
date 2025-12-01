@@ -87,8 +87,8 @@ export function Home() {
   // Corridas em andamento
   const activeRides = rides.filter(
     r =>
+      r.status !== 'idle' &&
       r.status !== 'pending' &&
-      r.status !== 'accepting_pending' &&
       r.status !== 'completed' &&
       r.status !== 'canceled'
   )

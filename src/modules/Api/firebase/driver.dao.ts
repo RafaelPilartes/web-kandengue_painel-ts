@@ -24,7 +24,7 @@ import { generateId } from '@/helpers/generateId'
 export class FirebaseDriverDAO implements IDriverRepository {
   private driversRef = collection(db, firebaseCollections.drivers.root)
 
-  // 🔹 Remove campos undefined antes de salvar
+  // Remove campos undefined antes de salvar
   private sanitize<T extends Record<string, any>>(data: T): T {
     return Object.fromEntries(
       Object.entries(data).filter(([_, v]) => v !== undefined)
@@ -44,7 +44,7 @@ export class FirebaseDriverDAO implements IDriverRepository {
     return q
   }
 
-  /** 🔹 Listar drivers com paginação + pesquisa opcional */
+  /** Listar drivers com paginação + pesquisa opcional */
   async getAll(
     limitValue: number = 500,
     offset = 0,
@@ -176,6 +176,12 @@ export class FirebaseDriverDAO implements IDriverRepository {
       ...this.sanitize(driver),
       id: driverId,
       created_at: new Date()
+    }
+
+    // Validar dados
+    const validation = sanitized.validate()
+    if (!validation.isValid) {
+      throw new Error(validation.errors.join(', '))
     }
 
     await setDoc(doc(this.driversRef, driverId), sanitized)

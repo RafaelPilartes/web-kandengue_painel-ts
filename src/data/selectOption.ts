@@ -142,8 +142,8 @@ export const weekdayOptions: OptionType[] = [
 ]
 
 export const rideStatusOptions: OptionType[] = [
+  { value: 'idle', label: 'Procurando Motorista' },
   { value: 'pending', label: 'Pendente' },
-  { value: 'accepting_pending', label: 'Aceitando/Pendente' },
   { value: 'driver_on_the_way', label: 'Motorista a Caminho' },
   { value: 'arrived_pickup', label: 'Chegou no Pick-up' },
   { value: 'picked_up', label: 'Pegou o Passageiro' },

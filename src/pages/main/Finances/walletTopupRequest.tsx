@@ -22,6 +22,7 @@ import { useAdminStore } from '@/stores/userStore'
 import { SelectCustom } from '@/components/selects/SelectCustom'
 import { rowPerPageOptions } from '@/data/selectOption'
 import { mapFirebaseError } from '@/helpers/mapFirebaseError'
+import { ModalViewTopupRequest } from './components/ModalViewTopupRequest'
 
 export function WalletTopupRequestsPage() {
   // Filtros
@@ -31,6 +32,12 @@ export function WalletTopupRequestsPage() {
   // Paginação
   const [currentPage, setCurrentPage] = useState(0)
   const [docsPerPage, setDocsPerPage] = useState(10)
+
+  // Estados para modais
+  const [rowSelect, setRowSelect] =
+    useState<WalletTopupRequestInterface | null>(null)
+  const [modalViewTopupRequestIsOpen, setModalViewTopupRequestIsOpen] =
+    useState<boolean>(false)
 
   const { currentAdminData } = useAdminStore()
 
@@ -112,16 +119,40 @@ export function WalletTopupRequestsPage() {
       swal({
         title: 'Tem certeza?',
         text: 'Uma vez rejeitar, não poderá reverter!',
+        content: {
+          element: 'textarea',
+          attributes: {
+            placeholder: 'Motivo da rejeição...',
+            rows: 4,
+            id: 'rejection-reason' // ID para o textarea
+          }
+        },
         buttons: ['Cancelar', 'Confirmar'],
         icon: 'warning',
         dangerMode: true
       }).then(async willApprove => {
         if (willApprove) {
+          // Capturar o valor do textarea manualmente
+          const textarea = document.getElementById(
+            'rejection-reason'
+          ) as HTMLTextAreaElement
+          const rejectionReason = textarea?.value.trim()
+
+          // Validar se o motivo foi preenchido
+          if (!rejectionReason) {
+            swal('Erro!', 'Por favor, informe o motivo da rejeição.', 'error')
+            return
+          }
+
+          // alert(`Motivo: ${rejectionReason}`)
+
           try {
             await updateWalletTopupRequest.mutateAsync({
               id: docId,
               walletTopupRequest: {
-                status: 'rejected'
+                status: 'rejected',
+                rejected_reason: rejectionReason,
+                reviewed_by: currentAdminData
               }
             })
 
@@ -150,7 +181,7 @@ export function WalletTopupRequestsPage() {
         <TableRow
           key={item.id}
           rowItem={item}
-          openPageViewRow={undefined}
+          openPageViewRow={openModalViewTopupRequestRow}
           handleApprove={handleAction}
           handleReject={handleAction}
         />
@@ -162,6 +193,12 @@ export function WalletTopupRequestsPage() {
   const handleSelectChange = (value: number) => {
     const rowsPerPage = value === -1 ? 8 : value
     setDocsPerPage(rowsPerPage)
+  }
+
+  // openModalViewRow
+  function openModalViewTopupRequestRow(item: WalletTopupRequestInterface) {
+    setRowSelect(item)
+    setModalViewTopupRequestIsOpen(true)
   }
 
   return (
@@ -183,6 +220,7 @@ export function WalletTopupRequestsPage() {
           label="Status"
           options={[
             { value: '', label: 'Todos' },
+            { value: 'pending', label: 'Pendente' },
             { value: 'approved', label: 'Aprovado' },
             { value: 'rejected', label: 'Rejeitado' }
           ]}
@@ -294,6 +332,14 @@ export function WalletTopupRequestsPage() {
           </div>
         </div>
       </div>
+
+      {modalViewTopupRequestIsOpen && rowSelect && (
+        <ModalViewTopupRequest
+          modalViewRowIsOpen={modalViewTopupRequestIsOpen}
+          setModalViewRowIsOpen={setModalViewTopupRequestIsOpen}
+          baseInfo={rowSelect}
+        />
+      )}
     </div>
   )
 }

@@ -16,8 +16,8 @@ export type WalletStatusEnumType = 'active' | 'blocked'
 // =========================================================================
 
 export type RideStatusType =
-  | 'pending' // Aguardando motorista aceitar & Novo pedido disponível para aceitar
-  | 'accepting_pending' // Aceitando & aguardando motorista aceitar
+  | 'idle' // Aguardando motorista aceitar & Novo pedido disponível para aceitar
+  | 'pending' // Aceitando & aguardando motorista aceitar
   | 'driver_on_the_way' // Motorista a caminho & mostra navegação até pickup
   | 'arrived_pickup' // Motorista chegou ao local & botão para "Confirmar recolha"
   | 'picked_up' // O estafeta recolheu seu pacote & mostra navegação até dropoff

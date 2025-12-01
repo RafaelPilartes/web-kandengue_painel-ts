@@ -25,6 +25,7 @@ import { MetricsPage } from '@/pages/main/Metrics'
 import { SettingsPage } from '@/pages/main/Settings'
 import { WalletTopupRequestsPage } from '@/pages/main/Finances/walletTopupRequest'
 import { DriverViewPage } from '@/pages/main/Drivers/DriverDetails'
+import { UserViewPage } from '@/pages/main/Passengers/UserDetails'
 
 // Page
 
@@ -95,6 +96,17 @@ export function Router() {
               <React.Suspense fallback={<Loading />}>
                 <Private>
                   <UserPage />
+                </Private>
+              </React.Suspense>
+            }
+          />
+          {/* Details */}
+          <Route
+            path={routsNameMain.users.passengers.view}
+            element={
+              <React.Suspense fallback={<Loading />}>
+                <Private>
+                  <UserViewPage />
                 </Private>
               </React.Suspense>
             }

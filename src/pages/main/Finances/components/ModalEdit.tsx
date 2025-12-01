@@ -29,7 +29,7 @@ import { showToast } from '@/utils/toasts'
 import { ToastContainer } from 'react-toastify'
 import { mapFirebaseError } from '@/helpers/mapFirebaseError'
 
-// 🔹 Schema de validação
+// Schema de validação
 const formSchema = z.object({
   user: z.custom<DriverInterface>(val => !!val, {
     message: 'Selecione um motorista'
@@ -71,7 +71,7 @@ export function ModalEditWallet({
     setModalEditRowIsOpen(false)
   }
 
-  // 🔹 Preencher dados ao abrir modal
+  // Preencher dados ao abrir modal
   useEffect(() => {
     if (baseInfo) {
       reset({
@@ -83,7 +83,7 @@ export function ModalEditWallet({
     }
   }, [baseInfo, reset])
 
-  // 🔹 Função para enviar formulário
+  // Função para enviar formulário
   async function handleSubmitForm(dataForm: formType) {
     if (!baseInfo?.id) return
     setIsSending(true)

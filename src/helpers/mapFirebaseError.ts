@@ -7,31 +7,43 @@ export function mapFirebaseError(error: any): string {
 
   switch (errorCode) {
     /**
-     * 🔹 AUTH ERRORS
+     * AUTH ERRORS
      */
-    case 'auth/invalid-email':
-      return 'E-mail inválido'
     case 'auth/email-already-in-use':
-      return 'Este e-mail já está em uso'
-    case 'auth/user-disabled':
-      return 'Esta conta foi desativada'
+      return 'Este email já está em uso'
+    case 'auth/missing-password':
+      return 'Senha não informada'
+    case 'auth/invalid-email':
+      return 'Email inválido'
+    case 'auth/invalid-credential':
+      return 'Credenciais inválidas'
+    case 'auth/weak-password':
+      return 'Senha muito fraca'
     case 'auth/user-not-found':
       return 'Usuário não encontrado'
     case 'auth/wrong-password':
       return 'Senha incorreta'
-    case 'auth/weak-password':
-      return 'A senha é muito fraca'
+    case 'auth/user-disabled':
+      return 'Conta desativada'
+    case 'auth/invalid-phone-number':
+      return 'Número de telefone inválido'
     case 'auth/too-many-requests':
-      return 'Muitas tentativas. Aguarde e tente novamente'
+      return 'Muitas tentativas. Tente novamente mais tarde'
+    case 'auth/invalid-verification-code':
+      return 'Código de verificação inválido'
+    case 'auth/invalid-verification-id':
+      return 'Sessão de verificação expirada'
+    case 'auth/credential-already-in-use':
+      return 'Este número já está em uso por outra conta'
     case 'auth/network-request-failed':
-      return 'Falha na rede. Verifique sua internet'
-    case 'auth/invalid-credential':
-      return 'Credenciais inválidas'
-    case 'auth/missing-password':
-      return 'Senha não informada'
+      return 'Erro de conexão'
+    case 'auth/operation-not-allowed':
+      return 'Operação não permitida'
+    case 'auth/requires-recent-login':
+      return 'É necessário fazer login novamente'
 
     /**
-     * 🔹 FIRESTORE ERRORS
+     * FIRESTORE ERRORS
      */
     case 'permission-denied':
       return 'Sem permissão para acessar este recurso'
@@ -61,7 +73,7 @@ export function mapFirebaseError(error: any): string {
       return 'Usuário não autenticado'
 
     /**
-     * 🔹 REALTIME DATABASE ERRORS
+     * REALTIME DATABASE ERRORS
      */
     case 'database/permission-denied':
       return 'Sem permissão para acessar os dados'
@@ -73,7 +85,7 @@ export function mapFirebaseError(error: any): string {
       return 'Erro de rede ao acessar a base de dados'
 
     /**
-     * 🔹 STORAGE ERRORS
+     * STORAGE ERRORS
      */
     case 'storage/unauthorized':
       return 'Sem permissão para acessar o arquivo'
@@ -91,7 +103,7 @@ export function mapFirebaseError(error: any): string {
       return 'Arquivo corrompido. Verifique o upload'
 
     /**
-     * 🔹 FUNCTIONS ERRORS
+     * FUNCTIONS ERRORS
      */
     case 'functions/invalid-argument':
       return 'Argumento inválido enviado para a função'
@@ -107,6 +119,6 @@ export function mapFirebaseError(error: any): string {
       return 'A função demorou muito para responder'
 
     default:
-      return `Erro inesperado. Tente novamente: ${error}`
+      return `Erro mapeado: ${error.message || JSON.stringify(error)}`
   }
 }

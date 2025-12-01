@@ -75,12 +75,12 @@ const dashItem = [
     icon: <CreditCard size={16} />,
     to: '/',
     subMenus: [
-      {
-        label: 'Visão Geral Financeira',
-        icon: <LayoutDashboard size={16} />,
-        to: routsNameMain.finance.index,
-        notification: 0
-      },
+      // {
+      //   label: 'Visão Geral Financeira',
+      //   icon: <LayoutDashboard size={16} />,
+      //   to: routsNameMain.finance.index,
+      //   notification: 0
+      // },
       {
         label: 'Carteira & Transações',
         icon: <Wallet size={16} />,
@@ -92,13 +92,13 @@ const dashItem = [
         icon: <CreditCard size={16} />,
         to: routsNameMain.finance.walletTopupRequest,
         notification: 0
-      },
-      {
-        label: 'Relatórios Financeiros',
-        icon: <BarChart2 size={16} />,
-        to: routsNameMain.finance.reports.index,
-        notification: 0
       }
+      // {
+      //   label: 'Relatórios Financeiros',
+      //   icon: <BarChart2 size={16} />,
+      //   to: routsNameMain.finance.reports.index,
+      //   notification: 0
+      // }
     ],
     notification: 0,
     accordion: true

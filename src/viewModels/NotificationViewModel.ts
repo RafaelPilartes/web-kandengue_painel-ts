@@ -16,7 +16,7 @@ export function useNotificationsViewModel(
 
   const filtersKey = filters ? JSON.stringify(filters) : ''
 
-  /** 🔹 Buscar lista de notificação */
+  /** Buscar lista de notificação */
   const {
     data: notificationsResponse,
     isLoading: loading,
@@ -29,7 +29,7 @@ export function useNotificationsViewModel(
     staleTime: 1000 * 60 // cache 1min
   })
 
-  /** 🔹 Buscar lista de notificações por field */
+  /** Buscar lista de notificações por field */
   const fetchAllNotificationsByField = async (
     field: string,
     value: any,
@@ -49,7 +49,7 @@ export function useNotificationsViewModel(
     }
   }
 
-  /** 🔹 Criar notificação */
+  /** Criar notificação */
   const createNotification = useMutation({
     mutationFn: (notification: Omit<NotificationEntity, 'id'>) =>
       notificationService.create(notification),
@@ -58,7 +58,7 @@ export function useNotificationsViewModel(
     }
   })
 
-  /** 🔹 Atualizar notificação */
+  /** Atualizar notificação */
   const updateNotification = useMutation({
     mutationFn: ({
       id,
@@ -72,7 +72,7 @@ export function useNotificationsViewModel(
     }
   })
 
-  /** 🔹 Deletar notificação */
+  /** Deletar notificação */
   const deleteNotification = useMutation({
     mutationFn: (id: string) => notificationService.delete(id),
     onSuccess: () => {
@@ -80,7 +80,7 @@ export function useNotificationsViewModel(
     }
   })
 
-  /** 🔹 Buscar notificação único (on-demand) */
+  /** Buscar notificação único (on-demand) */
   const fetchNotificationById = async (id: string) => {
     try {
       return await notificationService.getById(id)
@@ -90,7 +90,7 @@ export function useNotificationsViewModel(
     }
   }
 
-  /** 🔹 Buscar notification por field */
+  /** Buscar notification por field */
   const fetchOneNotificationByField = async (
     field: keyof NotificationEntity,
     value: string

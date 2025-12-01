@@ -17,7 +17,7 @@ export function useRideRatesViewModel(
 
   const filtersKey = filters ? JSON.stringify(filters) : ''
 
-  /** 🔹 Buscar lista de taxa de viagem */
+  /** Buscar lista de taxa de viagem */
   const {
     data: rideRatesResponse,
     isLoading: loading,
@@ -35,7 +35,7 @@ export function useRideRatesViewModel(
     staleTime: 1000 * 60 // cache 1min
   })
 
-  /** 🔹 Buscar lista de taxa de viagem por field */
+  /** Buscar lista de taxa de viagem por field */
   const fetchAllRideRatesByField = async (
     field: string,
     value: any,
@@ -50,7 +50,7 @@ export function useRideRatesViewModel(
     }
   }
 
-  /** 🔹 Criar ride */
+  /** Criar ride */
   const createRideRate = useMutation({
     mutationFn: (rideRate: Omit<RideRateEntity, 'id'>) =>
       rideRateService.create(rideRate),
@@ -61,7 +61,7 @@ export function useRideRatesViewModel(
     }
   })
 
-  /** 🔹 Atualizar ride */
+  /** Atualizar ride */
   const updateRideRate = useMutation({
     mutationFn: ({
       id,
@@ -77,7 +77,7 @@ export function useRideRatesViewModel(
     }
   })
 
-  /** 🔹 Deletar ride */
+  /** Deletar ride */
   const deleteRideRate = useMutation({
     mutationFn: (id: string) => rideRateService.delete(id),
     onSuccess: () => {
@@ -87,7 +87,7 @@ export function useRideRatesViewModel(
     }
   })
 
-  /** 🔹 Buscar ride único (on-demand) */
+  /** Buscar ride único (on-demand) */
   const fetchRideRateById = async (id: string) => {
     try {
       return await rideRateService.getById(id)
@@ -97,7 +97,7 @@ export function useRideRatesViewModel(
     }
   }
 
-  /** 🔹 Buscar rideRate por field */
+  /** Buscar rideRate por field */
   const fetchOneRideRateByField = async (
     field: keyof RideRateEntity,
     value: string

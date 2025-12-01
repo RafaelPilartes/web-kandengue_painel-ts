@@ -12,8 +12,8 @@ import { Pagination } from '@/components/Pagination'
 import { InputWithButton } from '@/components/input/InputWithButton'
 import { SelectCustom } from '@/components/selects/SelectCustom'
 import { SelectSearchableCustom } from '@/components/selects/SelectSearchableCustom'
-// import { ModalCreateUser } from './components/modal/ModalCreate'
-// import { ModalEditUser } from './components/modal/ModalEdit'
+import { ModalCreateUser } from './components/ModalCreate'
+import { ModalEditUser } from './components/ModalEdit'
 
 // Data
 import { routsNameMain } from '@/constants/routsName'
@@ -261,8 +261,19 @@ export function UserPage() {
         </div>
       </div>
 
-      {/* {modalCreateRowIsOpen && <ModalCreateUser ... />} */}
-      {/* {modalEditRowIsOpen && <ModalEditUser ... />} */}
+      {modalCreateRowIsOpen && (
+        <ModalCreateUser
+          modalCreateRowIsOpen={modalCreateRowIsOpen}
+          setModalCreateRowIsOpen={setModalCreateRowIsOpen}
+        />
+      )}
+      {modalEditRowIsOpen && rowSelect && (
+        <ModalEditUser
+          modalEditRowIsOpen={modalEditRowIsOpen}
+          setModalEditRowIsOpen={setModalEditRowIsOpen}
+          baseInfo={rowSelect}
+        />
+      )}
     </div>
   )
 }

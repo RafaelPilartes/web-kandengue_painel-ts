@@ -11,7 +11,7 @@ import { FiX } from 'react-icons/fi'
 
 interface TableRowWalletTopupRequestProps {
   rowItem: WalletTopupRequestInterface
-  openPageViewRow?: (id: string) => void
+  openPageViewRow?: (item: WalletTopupRequestInterface) => void
   handleApprove: (
     id: string,
     type: RequestStatus,
@@ -63,7 +63,7 @@ export default function TableRowWalletTopupRequest({
               {
                 icon: <Wallet size={16} />,
                 label: 'Ver detalhes',
-                onClick: () => openPageViewRow?.(rowItem.id as string)
+                onClick: () => openPageViewRow?.(rowItem)
               },
               rowItem.status === 'pending' &&
                 ({

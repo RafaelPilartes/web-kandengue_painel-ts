@@ -17,7 +17,7 @@ export function useVehiclesViewModel(
 
   const filtersKey = filters ? JSON.stringify(filters) : ''
 
-  /** 🔹 Buscar lista de veículos */
+  /** Buscar lista de veículos */
   const {
     data: vehiclesResponse,
     isLoading: loading,
@@ -35,7 +35,7 @@ export function useVehiclesViewModel(
     staleTime: 1000 * 60 // cache 1min
   })
 
-  /** 🔹 Buscar lista de veículos por field */
+  /** Buscar lista de veículos por field */
   const fetchAllVehiclesByField = async (
     field: string,
     value: any,
@@ -50,7 +50,7 @@ export function useVehiclesViewModel(
     }
   }
 
-  /** 🔹 Criar veículo */
+  /** Criar veículo */
   const createVehicle = useMutation({
     mutationFn: (vehicle: Omit<VehicleEntity, 'id'>) =>
       vehicleService.create(vehicle),
@@ -61,7 +61,7 @@ export function useVehiclesViewModel(
     }
   })
 
-  /** 🔹 Atualizar veículo */
+  /** Atualizar veículo */
   const updateVehicle = useMutation({
     mutationFn: ({
       id,
@@ -77,7 +77,7 @@ export function useVehiclesViewModel(
     }
   })
 
-  /** 🔹 Deletar veículo */
+  /** Deletar veículo */
   const deleteVehicle = useMutation({
     mutationFn: (id: string) => vehicleService.delete(id),
     onSuccess: () => {
@@ -87,7 +87,7 @@ export function useVehiclesViewModel(
     }
   })
 
-  /** 🔹 Buscar veículo único (on-demand) */
+  /** Buscar veículo único (on-demand) */
   const fetchVehicleById = async (id: string) => {
     try {
       return await vehicleService.getById(id)
@@ -97,7 +97,7 @@ export function useVehiclesViewModel(
     }
   }
 
-  /** 🔹 Buscar vehicle por field */
+  /** Buscar vehicle por field */
   const fetchOneVehicleByField = async (
     field: keyof VehicleEntity,
     value: string

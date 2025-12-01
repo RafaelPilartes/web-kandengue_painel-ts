@@ -37,20 +37,23 @@ import { formatMoney } from '@/utils/number'
 import { Card } from '@/components/ui/card'
 import { useTransactionsViewModel } from '@/viewModels/TransactionViewModel'
 import { ToastContainer } from 'react-toastify'
-import { showToast } from '@/utils/toasts'
+import { showToast, showToastLoading, updateToast } from '@/utils/toasts'
 import type { TransactionInterface } from '@/interfaces/ITransaction'
 import {
   getDocumentStatusLabel,
   getDocumentTypeLabel,
   getRideStatusLabel,
   getTransactionTypeLabel,
+  getUserStatusLabel,
   getVehicleStatusLabel
 } from '@/utils/gettersLabels'
 import { ActionsMenu } from '@/components/ActionsMenu'
 import { IoColorPaletteSharp } from 'react-icons/io5'
 import { BadgeSimple } from '@/components/badge/BadgeSimple'
 import { mapFirebaseError } from '@/helpers/mapFirebaseError'
-import type { DocumentStatus } from '@/types/enum'
+import type { DocumentStatus, UserStatus } from '@/types/enum'
+import { userStatusOptions } from '@/data/selectOption'
+import { SelectCustom } from '@/components/selects/SelectCustom'
 
 export function DriverViewPage() {
   const { driverId } = useParams<{ driverId: string }>()
@@ -90,6 +93,11 @@ export function DriverViewPage() {
   const [documentsPending, setDocumentsPending] = useState<
     DocumentInterface[] | null
   >(null)
+
+  const [driverStatus, setDriverStatus] = useState<UserStatus>(
+    rowDataDriver?.status || 'pending'
+  )
+  const [isUpdatingStatus, setUpdatingStatus] = useState<boolean>(false)
 
   const [docDriverLicense, setDocDriverLicense] =
     useState<DocumentInterface | null>(null)
@@ -188,41 +196,31 @@ export function DriverViewPage() {
       const url = doc.url
       const filename = `${getDocumentTypeLabel(doc.type)}-${
         rowDataDriver?.name
-      }`
+      }.jpg`
 
-      // Faz o fetch para obter o arquivo
-      const response = await fetch(url)
-
-      // Verifica se a resposta foi bem-sucedida
-      if (!response.ok) {
-        throw new Error('Falha ao baixar o documento.')
-      }
-
-      // Converte a resposta para um blob
-      const blob = await response.blob()
-
-      // Cria uma URL para o arquivo blob
-      const blobUrl = URL.createObjectURL(blob)
-
-      // Cria um link temporário para disparar o download
+      // Método mais confiável para Firebase Storage
       const a = document.createElement('a')
-      a.href = blobUrl
+      a.href = url
       a.download = filename
+      a.target = '_blank' // Importante para URLs externas
+      a.rel = 'noopener noreferrer'
 
-      // Aciona o clique no link para iniciar o download
+      document.body.appendChild(a)
       a.click()
-
-      // Libera o objeto URL após o download
-      URL.revokeObjectURL(blobUrl)
+      document.body.removeChild(a)
     } catch (error) {
-      console.error('Erro ao baixar o documento:', error)
+      showToast('error', 'Erro ao abrir o documento.')
+      console.error('Erro ao abrir o documento:', error)
     }
   }
-
   const handleValidateDocument = async (
     document: DocumentInterface,
     type: DocumentStatus
   ) => {
+    const toastId = showToastLoading(
+      `${type === 'approved' ? 'Aprovando' : 'Rejeitando'} documento`
+    )
+
     try {
       const dataToUpdate: Partial<DocumentInterface> = {
         status: type
@@ -239,7 +237,8 @@ export function DriverViewPage() {
         setRowsDataDocuments(resultDocument?.data)
       }
 
-      showToast(
+      updateToast(
+        toastId,
         'success',
         `Documento ${getDocumentTypeLabel(documentUpdated.type)}, foi ${
           type === 'approved' ? 'aprovado' : 'rejeitado'
@@ -247,11 +246,62 @@ export function DriverViewPage() {
       )
     } catch (err) {
       const message = mapFirebaseError(err)
-
-      showToast('error', message)
+      updateToast(toastId, 'error', message)
     }
   }
 
+  const validateDocumentsBeforeActivation = () => {
+    const missing: string[] = []
+
+    if (!docDriverLicense || docDriverLicense.status !== 'approved')
+      missing.push('Carta de condução')
+    if (!docIdFront || docIdFront.status !== 'approved')
+      missing.push('BI - Frente')
+    if (!docIdBack || docIdBack.status !== 'approved')
+      missing.push('BI - Verso')
+
+    return missing
+  }
+  const handleStatusChange = async (valueSelected: string) => {
+    if (!valueSelected) return
+
+    try {
+      setUpdatingStatus(true)
+
+      if (valueSelected === 'active') {
+        const missing = validateDocumentsBeforeActivation()
+
+        if (missing.length > 0) {
+          showToast('error', `Documentos em falta: ${missing.join(', ')}`)
+          return
+        }
+      }
+
+      const dataToUpdate: Partial<DriverInterface> = {
+        status: valueSelected as DriverInterface['status']
+      }
+
+      await updateDriver
+        .mutateAsync({
+          id: rowDataDriver?.id as string,
+          driver: dataToUpdate
+        })
+        .then(() => {
+          setDriverStatus(valueSelected as DriverInterface['status'])
+        })
+
+      showToast(
+        'success',
+        `Status do motorista atualizado para - ${getUserStatusLabel(
+          valueSelected as DriverInterface['status']
+        )}`
+      )
+    } catch (error) {
+      console.error(error)
+    } finally {
+      setUpdatingStatus(false)
+    }
+  }
   // Function
   useEffect(() => {
     const fetchData = async () => {
@@ -326,6 +376,7 @@ export function DriverViewPage() {
       )
       setDocumentsPending(documentsPending)
 
+      // driver_license
       const driverLicenseFiltered = filterDocsBy(
         rowsDataDocuments,
         'type',
@@ -336,7 +387,7 @@ export function DriverViewPage() {
       )
       setDocDriverLicense(driverLicenseFounded ?? null)
 
-      // driver_license
+      // id_front
       const idFrontFiltered = filterDocsBy(
         rowsDataDocuments,
         'type',
@@ -347,14 +398,12 @@ export function DriverViewPage() {
       )
       setDocIdFront(idFrontFounded ?? null)
 
-      // id_front
+      // id_back
       const idBackFiltered = filterDocsBy(rowsDataDocuments, 'type', 'id_back')
       const idBackFounded = idBackFiltered.find(
         doc => doc.status === 'approved'
       )
       setDocIdBack(idBackFounded ?? null)
-
-      // id_back
     }
   }, [rowsDataRides, rowsDataDocuments])
 
@@ -427,7 +476,7 @@ export function DriverViewPage() {
 
     actions.push({
       icon: <Download size={16} />,
-      label: 'Baixar',
+      label: 'Abrir',
       onClick: () => handleDownloadDocument(doc)
     })
 
@@ -529,12 +578,27 @@ export function DriverViewPage() {
         </div>
       </div>
 
+      <div className="w-full max-w-32 flex flex-col gap-4">
+        <SelectCustom
+          htmlFor="status"
+          selectedValue={driverStatus}
+          label="Estado da conta"
+          options={userStatusOptions}
+          onChange={handleStatusChange}
+          isLoading={isUpdatingStatus}
+        />
+      </div>
+
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card
           title="Saldo Carteira"
           icon={<Wallet />}
-          value={`AOA ${formatMoney(rowDataWallet?.balance as number)}`}
+          value={
+            rowDataWallet
+              ? `AOA ${formatMoney(rowDataWallet?.balance as number)}`
+              : 'Sem carteira criada'
+          }
         />
         <Card
           title="Corridas Concluídas"

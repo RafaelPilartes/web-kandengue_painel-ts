@@ -120,7 +120,7 @@ export function WalletsPage() {
     setModalViewTransactionsIsOpen(true)
   }
 
-  // openModalEditRow
+  // openModalViewRow
   function openModalViewWalletRow(item: WalletInterface) {
     setRowSelect(item)
     setModalViewWalletIsOpen(true)

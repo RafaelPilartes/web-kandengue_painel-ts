@@ -19,7 +19,7 @@ export function useDriversViewModel(
 
   const filtersKey = filters ? JSON.stringify(filters) : ''
 
-  /** 🔹 Buscar lista de motoristas */
+  /** Buscar lista de motoristas */
   const {
     data: driversResponse,
     isLoading: loading,
@@ -37,7 +37,7 @@ export function useDriversViewModel(
     staleTime: 1000 * 60 // cache 1min
   })
 
-  // 🔹 transforma os dados em formato exportável
+  // transforma os dados em formato exportável
   const dataToExport = useMemo(() => {
     if (!driversResponse?.data) return []
     return driversResponse?.data.map(doc => ({
@@ -51,7 +51,7 @@ export function useDriversViewModel(
     }))
   }, [driversResponse?.data])
 
-  /** 🔹 Buscar lista de motoristas por field */
+  /** Buscar lista de motoristas por field */
   const fetchAllDriversByField = async (
     field: string,
     value: any,
@@ -66,7 +66,7 @@ export function useDriversViewModel(
     }
   }
 
-  /** 🔹 Criar motorista */
+  /** Criar motorista */
   const createDriver = useMutation({
     mutationFn: (driver: Omit<DriverEntity, 'id'>) =>
       driverService.create(driver),
@@ -77,7 +77,7 @@ export function useDriversViewModel(
     }
   })
 
-  /** 🔹 Atualizar motorista */
+  /** Atualizar motorista */
   const updateDriver = useMutation({
     mutationFn: ({
       id,
@@ -93,7 +93,7 @@ export function useDriversViewModel(
     }
   })
 
-  /** 🔹 Deletar motorista */
+  /** Deletar motorista */
   const deleteDriver = useMutation({
     mutationFn: (id: string) => driverService.delete(id),
     onSuccess: () => {
@@ -103,7 +103,7 @@ export function useDriversViewModel(
     }
   })
 
-  /** 🔹 Buscar motorista único (on-demand) */
+  /** Buscar motorista único (on-demand) */
   const fetchDriverById = async (id: string) => {
     try {
       return await driverService.getById(id)
@@ -113,8 +113,8 @@ export function useDriversViewModel(
     }
   }
 
-  /** 🔹 Buscar driver por field */
-  const fetchOneAdminByField = async (
+  /** Buscar driver por field */
+  const fetchOneDriverByField = async (
     field: keyof DriverEntity,
     value: string
   ) => {
@@ -134,7 +134,7 @@ export function useDriversViewModel(
     refresh: refetch,
 
     fetchAllDriversByField,
-    fetchOneAdminByField,
+    fetchOneDriverByField,
 
     createDriver,
     updateDriver,

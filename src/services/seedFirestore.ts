@@ -1,19 +1,7 @@
 // src/services/seedFirestore.ts
 import { db } from '@/config/firebase.config'
 import { firebaseCollections } from '@/constants/firebaseCollections'
-import {
-  users,
-  vehicles,
-  drivers,
-  documents,
-  transactions,
-  notifications,
-  rides,
-  rideRates,
-  rideTrackings,
-  wallets,
-  walletTopupRequests
-} from '@/data/mockData'
+import { rides } from '@/data/mockData'
 import { setDoc, doc } from 'firebase/firestore'
 
 // importa os mocks

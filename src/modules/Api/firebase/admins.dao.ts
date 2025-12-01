@@ -24,7 +24,7 @@ import { generateId } from '@/helpers/generateId'
 export class FirebaseAdminDAO implements IAdminRepository {
   private adminsRef = collection(db, firebaseCollections.admins.root)
 
-  // 🔹 Remove campos undefined antes de salvar
+  // Remove campos undefined antes de salvar
   private sanitize<T extends Record<string, any>>(data: T): T {
     return Object.fromEntries(
       Object.entries(data).filter(([_, v]) => v !== undefined)
@@ -44,7 +44,7 @@ export class FirebaseAdminDAO implements IAdminRepository {
     return q
   }
 
-  // 🔹 Busca todos os admins em lote
+  // Busca todos os admins em lote
   async getAllInBatches(batchSize = 500): Promise<AdminEntity[]> {
     let lastDoc: any = null
     let allAdmins: AdminEntity[] = []
@@ -77,7 +77,7 @@ export class FirebaseAdminDAO implements IAdminRepository {
     return allAdmins
   }
 
-  /** 🔹 Listar admins com paginação + pesquisa opcional */
+  /** Listar admins com paginação + pesquisa opcional */
   async getAll(
     limitValue: number = 500,
     offset = 0,
@@ -206,11 +206,17 @@ export class FirebaseAdminDAO implements IAdminRepository {
   }
 
   async create(admin: Omit<AdminEntity, 'id'>): Promise<AdminEntity> {
-    const adminId = generateId('adm')
+    const adminId: string = generateId('adm')
     const sanitized = {
       ...this.sanitize(admin),
       id: adminId,
       created_at: new Date()
+    }
+
+    // Validar dados
+    const validation = sanitized.validate()
+    if (!validation.isValid) {
+      throw new Error(validation.errors.join(', '))
     }
 
     await setDoc(doc(this.adminsRef, adminId), sanitized)

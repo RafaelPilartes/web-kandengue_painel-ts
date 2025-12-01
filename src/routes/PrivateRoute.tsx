@@ -15,12 +15,12 @@ export function Private({ children }: Props) {
   const { admins, isLoadingAdmins, fetchAdminByEmail } = useAdminsViewModel(100)
 
   useEffect(() => {
-    // 🔹 Sincronizar rideRates
+    // Sincronizar rideRates
     if (rideRates[0] && rideRates[0] !== currentRideRatesData) {
       addRideRatesData(rideRates[0])
     }
 
-    // 🔹 Verificação de admin em tempo real
+    // Verificação de admin em tempo real
     async function checkAdmin() {
       if (currentAdminData && !isLoadingAdmins) {
         const adminFound = await fetchAdminByEmail(currentAdminData.email)

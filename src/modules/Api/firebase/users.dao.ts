@@ -24,7 +24,7 @@ import { generateId } from '@/helpers/generateId'
 export class FirebaseUserDAO implements IUserRepository {
   private usersRef = collection(db, firebaseCollections.users.root)
 
-  // 🔹 Remove campos undefined antes de salvar
+  // Remove campos undefined antes de salvar
   private sanitize<T extends Record<string, any>>(data: T): T {
     return Object.fromEntries(
       Object.entries(data).filter(([_, v]) => v !== undefined)
@@ -44,7 +44,7 @@ export class FirebaseUserDAO implements IUserRepository {
     return q
   }
 
-  /** 🔹 Listar users com paginação + pesquisa opcional */
+  /** Listar users com paginação + pesquisa opcional */
   async getAll(
     limitValue: number = 500,
     offset = 0,
@@ -176,6 +176,12 @@ export class FirebaseUserDAO implements IUserRepository {
       ...this.sanitize(user),
       id: userId,
       created_at: new Date()
+    }
+
+    // Validar dados
+    const validation = sanitized.validate()
+    if (!validation.isValid) {
+      throw new Error(validation.errors.join(', '))
     }
 
     await setDoc(doc(this.usersRef, userId), sanitized)

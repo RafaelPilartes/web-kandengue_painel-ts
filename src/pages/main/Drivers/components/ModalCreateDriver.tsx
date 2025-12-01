@@ -15,12 +15,8 @@ import { z } from 'zod'
 import { useFileUploadViewModel } from '@/viewModels/FileUploadViewModel'
 import { useDriversViewModel } from '@/viewModels/DriverViewModel'
 
-// Data
-import { statusOptions } from '@/data/selectOption'
-
 // Component
 import { CustomInput } from '@/components/input/InputLabel'
-import { SelectCustomZod } from '@/components/selects/SelectCustomZod'
 
 // Style
 import { customStylesModalCenter } from '@/styles/custom/modals'
@@ -36,6 +32,7 @@ import { showToast } from '@/utils/toasts'
 import { validationFileImage } from '@/utils/file'
 import { useAuthViewModel } from '@/viewModels/AuthViewModel'
 import { mapFirebaseError } from '@/helpers/mapFirebaseError'
+import type { DriverEntity } from '@/core/entities/Driver'
 
 const requiredStringField = (message = 'Campo obrigatório') =>
   z
@@ -49,11 +46,6 @@ const formSchema = z.object({
   name: requiredStringField('O nome é obrigatório!'),
   email: z.string('O email é obrigatório!').toLowerCase().trim(),
   phone: requiredStringField(),
-  status: z.enum(['active', 'inactive', 'pending'], {
-    error: () => ({
-      message: "Selecione 'Ativo', 'Inativo' ou 'Pendente' "
-    })
-  }),
   password: z
     .string('A palavra-passe é obrigatório!')
     .min(6, 'A palavra-passe tem de no mínimo 6 caracteres')
@@ -71,7 +63,7 @@ export function ModalCreateDriver({
   modalCreateRowIsOpen,
   setModalCreateRowIsOpen
 }: modalCreateType<any>) {
-  const { createDriver, fetchOneAdminByField } = useDriversViewModel()
+  const { createDriver, fetchOneDriverByField } = useDriversViewModel()
   const { uploadSimple, isUploading, uploadError } = useFileUploadViewModel()
   const { register, isRegistering, registerError } = useAuthViewModel()
 
@@ -113,13 +105,6 @@ export function ModalCreateDriver({
     if (file) {
       setSelectedFile(file)
       setImagePreview(URL.createObjectURL(file))
-    }
-  }
-
-  // Handle Select
-  const handleStatusChange = (valueSelected: string) => {
-    if (valueSelected) {
-      console.log = () => {}
     }
   }
 
@@ -166,7 +151,7 @@ export function ModalCreateDriver({
     }
 
     try {
-      const userFounded = await fetchOneAdminByField('email', dataForm.email)
+      const userFounded = await fetchOneDriverByField('email', dataForm.email)
       if (userFounded) {
         showToast('error', `Este email email já encontra-se em uso`)
         return
@@ -210,6 +195,9 @@ export function ModalCreateDriver({
       const dataToSave: DriverInterface = {
         ...dataForm,
         photo: imageUploaded,
+        status: 'inactive',
+        email_verified: false,
+        phone_verified: false,
         is_online: false
       }
 
@@ -217,7 +205,7 @@ export function ModalCreateDriver({
       delete (dataToSave as any).password
       delete (dataToSave as any).confirm_password
 
-      await createDriver.mutateAsync(dataToSave)
+      await createDriver.mutateAsync(dataToSave as Omit<DriverEntity, 'id'>)
 
       if (createDriver.isError) {
         showToast('error', 'Erro ao salvar motorista')
@@ -339,17 +327,6 @@ export function ModalCreateDriver({
                   placeholder="Ex.: 923414621"
                   control={control}
                   error={errors.phone}
-                />
-              </div>
-
-              <div className="w-full grid gap-6 md:grid-cols-2">
-                <SelectCustomZod
-                  name="status"
-                  label="Estado da conta"
-                  control={control}
-                  error={errors.status}
-                  options={statusOptions}
-                  onOptionChange={handleStatusChange}
                 />
               </div>
 

@@ -24,7 +24,7 @@ import { generateId } from '@/helpers/generateId'
 export class FirebaseDocumentDAO implements IDocumentRepository {
   private documentsRef = collection(db, firebaseCollections.documents.root)
 
-  // 🔹 Remove campos undefined antes de salvar
+  // Remove campos undefined antes de salvar
   private sanitize<T extends Record<string, any>>(data: T): T {
     return Object.fromEntries(
       Object.entries(data).filter(([_, v]) => v !== undefined)
@@ -44,7 +44,7 @@ export class FirebaseDocumentDAO implements IDocumentRepository {
     return q
   }
 
-  /** 🔹 Listar documents com paginação + pesquisa opcional */
+  /** Listar documents com paginação + pesquisa opcional */
   async getAll(
     limitValue: number = 500,
     offset = 0,

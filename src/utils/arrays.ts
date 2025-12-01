@@ -1,6 +1,5 @@
 import type { UserInterface } from '@/interfaces/IUser'
 import type { OptionType } from '../types/option'
-import { data } from 'react-router-dom'
 
 export function sortArrayBy(array: any[], asc: boolean, prop?: string): any[] {
   const sortedArray = array.sort((a: any, b: any) => {
@@ -67,7 +66,7 @@ export function mapArrayToOptions(array: any[]): OptionType[] {
     }))
 }
 
-// 🔹 Mapear usuários para options
+// Mapear usuários para options
 export function mapUserToOptionsJson(arrayData: UserInterface[]): OptionType[] {
   return arrayData
     .filter(data => data.id !== undefined)

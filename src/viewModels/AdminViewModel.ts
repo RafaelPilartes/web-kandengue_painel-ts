@@ -19,7 +19,7 @@ export function useAdminsViewModel(
 
   const filtersKey = filters ? JSON.stringify(filters) : ''
 
-  /** 🔹 Buscar lista de administradores */
+  /** Buscar lista de administradores */
   const {
     data: adminsResponse,
     isLoading: loading,
@@ -37,7 +37,7 @@ export function useAdminsViewModel(
     staleTime: 1000 * 60 // cache 1min
   })
 
-  // 🔹 transforma os dados em formato exportável
+  // transforma os dados em formato exportável
   const dataToExport = useMemo(() => {
     if (!adminsResponse?.data) return []
     return adminsResponse?.data.map(doc => ({
@@ -52,7 +52,7 @@ export function useAdminsViewModel(
     }))
   }, [adminsResponse?.data])
 
-  /** 🔹 Buscar admin por field */
+  /** Buscar admin por field */
   const fetchOneAdminByField = async (
     field: keyof AdminEntity,
     value: string
@@ -65,7 +65,7 @@ export function useAdminsViewModel(
     }
   }
 
-  /** 🔹 Buscar lista de administradores por field */
+  /** Buscar lista de administradores por field */
   const fetchAllAdminsByField = async (
     field: string,
     value: any,
@@ -91,7 +91,7 @@ export function useAdminsViewModel(
   //   staleTime: 1000 * 60 // cache 1min
   // })
 
-  /** 🔹 Criar administrador */
+  /** Criar administrador */
   const createAdmin = useMutation({
     mutationFn: (admin: Omit<AdminEntity, 'id'>) => adminService.create(admin),
     onSuccess: () => {
@@ -101,7 +101,7 @@ export function useAdminsViewModel(
     }
   })
 
-  /** 🔹 Atualizar administrador */
+  /** Atualizar administrador */
   const updateAdmin = useMutation({
     mutationFn: ({ id, admin }: { id: string; admin: Partial<AdminEntity> }) =>
       adminService.update(id, admin),
@@ -112,7 +112,7 @@ export function useAdminsViewModel(
     }
   })
 
-  /** 🔹 Deletar administrador */
+  /** Deletar administrador */
   const deleteAdmin = useMutation({
     mutationFn: (id: string) => adminService.delete(id),
     onSuccess: () => {
@@ -122,7 +122,7 @@ export function useAdminsViewModel(
     }
   })
 
-  /** 🔹 Buscar administrador único (on-demand) */
+  /** Buscar administrador único (on-demand) */
   const fetchAdminById = async (id: string) => {
     try {
       return await adminService.getById(id)
@@ -132,7 +132,7 @@ export function useAdminsViewModel(
     }
   }
 
-  /** 🔹 Buscar administrador único (on-demand) */
+  /** Buscar administrador único (on-demand) */
   const fetchAdminByEmail = async (email: string) => {
     try {
       return await adminService.getByEmail(email)

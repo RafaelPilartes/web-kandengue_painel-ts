@@ -88,4 +88,74 @@ export class RideService {
       throw new Error(error.message || 'Erro ao deletar corrida')
     }
   }
+
+  listenRideRealtime(
+    id: string,
+    onUpdate: (ride: RideEntity) => void,
+    onError?: (err: Error) => void
+  ): () => void {
+    try {
+      return rideRepository.listenById(id, onUpdate, onError)
+    } catch (error: any) {
+      console.error(`Erro ao escutar corrida ${id} em tempo real:`, error)
+      throw new Error(error.message || 'Erro ao escutar corrida em tempo real')
+    }
+  }
+
+  listenByField(
+    field: keyof RideEntity,
+    value: string,
+    onUpdate: (ride: RideEntity) => void,
+    onError?: (err: Error) => void
+  ) {
+    try {
+      return rideRepository.listenByField(field, value, onUpdate, onError)
+    } catch (error: any) {
+      console.error(`Erro ao escutar corrida pelo campo ${field}:`, error)
+      throw new Error(error.message || 'Erro ao escutar corrida pelo campo')
+    }
+  }
+
+  listenAllByField(
+    field: keyof RideEntity,
+    value: any,
+    onUpdate: (rides: RideEntity[]) => void,
+    onError?: (err: Error) => void,
+    options: {
+      limit?: number
+      orderBy?: keyof RideEntity
+      orderDirection?: 'asc' | 'desc'
+    } = {}
+  ) {
+    try {
+      return rideRepository.listenAllByField(
+        field,
+        value,
+        onUpdate,
+        onError,
+        options
+      )
+    } catch (error: any) {
+      console.error(`Erro ao escutar corridas pelo campo ${field}:`, error)
+      throw new Error(error.message || 'Erro ao escutar corridas pelo campo')
+    }
+  }
+
+  listenAll(
+    onUpdate: (rides: RideEntity[]) => void,
+    onError?: (err: Error) => void,
+    options: {
+      filters?: Partial<RideEntity>
+      limit?: number
+      orderBy?: keyof RideEntity
+      orderDirection?: 'asc' | 'desc'
+    } = {}
+  ) {
+    try {
+      return rideRepository.listenAll(onUpdate, onError, options)
+    } catch (error: any) {
+      console.error('Erro ao escutar corridas:', error)
+      throw new Error(error.message || 'Erro ao escutar corridas')
+    }
+  }
 }

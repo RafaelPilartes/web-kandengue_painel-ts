@@ -12,8 +12,8 @@ import { Pagination } from '@/components/Pagination'
 import { InputWithButton } from '@/components/input/InputWithButton'
 import { SelectCustom } from '@/components/selects/SelectCustom'
 import { SelectSearchableCustom } from '@/components/selects/SelectSearchableCustom'
-// import { ModalCreateAdmin } from './components/modal/ModalCreate'
-// import { ModalEditAdmin } from './components/modal/ModalEdit'
+import { ModalCreateAdmin } from './components/ModalCreate'
+import { ModalEditAdmin } from './components/ModalEdit'
 
 // Data
 import { routsNameMain } from '@/constants/routsName'
@@ -262,8 +262,19 @@ export function AdminPage() {
         </div>
       </div>
 
-      {/* {modalCreateRowIsOpen && <ModalCreateAdmin ... />} */}
-      {/* {modalEditRowIsOpen && <ModalEditAdmin ... />} */}
+      {modalCreateRowIsOpen && (
+        <ModalCreateAdmin
+          modalCreateRowIsOpen={modalCreateRowIsOpen}
+          setModalCreateRowIsOpen={setModalCreateRowIsOpen}
+        />
+      )}
+      {modalEditRowIsOpen && rowSelect && (
+        <ModalEditAdmin
+          modalEditRowIsOpen={modalEditRowIsOpen}
+          setModalEditRowIsOpen={setModalEditRowIsOpen}
+          baseInfo={rowSelect}
+        />
+      )}
     </div>
   )
 }

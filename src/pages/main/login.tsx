@@ -14,6 +14,7 @@ import { BeatLoader } from 'react-spinners'
 import { useAdminsViewModel } from '@/viewModels/AdminViewModel'
 import { useAuthViewModel } from '@/viewModels/AuthViewModel'
 import type { AdminEntity } from '@/core/entities/Admin'
+import { mapFirebaseError } from '@/helpers/mapFirebaseError'
 
 const loginUserSchema = z.object({
   email: z.string().nonempty('O email é obrigatório!').toLowerCase().trim(),
@@ -72,7 +73,7 @@ export function Login() {
 
   useEffect(() => {
     if (loginError) {
-      showToast('error', loginError.message)
+      showToast('error', mapFirebaseError(loginError.message))
     }
   }, [loginError])
 

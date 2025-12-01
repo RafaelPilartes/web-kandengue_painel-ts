@@ -16,7 +16,7 @@ export const Pagination: React.FC<PaginationProps> = ({
   const totalPages = Math.ceil(totalDocs / docsPerPage)
   const windowSize = 4 // número de páginas visíveis na navegação
 
-  // 🔹 Cálculo do range de páginas visíveis
+  // Cálculo do range de páginas visíveis
   let startPage = Math.max(0, currentPage - Math.floor(windowSize / 2))
   let endPage = startPage + windowSize
 

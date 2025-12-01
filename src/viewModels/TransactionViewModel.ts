@@ -20,7 +20,7 @@ export function useTransactionsViewModel(
 
   const filtersKey = filters ? JSON.stringify(filters) : ''
 
-  /** 🔹 Buscar lista de transações */
+  /** Buscar lista de transações */
   const {
     data: transactionsResponse,
     isLoading: loading,
@@ -39,7 +39,7 @@ export function useTransactionsViewModel(
     staleTime: 1000 * 60 // cache 1min
   })
 
-  /** 🔹 Buscar lista de transações por field */
+  /** Buscar lista de transações por field */
   const fetchAllTransactionsByField = async (
     field: string,
     value: any,
@@ -54,7 +54,7 @@ export function useTransactionsViewModel(
     }
   }
 
-  /** 🔹 Criar transação */
+  /** Criar transação */
   const createTransaction = useMutation({
     mutationFn: (transaction: Omit<TransactionEntity, 'id'>) =>
       transactionService.create(transaction),
@@ -65,7 +65,7 @@ export function useTransactionsViewModel(
     }
   })
 
-  /** 🔹 Atualizar transação */
+  /** Atualizar transação */
   const updateTransaction = useMutation({
     mutationFn: ({
       id,
@@ -81,7 +81,7 @@ export function useTransactionsViewModel(
     }
   })
 
-  /** 🔹 Deletar transação */
+  /** Deletar transação */
   const deleteTransaction = useMutation({
     mutationFn: (id: string) => transactionService.delete(id),
     onSuccess: () => {
@@ -91,7 +91,7 @@ export function useTransactionsViewModel(
     }
   })
 
-  /** 🔹 Buscar transação único (on-demand) */
+  /** Buscar transação único (on-demand) */
   const fetchTransactionById = async (id: string) => {
     try {
       return await transactionService.getById(id)
@@ -101,7 +101,7 @@ export function useTransactionsViewModel(
     }
   }
 
-  /** 🔹 Função composta: atualizar saldo + registrar transação */
+  /** Função composta: atualizar saldo + registrar transação */
   const updateBalanceAndAddTransaction = useMutation({
     mutationFn: async ({
       walletId,
@@ -144,7 +144,7 @@ export function useTransactionsViewModel(
     }
   })
 
-  /** 🔹 Buscar transaction por field */
+  /** Buscar transaction por field */
   const fetchOneTransactionByField = async (
     field: keyof TransactionEntity,
     value: string

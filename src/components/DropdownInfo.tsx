@@ -1,5 +1,5 @@
 import { ArrowRight } from 'lucide-react'
-import { ElementType, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ElementType } from 'react'
 import { Link } from 'react-router-dom'
 
 interface DropdownInfoItem {

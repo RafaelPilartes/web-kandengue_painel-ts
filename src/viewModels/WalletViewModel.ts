@@ -18,7 +18,7 @@ export function useWalletsViewModel(
 
   const filtersKey = filters ? JSON.stringify(filters) : ''
 
-  /** 🔹 Buscar lista de Carteiras */
+  /** Buscar lista de Carteiras */
   const {
     data: walletsResponse,
     isLoading: loading,
@@ -36,7 +36,7 @@ export function useWalletsViewModel(
     staleTime: 1000 * 60 // cache 1min
   })
 
-  // 🔹 transforma os dados em formato exportável
+  // transforma os dados em formato exportável
   const dataToExport = useMemo(() => {
     if (!walletsResponse?.data) return []
     return walletsResponse?.data.map(doc => ({
@@ -49,7 +49,7 @@ export function useWalletsViewModel(
     }))
   }, [walletsResponse?.data])
 
-  /** 🔹 Buscar lista de Carteiras por field */
+  /** Buscar lista de Carteiras por field */
   const fetchAllWalletsByField = async (
     field: string,
     value: any,
@@ -64,7 +64,7 @@ export function useWalletsViewModel(
     }
   }
 
-  /** 🔹 Criar carteira */
+  /** Criar carteira */
   const createWallet = useMutation({
     mutationFn: async (wallet: Omit<WalletEntity, 'id'>) => {
       return walletService.create(wallet)
@@ -76,7 +76,7 @@ export function useWalletsViewModel(
     }
   })
 
-  /** 🔹 Atualizar carteira */
+  /** Atualizar carteira */
   const updateWallet = useMutation({
     mutationFn: ({
       id,
@@ -92,7 +92,7 @@ export function useWalletsViewModel(
     }
   })
 
-  /** 🔹 Deletar carteira */
+  /** Deletar carteira */
   const deleteWallet = useMutation({
     mutationFn: async (id: string) => {
       return walletService.delete(id)
@@ -104,7 +104,7 @@ export function useWalletsViewModel(
     }
   })
 
-  /** 🔹 Buscar carteira único (on-demand) */
+  /** Buscar carteira único (on-demand) */
   const fetchWalletById = async (id: string) => {
     try {
       return await walletService.getById(id)
@@ -114,7 +114,7 @@ export function useWalletsViewModel(
     }
   }
 
-  /** 🔹 Buscar wallet por field */
+  /** Buscar wallet por field */
   const fetchOneWalletByField = async (
     field: keyof WalletEntity,
     value: string

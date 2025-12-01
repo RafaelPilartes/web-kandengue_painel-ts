@@ -166,7 +166,7 @@ export function DriverPage() {
         {/* Filtro por role */}
         <SelectSearchableCustom
           name="is_online"
-          label=""
+          label="Atividade"
           options={isOnlineOptions}
           onOptionChange={e => handleDriverIsOnlineChange(e as string)}
         />
