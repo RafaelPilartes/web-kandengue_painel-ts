@@ -26,6 +26,8 @@ import { SettingsPage } from '@/pages/main/Settings'
 import { WalletTopupRequestsPage } from '@/pages/main/Finances/walletTopupRequest'
 import { DriverViewPage } from '@/pages/main/Drivers/DriverDetails'
 import { UserViewPage } from '@/pages/main/Passengers/UserDetails'
+import { ApplicationPage } from '@/pages/main/Application'
+import { ApplicationViewPage } from '@/pages/main/Application/ApplicationDetails'
 
 // Page
 
@@ -107,6 +109,28 @@ export function Router() {
               <React.Suspense fallback={<Loading />}>
                 <Private>
                   <UserViewPage />
+                </Private>
+              </React.Suspense>
+            }
+          />
+          {/* Application */}
+          <Route
+            path={routsNameMain.users.applications.index}
+            element={
+              <React.Suspense fallback={<Loading />}>
+                <Private>
+                  <ApplicationPage />
+                </Private>
+              </React.Suspense>
+            }
+          />
+          {/* Details */}
+          <Route
+            path={routsNameMain.users.applications.view}
+            element={
+              <React.Suspense fallback={<Loading />}>
+                <Private>
+                  <ApplicationViewPage />
                 </Private>
               </React.Suspense>
             }

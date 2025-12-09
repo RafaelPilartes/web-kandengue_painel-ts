@@ -10,7 +10,8 @@ import {
   ShieldCheck,
   Map,
   CarFront,
-  Wallet
+  Wallet,
+  FileInput
 } from 'lucide-react'
 import { routsNameMain } from './routsName'
 
@@ -43,6 +44,12 @@ const dashItem = [
         label: 'Admins & Operadores',
         icon: <ShieldCheck size={16} />,
         to: routsNameMain.users.admins.index,
+        notification: 0
+      },
+      {
+        label: 'Candidaturas',
+        icon: <FileInput size={16} />,
+        to: routsNameMain.users.applications.index,
         notification: 0
       }
     ],

@@ -200,6 +200,8 @@ export function ModalCreateAdmin({
       return
     }
 
+    console.log('dataForm =>', dataForm)
+
     try {
       const adminFounded = await fetchOneAdminByField('email', dataForm.email)
       if (adminFounded) {
@@ -244,10 +246,12 @@ export function ModalCreateAdmin({
 
       const dataToSave: Omit<any, 'id'> = {
         ...dataForm,
-        photo: imageUploaded,
-        role: 'superadmin',
-        permissions: []
+        photo: imageUploaded
+        // role: 'superadmin',
+        // permissions: []
       }
+
+      console.log('dataToSave =>', dataToSave)
 
       // remove key from dataToSave
       delete (dataToSave as any).password
@@ -255,14 +259,10 @@ export function ModalCreateAdmin({
 
       await createAdmin.mutateAsync(dataToSave)
 
-      if (createAdmin.isError) {
-        showToast('error', 'Erro ao salvar motorista')
-      } else {
-        showToast('success', 'Motorista criado com sucesso!')
-        setTimeout(() => {
-          closeModal()
-        }, 3000)
-      }
+      showToast('success', 'Motorista criado com sucesso!')
+      setTimeout(() => {
+        closeModal()
+      }, 3000)
     } catch (error) {
       const message = mapFirebaseError(error)
       showToast('error', message)

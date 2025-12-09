@@ -210,14 +210,15 @@ export class FirebaseAdminDAO implements IAdminRepository {
     const sanitized = {
       ...this.sanitize(admin),
       id: adminId,
+      entity_code: adminId,
       created_at: new Date()
     }
 
     // Validar dados
-    const validation = sanitized.validate()
-    if (!validation.isValid) {
-      throw new Error(validation.errors.join(', '))
-    }
+    // const validation = sanitized.validate()
+    // if (!validation.isValid) {
+    //   throw new Error(validation.errors.join(', '))
+    // }
 
     await setDoc(doc(this.adminsRef, adminId), sanitized)
 

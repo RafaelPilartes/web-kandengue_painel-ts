@@ -179,10 +179,10 @@ export class FirebaseUserDAO implements IUserRepository {
     }
 
     // Validar dados
-    const validation = sanitized.validate()
-    if (!validation.isValid) {
-      throw new Error(validation.errors.join(', '))
-    }
+    // const validation = sanitized.validate()
+    // if (!validation.isValid) {
+    //   throw new Error(validation.errors.join(', '))
+    // }
 
     await setDoc(doc(this.usersRef, userId), sanitized)
 

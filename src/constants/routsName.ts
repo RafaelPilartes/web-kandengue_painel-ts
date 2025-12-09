@@ -33,6 +33,11 @@ export const routsNameMain = {
       viewStr: '/users/admins/view/',
       create: '/users/admins/create',
       edit: '/users/admins/edit/:adminId'
+    },
+    applications: {
+      index: '/applications',
+      view: '/applications/view/:applicationId',
+      viewStr: '/applications/view/'
     }
   },
 

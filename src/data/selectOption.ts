@@ -34,6 +34,11 @@ export const userStatusOptions: OptionType[] = [
   { value: 'pending', label: 'Pendente' },
   { value: 'banned', label: 'Banido' }
 ]
+export const applicationStatusOptions: OptionType[] = [
+  { value: 'rejected', label: 'Rejeitado' },
+  { value: 'approved', label: 'Aprovado' },
+  { value: 'pending', label: 'Pendente' }
+]
 export const booleanOptions: OptionType[] = [
   { value: 'true', label: 'Sim' },
   { value: 'false', label: 'Não' }
@@ -294,3 +299,9 @@ export const adminRolePermissionsMap: Record<string, OptionType[]> = {
     { value: 'send_notifications', label: 'Enviar Notificações' }
   ]
 }
+
+export const ApplicationStatusOptions: OptionType[] = [
+  { value: 'pending', label: 'Pendente' },
+  { value: 'approved', label: 'Aprovado' },
+  { value: 'rejected', label: 'Rejeitado' }
+]

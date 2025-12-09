@@ -96,6 +96,13 @@ export const firebaseCollections = {
   },
 
   // ============================================
+  // APPLICATIONS
+  applications: {
+    root: 'applications',
+    single: (applicationId: string) => `applications/${applicationId}`
+  },
+
+  // ============================================
   // SYSTEM LOGS
   logs: {
     root: 'logs',

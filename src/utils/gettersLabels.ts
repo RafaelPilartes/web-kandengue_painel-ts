@@ -2,6 +2,7 @@ import { rideRatesLabels } from '@/data/label'
 import type { RideRatesInterface } from '@/interfaces/IRideRates'
 import type { RateType, PayoutsType } from '@/types/ride'
 import {
+  ApplicationStatusOptions,
   booleanOptions,
   documentStatusOptions,
   documentTypeOptions,
@@ -20,6 +21,7 @@ import {
 } from '../data/selectOption'
 import type {
   AdminRole,
+  ApplicationStatus,
   DocumentStatus,
   GenderType,
   NotificationCategory,
@@ -123,6 +125,11 @@ export function getAdminRoleLabel(role: AdminRole): string {
     support: 'Suporte'
   }
   return labels[role]
+}
+
+export const getApplicationStatusLabel = (value: ApplicationStatus): string => {
+  const found = ApplicationStatusOptions.find(option => option.value === value)
+  return found ? found.label : value
 }
 
 export const getRideRateLabel = (
