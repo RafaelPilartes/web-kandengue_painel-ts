@@ -579,6 +579,8 @@ export function DriverViewPage() {
       </div>
 
       <div className="w-full max-w-32 flex flex-col gap-4">
+        {rowDataDriver?.status}
+
         <SelectCustom
           htmlFor="status"
           selectedValue={driverStatus}
@@ -806,8 +808,8 @@ export function DriverViewPage() {
                                 vehicle.status === 'validated'
                                   ? 'bg-green-100 text-green-700'
                                   : vehicle.status === 'rejected'
-                                  ? 'bg-red-200 text-red-700'
-                                  : 'bg-orange-100 text-orange-700'
+                                    ? 'bg-red-200 text-red-700'
+                                    : 'bg-orange-100 text-orange-700'
                               }`}
                             >
                               <span className="text-xs font-medium">
@@ -860,8 +862,8 @@ export function DriverViewPage() {
                                     doc.status === 'approved'
                                       ? 'green'
                                       : doc.status === 'pending'
-                                      ? 'orange'
-                                      : 'red'
+                                        ? 'orange'
+                                        : 'red'
                                   }
                                   label={getDocumentStatusLabel(doc.status)}
                                 />
