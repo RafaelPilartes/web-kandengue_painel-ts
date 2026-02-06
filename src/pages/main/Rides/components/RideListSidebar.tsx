@@ -6,7 +6,7 @@ import type { RideInterface } from '@/interfaces/IRide'
 import { colorRideStatus } from '@/utils/colorBy'
 import { formatDateTimeFromFirestore } from '@/utils/date'
 import { getRideStatusLabel } from '@/utils/gettersLabels'
-import { Package, User } from 'lucide-react'
+import { Package, User, ChevronLeft, ChevronRight } from 'lucide-react'
 import { IoSearchSharp } from 'react-icons/io5'
 import { RideSkeleton } from '../components/RideSkeleton'
 
@@ -20,6 +20,9 @@ interface RideListSidebarProps {
   docsPerPage: number
   setDocsPerPage: (value: number) => void
   onFilterStatusChange: (status: string) => void
+  currentPage: number
+  setCurrentPage: (page: number) => void
+  totalCount: number
 }
 
 export function RideListSidebar({
@@ -31,11 +34,31 @@ export function RideListSidebar({
   setTermForSearch,
   docsPerPage,
   setDocsPerPage,
-  onFilterStatusChange
+  onFilterStatusChange,
+  currentPage,
+  setCurrentPage,
+  totalCount
 }: RideListSidebarProps) {
   const handleSelectChange = (value: number) => {
     const rowsPerPage = value === -1 ? 8 : value
     setDocsPerPage(rowsPerPage)
+  }
+
+  // Cálculos de paginação do servidor
+  const totalPages = Math.ceil(totalCount / docsPerPage)
+  const startIndex = currentPage * docsPerPage
+  const endIndex = Math.min(startIndex + rides.length, totalCount)
+
+  const handlePreviousPage = () => {
+    if (currentPage > 0) {
+      setCurrentPage(currentPage - 1)
+    }
+  }
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages - 1) {
+      setCurrentPage(currentPage + 1)
+    }
   }
 
   return (
@@ -120,7 +143,7 @@ export function RideListSidebar({
               <div className="absolute left-[15px] top-[18px] bottom-[18px] w-0.5 bg-gray-200 dark:bg-gray-700" />
 
               {/* Pickup */}
-              <div className="flex items-start gap-3 relative z-10">
+              <div className="flex items-start gap-3 relative">
                 <div className="w-2 h-2 mt-1.5 rounded-full bg-blue-500 ring-2 ring-white dark:ring-gray-800" />
                 <div className="flex-1 overflow-hidden">
                   <p className="text-xs font-medium text-gray-800 dark:text-gray-100 truncate">
@@ -133,7 +156,7 @@ export function RideListSidebar({
               </div>
 
               {/* Dropoff */}
-              <div className="flex items-start gap-3 relative z-10">
+              <div className="flex items-start gap-3 relative">
                 <div className="w-2 h-2 mt-1.5 rounded-full bg-gray-900 dark:bg-gray-400 ring-2 ring-white dark:ring-gray-800" />
                 <div className="flex-1 overflow-hidden">
                   <p className="text-xs font-medium text-gray-800 dark:text-gray-100 truncate">
@@ -172,8 +195,49 @@ export function RideListSidebar({
           </div>
         ))}
 
-        <div className="pt-2 pb-6 flex flex-col justify-center items-center gap-4">
-          <div className="w-full flex-1 flex flex-row justify-between items-center gap-2">
+        <div className="pt-2 pb-4 flex flex-col justify-center items-center gap-3">
+          {/* Informação de exibição */}
+          {totalCount > 0 && (
+            <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
+              Mostrando {startIndex + 1}-{endIndex} de {totalCount}
+            </div>
+          )}
+
+          {/* Controles de paginação */}
+          {totalPages > 1 && (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handlePreviousPage}
+                disabled={currentPage === 0}
+                className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title="Página anterior"
+              >
+                <ChevronLeft
+                  size={16}
+                  className="text-gray-600 dark:text-gray-300"
+                />
+              </button>
+
+              <span className="text-xs font-medium text-gray-700 dark:text-gray-300 min-w-[60px] text-center">
+                {currentPage + 1} / {totalPages}
+              </span>
+
+              <button
+                onClick={handleNextPage}
+                disabled={currentPage === totalPages - 1}
+                className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title="Próxima página"
+              >
+                <ChevronRight
+                  size={16}
+                  className="text-gray-600 dark:text-gray-300"
+                />
+              </button>
+            </div>
+          )}
+
+          {/* Registros por página */}
+          <div className="w-full flex flex-row justify-between items-center gap-2">
             <span className="text-xs text-gray-500">Registos por página: </span>
             <span className="w-20">
               <SelectCustom

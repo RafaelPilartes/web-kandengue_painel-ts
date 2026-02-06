@@ -1,5 +1,5 @@
 // pages/rides/RidesPage.tsx
-import { useEffect, useMemo, useState } from 'react'
+import { useState } from 'react'
 import {
   MapContainer,
   TileLayer,
@@ -28,17 +28,21 @@ import { MapController } from './components/MapController'
 
 export function RealtimePage() {
   // Paginação
+  const [currentPage, setCurrentPage] = useState(0) // página atual (0-based)
   const [docsPerPage, setDocsPerPage] = useState(8) // limite por página
 
   // Filtros
   const [termForSearch, setTermForSearch] = useState<string>('')
-
   const [filters, setFilters] = useState<Partial<RideInterface>>()
 
-  const [ridesList, setRidesList] = useState<RideInterface[]>([])
-  const [isLoadingRides, setIsLoadingRides] = useState(true)
+  // ViewModel com paginação do servidor
+  const { rides, pagination, isLoadingRides } = useRidesViewModel(
+    docsPerPage,
+    currentPage * docsPerPage,
+    termForSearch,
+    filters
+  )
 
-  const { listenAll } = useRidesViewModel()
   const { rideTrackings } = useRideTrackingsViewModel()
   const { routeCoords, fetchRoute } = useDirections()
 
@@ -117,65 +121,20 @@ export function RealtimePage() {
         status: valueSelected as RideInterface['status']
       }))
     }
+    setCurrentPage(0) // resetar para primeira página
   }
 
   // Change rows per page
   const handleSelectChange = (value: number) => {
     const rowsPerPage = value === -1 ? 8 : value
     setDocsPerPage(rowsPerPage)
+    setCurrentPage(0) // resetar para primeira página
   }
-
-  // Dados filtrados com useMemo
-  const filteredRides = useMemo(() => {
-    if (!termForSearch.trim()) return ridesList
-
-    const searchTerm = termForSearch.toLowerCase().trim()
-
-    return ridesList.filter(ride => {
-      // Busca em múltiplos campos
-      return (
-        // Email do motorista
-        ride.driver?.email?.toLowerCase().includes(searchTerm) ||
-        // Nome do motorista
-        ride.driver?.name?.toLowerCase().includes(searchTerm) ||
-        // Email do cliente
-        ride.user?.email?.toLowerCase().includes(searchTerm) ||
-        // Nome do cliente
-        ride.user?.name?.toLowerCase().includes(searchTerm) ||
-        // ID da corrida
-        ride.id?.toLowerCase().includes(searchTerm) ||
-        // Local de pickup
-        ride.pickup.name?.toLowerCase().includes(searchTerm) ||
-        ride.pickup.description?.toLowerCase().includes(searchTerm) ||
-        // Local de dropoff
-        ride.dropoff.name?.toLowerCase().includes(searchTerm) ||
-        ride.dropoff.description?.toLowerCase().includes(searchTerm)
-      )
-    })
-  }, [ridesList, termForSearch])
-
-  // Rides
-  useEffect(() => {
-    setIsLoadingRides(true)
-
-    const unsubscribeRides = listenAll(
-      rides => {
-        setRidesList(rides)
-        setIsLoadingRides(false)
-      },
-      {
-        filters,
-        limit: docsPerPage
-      }
-    )
-
-    return unsubscribeRides
-  }, [docsPerPage, filters])
   return (
     <div className="flex h-[calc(100vh-theme(spacing.16))] w-full relative overflow-hidden bg-gray-50 dark:bg-gray-900">
       {/* Sidebar Lista de Corridas */}
       <RideListSidebar
-        rides={filteredRides}
+        rides={rides || []}
         selectedRideId={selectedRide?.id}
         isLoading={isLoadingRides}
         onSelectRide={handleSelectRide}
@@ -184,6 +143,9 @@ export function RealtimePage() {
         docsPerPage={docsPerPage}
         setDocsPerPage={handleSelectChange}
         onFilterStatusChange={handleRideStatusChange}
+        currentPage={currentPage}
+        setCurrentPage={setCurrentPage}
+        totalCount={pagination?.count || 0}
       />
 
       {/* Mapa */}
