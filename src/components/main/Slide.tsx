@@ -42,7 +42,7 @@ export const Slide = () => {
 
   return (
     <>
-      <nav className={`fixed z-[9] left-0 w-screen group overflow-hidden`}>
+      <nav className={`fixed z-[19] left-0 w-screen group overflow-hidden`}>
         {/* Container */}
         <div
           className={`w-full h-full py-2 bg-light dark:bg-dark flex flex-row items-start justify-center shadow-3xl border-b-[1px] border-gray-200 dark:border-gray-700 flex-wrap gap-y-0 gap-x-0 overflow-y-auto`}

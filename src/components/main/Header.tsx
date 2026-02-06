@@ -64,7 +64,7 @@ export const Header = () => {
 
   return (
     <>
-      <header className="fixed z-10 h-20 top-0 left-0 w-full font-semibold bg-light dark:bg-dark border-b-[1px] border-gray-200 dark:border-gray-700">
+      <header className="fixed z-20 h-20 top-0 left-0 w-full font-semibold bg-light dark:bg-dark border-b-[1px] border-gray-200 dark:border-gray-700">
         {/* Container */}
         <div className="h-20 py-4 container flex items-center justify-between ">
           <div className="flex items-center justify-center gap-4">

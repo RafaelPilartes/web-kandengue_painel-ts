@@ -57,14 +57,20 @@ const TableRow: React.FC<TableRowProps> = ({
             <img
               className="w-full h-full object-cover rounded-full"
               src={rowItem.driver?.photo || '/default-avatar.png'}
-              alt={rowItem.driver?.name}
+              alt={rowItem.driver?.name || 'Sem motorista'}
             />
           </div>
           <div className="flex flex-col justify-center items-start">
             <span className="text-dark dark:text-light font-semibold text-sm">
-              {rowItem.driver?.name}
+              {rowItem.driver ? (
+                rowItem.driver.name
+              ) : (
+                <span className="text-gray-400 dark:text-gray-500 italic font-normal">
+                  Sem Motorista
+                </span>
+              )}
             </span>
-            <span className="text-xs">{rowItem.driver?.email}</span>
+            <span className="text-xs">{rowItem.driver?.email || '-'}</span>
           </div>
         </div>
       </td>
