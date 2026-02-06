@@ -9,6 +9,8 @@ import { useRideRatesViewModel } from '@/viewModels/RideRateViewModel'
 import { useRideRatesStore } from '@/stores/rideRatesStore'
 import { defaultRates } from '@/utils/rideRatesDefaults'
 import { isEqual } from 'lodash' // 👈 para comparar objetos
+import { routsNameMain } from '@/constants/routsName'
+import { Breadcrumbs } from '@/components/Breadcrumbs'
 
 type SettingsOption = 'tariffs' | 'payouts' | 'general'
 
@@ -91,39 +93,65 @@ export function SettingsPage() {
     }
   }
 
+  const namePageRides = 'Corridas'
+  const namePageReports = 'Relatórios'
+  const namePageReportsDetails = 'Relatórios de Corridas'
+
+  const itemsBreadcrumbs = [
+    { label: 'Início', to: routsNameMain.home },
+    { label: namePageRides, to: routsNameMain.rides.index },
+    { label: namePageReports, to: routsNameMain.metrics.index },
+    { label: namePageReportsDetails }
+  ]
+
   return (
-    <div className="flex flex-col">
-      {/* Header */}
-      <div className="border-b border-gray-200 dark:border-gray-700 pb-4 flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">
-            Configurações
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Gerencie as configurações do aplicativo.
-          </p>
+    <div className="w-full h-full flex flex-col gap-6">
+      <Breadcrumbs items={itemsBreadcrumbs} />
+
+      <div className="h-full flex flex-col">
+        {/* Header */}
+        <div className="px-0 pb-8 backdrop-blur-sm">
+          <div className="mx-auto flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
+                Configurações
+              </h1>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                Gerencie as preferências e taxas do sistema
+              </p>
+            </div>
+
+            {/* Ações */}
+            <div className="flex items-center gap-4">
+              {hasChanges && (
+                <div className="flex items-center gap-3 animate-in fade-in slide-in-from-right-4 duration-300">
+                  <span className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-orange-50 text-orange-700 border border-orange-100 text-xs font-medium dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-800/30">
+                    <span className="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
+                    Alterações pendentes
+                  </span>
+                  <button
+                    onClick={handleSave}
+                    className="px-6 py-2 bg-black text-white rounded-xl hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 transition-all font-medium text-sm shadow-sm hover:shadow-md active:scale-95"
+                  >
+                    Salvar Alterações
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
-        {/* Botão de salvar */}
-        {hasChanges && (
-          <button
-            onClick={handleSave}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 transition"
-          >
-            Salvar alterações
-          </button>
-        )}
-      </div>
+        {/* Content Container - Layout Limpo */}
+        <div className="flex-1 flex overflow-hidden rounded-lg">
+          <Sidebar
+            selectedOption={selectedOption}
+            setSelectedOption={setSelectedOption}
+          />
 
-      {/* Content */}
-      <div className="flex">
-        <Sidebar
-          selectedOption={selectedOption}
-          setSelectedOption={setSelectedOption}
-        />
-        <main className="flex-1 p-8 overflow-y-auto bg-white dark:bg-gray-800">
-          {renderContent()}
-        </main>
+          <main className="flex-1 overflow-y-auto bg-gray-50/50 dark:bg-gray-800 border-l border-l-gray-200 dark:border-l-gray-700">
+            <div className="max-w-4xl mx-auto p-8 py-10">{renderContent()}</div>
+          </main>
+        </div>
       </div>
     </div>
   )

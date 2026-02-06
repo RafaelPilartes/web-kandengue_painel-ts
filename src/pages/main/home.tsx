@@ -97,58 +97,106 @@ export function Home() {
     <div className="w-full h-full flex flex-col gap-6 overflow-x-hidden">
       <Breadcrumbs items={itemsBreadcrumbs} />
 
-      {/* Estatísticas */}
-      <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Estatísticas principais */}
-        <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="p-6 flex flex-col gap-3 rounded-md bg-light dark:bg-dark shadow-3xl border-b-8 border-blue-600">
-            <Users size={36} className="text-blue-600" />
-            <span className="text-base">Total de Usuários</span>
-            {isLoadingUsers ? (
-              <Spinner size={24} className="text-blue-600 animate-spin" />
-            ) : (
-              <span className="text-2xl font-semibold">{users.length}</span>
-            )}
-          </div>
-
-          <div className="p-6 flex flex-col gap-3 rounded-md bg-light dark:bg-dark shadow-3xl border-b-8 border-green-500">
-            <Truck size={36} className="text-green-500" />
-            <span className="text-base">Total de Motoristas</span>
-            {isLoadingDrivers ? (
-              <Spinner size={24} className="text-green-500 animate-spin" />
-            ) : (
-              <span className="text-2xl font-semibold">{drivers.length}</span>
-            )}
-          </div>
-
-          <div className="p-6 flex flex-col gap-3 rounded-md bg-light dark:bg-dark shadow-3xl border-b-8 border-orange-500">
-            <CarFront size={36} className="text-orange-500" />
-            <span className="text-base">Total de Corridas</span>
-            {isLoadingRides ? (
-              <Spinner size={24} className="text-orange-500 animate-spin" />
-            ) : (
-              <span className="text-2xl font-semibold">{rides.length}</span>
-            )}
-          </div>
-
-          <div className="p-6 flex flex-col gap-3 rounded-md bg-light dark:bg-dark shadow-3xl border-b-8 border-purple-500">
-            <CreditCard size={36} className="text-purple-500" />
-            <span className="text-base">Receita Total</span>
-            {isLoadingRides ? (
-              <Spinner size={24} className="text-purple-500 animate-spin" />
-            ) : (
-              <span className="text-2xl font-semibold">
-                AOA {formatMoney(ridesMetrics.payoutsTotals.company)}
-              </span>
-            )}
+      {/* Estatísticas - Layout Assimétrico */}
+      <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Corridas - Card Grande (destaque principal) */}
+        <div className="lg:col-span-2 p-8 rounded-xl bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 shadow-lg hover:shadow-xl transition-shadow border-l-4 border-orange-500">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-2">
+                <CarFront
+                  size={28}
+                  className="text-orange-600 dark:text-orange-400"
+                />
+                <span className="text-sm font-medium text-orange-800 dark:text-orange-300 uppercase tracking-wide">
+                  Total de Corridas
+                </span>
+              </div>
+              {isLoadingRides ? (
+                <Spinner size={32} className="text-orange-600 animate-spin" />
+              ) : (
+                <div className="text-6xl font-bold text-orange-900 dark:text-orange-100 tracking-tight">
+                  {rides.length}
+                </div>
+              )}
+              <p className="text-sm text-orange-700 dark:text-orange-400 mt-2">
+                Atividade total do sistema
+              </p>
+            </div>
+            <Activity
+              size={48}
+              className="text-orange-300 dark:text-orange-700 opacity-40"
+            />
           </div>
         </div>
 
+        {/* Receita - Card Destaque */}
+        <div className="p-6 rounded-xl bg-gradient-to-br from-amber-50 to-yellow-100 dark:from-amber-900/20 dark:to-yellow-800/20 shadow-lg hover:shadow-xl transition-shadow border-l-4 border-amber-500">
+          <div className="flex items-center gap-2 mb-3">
+            <CreditCard
+              size={20}
+              className="text-amber-600 dark:text-amber-400"
+            />
+            <span className="text-xs font-medium text-amber-800 dark:text-amber-300 uppercase tracking-wide">
+              Receita Total
+            </span>
+          </div>
+          {isLoadingRides ? (
+            <Spinner size={24} className="text-amber-600 animate-spin" />
+          ) : (
+            <>
+              <div className="text-3xl font-bold text-amber-900 dark:text-amber-100 tracking-tight">
+                AOA {formatMoney(ridesMetrics.payoutsTotals.company)}
+              </div>
+              <p className="text-xs text-amber-700 dark:text-amber-400 mt-2">
+                Faturamento da empresa
+              </p>
+            </>
+          )}
+        </div>
+
+        {/* Usuários */}
+        <div className="p-6 rounded-xl bg-white dark:bg-gray-800 shadow-md hover:shadow-lg transition-shadow border-l-4 border-blue-500">
+          <div className="flex items-center gap-2 mb-3">
+            <Users size={20} className="text-blue-600 dark:text-blue-400" />
+            <span className="text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide">
+              Usuários
+            </span>
+          </div>
+          {isLoadingUsers ? (
+            <Spinner size={24} className="text-blue-600 animate-spin" />
+          ) : (
+            <div className="text-4xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
+              {users.length}
+            </div>
+          )}
+        </div>
+
+        {/* Motoristas */}
+        <div className="lg:col-span-2 p-6 rounded-xl bg-white dark:bg-gray-800 shadow-md hover:shadow-lg transition-shadow border-l-4 border-emerald-500">
+          <div className="flex items-center gap-2 mb-3">
+            <Truck
+              size={20}
+              className="text-emerald-600 dark:text-emerald-400"
+            />
+            <span className="text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide">
+              Motoristas
+            </span>
+          </div>
+          {isLoadingDrivers ? (
+            <Spinner size={24} className="text-emerald-600 animate-spin" />
+          ) : (
+            <div className="text-4xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
+              {drivers.length}
+            </div>
+          )}
+        </div>
+
         {/* Mapa dos motoristas */}
-        <div className="p-6 rounded-md bg-light dark:bg-dark shadow-3xl">
-          <h1 className="text-lg font-semibold mb-4">
+        <div className="p-6 rounded-xl bg-white dark:bg-gray-800 shadow-md hover:shadow-lg transition-shadow">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
             Localização dos Motoristas
-          </h1>
+          </h3>
           <MapContainer
             center={driverLocations[0]}
             zoom={13}
@@ -165,23 +213,30 @@ export function Home() {
       </div>
 
       {/* Top Motoristas */}
-      <div className="p-6 rounded-md bg-light dark:bg-dark shadow-3xl">
-        <h2 className="flex items-center gap-2 font-semibold text-lg mb-4">
+      <div className="p-6 rounded-xl bg-white dark:bg-gray-800 shadow-md">
+        <h2 className="flex items-center gap-2 font-semibold text-lg text-gray-900 dark:text-gray-100 mb-4">
           <Crown className="text-yellow-500" /> Top Motoristas
         </h2>
         {isLoadingDrivers || isLoadingRides ? (
-          <Spinner size={24} className="text-blue-600 animate-spin" />
+          <div className="flex justify-center py-8">
+            <Spinner size={28} className="text-blue-600 animate-spin" />
+          </div>
         ) : (
-          <ul className="flex flex-col gap-2">
+          <ul className="flex flex-col gap-3">
             {topDrivers.map((driver, i) => (
               <li
                 key={driver.id}
-                className="flex justify-between items-center p-3 rounded-md bg-light dark:bg-dark/50 shadow border-b-2 border-b-yellow-500"
+                className="flex justify-between items-center p-4 rounded-lg bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border-l-4 border-yellow-500"
               >
-                <span>
-                  {i + 1}. {driver.name}
-                </span>
-                <span className="text-sm text-gray-500">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-yellow-500 text-white font-bold text-sm">
+                    {i + 1}
+                  </div>
+                  <span className="font-medium text-gray-900 dark:text-gray-100">
+                    {driver.name}
+                  </span>
+                </div>
+                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
                   {driver.rideCount} corridas
                 </span>
               </li>
@@ -192,39 +247,52 @@ export function Home() {
 
       {/* Gráficos */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="chart p-6 rounded-md bg-light dark:bg-dark shadow-3xl">
-          <h2>Corridas por Mês</h2>
+        <div className="p-6 rounded-xl bg-white dark:bg-gray-800 shadow-md">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+            Corridas por Mês
+          </h3>
           <Line data={ridesByMonth} />
         </div>
-        <div className="chart p-6 rounded-md bg-light dark:bg-dark shadow-3xl">
-          <h2>Receita por Mês</h2>
+        <div className="p-6 rounded-xl bg-white dark:bg-gray-800 shadow-md">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+            Receita por Mês
+          </h3>
           <Bar data={revenueByMonth} />
         </div>
       </div>
 
       {/* Corridas em andamento */}
-      <div className="p-6 rounded-md bg-light dark:bg-dark shadow-3xl">
-        <h2 className="flex items-center gap-2 font-semibold text-lg mb-4">
-          <Activity className="text-green-600" /> Corridas em Andamento
+      <div className="p-6 rounded-xl bg-white dark:bg-gray-800 shadow-md">
+        <h2 className="flex items-center gap-2 font-semibold text-lg text-gray-900 dark:text-gray-100 mb-4">
+          <Activity className="text-emerald-600" /> Corridas em Andamento
         </h2>
         {isLoadingRides ? (
-          <Spinner size={24} className="text-orange-500 animate-spin" />
+          <div className="flex justify-center py-8">
+            <Spinner size={28} className="text-emerald-600 animate-spin" />
+          </div>
         ) : activeRides.length === 0 ? (
-          <span className="text-sm text-gray-500">
-            Nenhuma corrida em andamento.
-          </span>
+          <div className="text-center py-8">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Nenhuma corrida em andamento no momento.
+            </p>
+          </div>
         ) : (
-          <ul className="flex flex-col gap-2">
+          <ul className="flex flex-col gap-3">
             {activeRides.map(r => (
               <li
                 key={r.id}
-                className="flex justify-between items-center p-3 rounded-md bg-light dark:bg-dark/50 shadow"
+                className="flex justify-between items-center p-4 rounded-lg bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border-l-4 border-emerald-500"
               >
-                <span>
-                  Cliente: {r.user.id} → Motorista: {r.driver?.id}
-                </span>
-                <span className="text-sm text-gray-500">
-                  Status: {r.status}
+                <div>
+                  <p className="font-medium text-gray-900 dark:text-gray-100">
+                    Cliente: {r.user.name}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Motorista: {r.driver?.name || 'N/A'}
+                  </p>
+                </div>
+                <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400 capitalize">
+                  {r.status}
                 </span>
               </li>
             ))}
@@ -233,8 +301,10 @@ export function Home() {
       </div>
 
       {/* Distribuição de Tipos de Corrida */}
-      <div className="chart p-6 rounded-md bg-light dark:bg-dark shadow-3xl">
-        <h2>Distribuição de Tipos de Corrida</h2>
+      <div className="p-6 rounded-xl bg-white dark:bg-gray-800 shadow-md">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+          Distribuição de Tipos de Corrida
+        </h3>
         <Bar data={ridesByType} />
       </div>
     </div>

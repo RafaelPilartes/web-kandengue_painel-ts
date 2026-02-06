@@ -460,14 +460,18 @@ export function MetricsPage() {
       {/* Charts part 1 */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* rides By Month Data */}
-        <div className="p-4 rounded-md bg-white dark:bg-gray-800 shadow">
-          <h4 className="font-semibold mb-2">Corridas por Mês</h4>
+        <div className="p-6 rounded-xl bg-white dark:bg-gray-800 shadow-md">
+          <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+            Corridas por Mês
+          </h4>
           <Line data={ridesByMonthData} />
         </div>
 
         {/* revenue By Month Data */}
-        <div className="p-4 rounded-md bg-white dark:bg-gray-800 shadow">
-          <h4 className="font-semibold mb-2">Receita por Mês</h4>
+        <div className="p-6 rounded-xl bg-white dark:bg-gray-800 shadow-md">
+          <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+            Receita por Mês
+          </h4>
           <Bar data={revenueByMonthData} />
         </div>
       </div>
@@ -475,8 +479,10 @@ export function MetricsPage() {
       {/* Charts part 2 */}
       <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* rides By Status */}
-        <div className="col-span-1 p-4 rounded-md bg-white dark:bg-gray-800 shadow">
-          <h4 className="font-semibold mb-2">Distribuição por Status</h4>
+        <div className="col-span-1 p-6 rounded-xl bg-white dark:bg-gray-800 shadow-md">
+          <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+            Distribuição por Status
+          </h4>
           <Pie
             data={{
               labels: ridesByStatus.labels,
@@ -497,8 +503,10 @@ export function MetricsPage() {
         </div>
 
         {/* rides By Type */}
-        <div className="col-span-2 p-4 rounded-md bg-white dark:bg-gray-800 shadow">
-          <h4 className="font-semibold mb-2">Distribuição por Tipo</h4>
+        <div className="col-span-2 p-6 rounded-xl bg-white dark:bg-gray-800 shadow-md">
+          <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+            Distribuição por Tipo
+          </h4>
           <Bar
             data={{
               labels: ridesByType.labels,
@@ -588,9 +596,13 @@ export function MetricsPage() {
    ----------------------------- */
 function StatCard({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="p-4 rounded-md bg-white dark:bg-gray-800 shadow border-t-4 border-blue-600">
-      <div className="text-sm text-gray-500 dark:text-gray-300">{label}</div>
-      <div className="text-xl font-semibold mt-1">{value}</div>
+    <div className="p-6 rounded-xl bg-white dark:bg-gray-800 shadow-md hover:shadow-lg transition-shadow border-l-4 border-blue-600">
+      <div className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">
+        {label}
+      </div>
+      <div className="text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight mt-2">
+        {value}
+      </div>
     </div>
   )
 }
