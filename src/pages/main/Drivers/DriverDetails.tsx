@@ -15,8 +15,8 @@ import {
   ClipboardList,
   Download,
   FileText,
+  Hash,
   Mail,
-  MapPin,
   Phone,
   Wallet,
   Wallet2,
@@ -51,7 +51,7 @@ import { ActionsMenu } from '@/components/ActionsMenu'
 import { IoColorPaletteSharp } from 'react-icons/io5'
 import { BadgeSimple } from '@/components/badge/BadgeSimple'
 import { mapFirebaseError } from '@/helpers/mapFirebaseError'
-import type { DocumentStatus, UserStatus } from '@/types/enum'
+import type { DocumentStatus } from '@/types/enum'
 import { userStatusOptions } from '@/data/selectOption'
 import { SelectCustom } from '@/components/selects/SelectCustom'
 
@@ -94,9 +94,6 @@ export function DriverViewPage() {
     DocumentInterface[] | null
   >(null)
 
-  const [driverStatus, setDriverStatus] = useState<UserStatus>(
-    rowDataDriver?.status || 'pending'
-  )
   const [isUpdatingStatus, setUpdatingStatus] = useState<boolean>(false)
 
   const [docDriverLicense, setDocDriverLicense] =
@@ -263,7 +260,7 @@ export function DriverViewPage() {
     return missing
   }
   const handleStatusChange = async (valueSelected: string) => {
-    if (!valueSelected) return
+    if (!valueSelected || !rowDataDriver) return
 
     try {
       setUpdatingStatus(true)
@@ -281,14 +278,16 @@ export function DriverViewPage() {
         status: valueSelected as DriverInterface['status']
       }
 
-      await updateDriver
-        .mutateAsync({
-          id: rowDataDriver?.id as string,
-          driver: dataToUpdate
-        })
-        .then(() => {
-          setDriverStatus(valueSelected as DriverInterface['status'])
-        })
+      await updateDriver.mutateAsync({
+        id: rowDataDriver.id as string,
+        driver: dataToUpdate
+      })
+
+      // Atualizar o estado local do driver
+      setRowDataDriver({
+        ...rowDataDriver,
+        status: valueSelected as DriverInterface['status']
+      })
 
       showToast(
         'success',
@@ -298,6 +297,7 @@ export function DriverViewPage() {
       )
     } catch (error) {
       console.error(error)
+      showToast('error', 'Erro ao atualizar status do motorista')
     } finally {
       setUpdatingStatus(false)
     }
@@ -361,7 +361,7 @@ export function DriverViewPage() {
     }
 
     fetchData()
-  }, [])
+  }, [driverId])
 
   useEffect(() => {
     if (rowsDataRides) {
@@ -545,7 +545,9 @@ export function DriverViewPage() {
 
                 <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-yellow-50 dark:bg-yellow-900/30 text-yellow-800 text-sm">
                   <Star size={14} />{' '}
-                  <span className="ml-1 font-medium">{'5.0'}</span>
+                  <span className="ml-1 font-medium">
+                    {rowDataDriver.rating?.toFixed(1) || 'N/A'}
+                  </span>
                 </div>
               </div>
             </div>
@@ -553,15 +555,15 @@ export function DriverViewPage() {
             {/* Contact */}
             <div className="w-full text-xs flex flex-row flex-wrap gap-2 max-w-s-520:justify-center text-gray-600 dark:text-gray-300">
               <div className="flex flex-row justify-start items-center gap-1">
+                <Hash size={14} /> {rowDataDriver.id || 'N/A'}
+              </div>
+              <span className="hidden text-sm xs:inline">|</span>
+              <div className="flex flex-row justify-start items-center gap-1">
                 <Phone size={14} /> {rowDataDriver.phone}
               </div>
               <span className="hidden text-sm xs:inline">|</span>
               <div className="flex flex-row justify-start items-center gap-1">
                 <Mail size={14} /> {rowDataDriver.email}
-              </div>
-              <span className="hidden text-sm xs:inline">|</span>
-              <div className="flex flex-row justify-start items-center gap-1">
-                <MapPin size={14} /> 775 Rolling Green Rd.
               </div>
             </div>
           </div>
@@ -579,11 +581,9 @@ export function DriverViewPage() {
       </div>
 
       <div className="w-full max-w-32 flex flex-col gap-4">
-        {rowDataDriver?.status}
-
         <SelectCustom
           htmlFor="status"
-          selectedValue={driverStatus}
+          selectedValue={rowDataDriver?.status || 'pending'}
           label="Estado da conta"
           options={userStatusOptions}
           onChange={handleStatusChange}
@@ -950,30 +950,36 @@ export function DriverViewPage() {
                 Carta de condução:{' '}
                 {docDriverLicense ? (
                   <span className="text-green-600 dark:text-green-400">
-                    Validado
+                    ✓ Validado
                   </span>
                 ) : (
-                  <Spinner size={20} className="text-red-600 animate-spin" />
+                  <span className="text-orange-600 dark:text-orange-400">
+                    ⏳ Pendente
+                  </span>
                 )}
               </div>
               <div className="flex flex-row items-center justify-start gap-2">
                 BI Frente:{' '}
                 {docIdFront ? (
                   <span className="text-green-600 dark:text-green-400">
-                    Validado
+                    ✓ Validado
                   </span>
                 ) : (
-                  <Spinner size={20} className="text-red-600 animate-spin" />
+                  <span className="text-orange-600 dark:text-orange-400">
+                    ⏳ Pendente
+                  </span>
                 )}
               </div>
               <div className="flex flex-row items-center justify-start gap-2">
                 BI verso:{' '}
                 {docIdBack ? (
                   <span className="text-green-600 dark:text-green-400">
-                    Validado
+                    ✓ Validado
                   </span>
                 ) : (
-                  <Spinner size={20} className="text-red-600 animate-spin" />
+                  <span className="text-orange-600 dark:text-orange-400">
+                    ⏳ Pendente
+                  </span>
                 )}
               </div>
             </div>
