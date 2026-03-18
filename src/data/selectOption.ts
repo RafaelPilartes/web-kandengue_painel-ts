@@ -165,138 +165,119 @@ export const rideTypeOptions: OptionType[] = [
 
 // ==============================================
 export const adminRoleOptions: OptionType[] = [
-  { value: 'superadmin', label: 'Super Administrador' },
-  { value: 'manager', label: 'Gerente' },
-  { value: 'finance', label: 'Financeiro' },
-  { value: 'content', label: 'Conteúdo' },
-  { value: 'support', label: 'Suporte' }
+  { value: 'direcao_geral', label: 'Direcção Geral' },
+  {
+    value: 'operacoes_qualidade',
+    label: 'Departamento de Operações e Qualidade'
+  },
+  {
+    value: 'administracao_financas',
+    label: 'Departamento de Administração e Finanças'
+  },
+  {
+    value: 'tecnologia_inovacao',
+    label: 'Departamento de Tecnologia e Inovação'
+  },
+  {
+    value: 'seguranca_qualidade_operacional',
+    label: 'Departamento de Segurança e Qualidade Operacional'
+  },
+  {
+    value: 'negocios_imagem_institucional',
+    label: 'Departamento de Negócios e Imagem Institucional'
+  },
+  {
+    value: 'capital_humano',
+    label: 'Departamento de Capital Humano'
+  },
+  {
+    value: 'contabilidade_financas',
+    label: 'Departamento de Contabilidade e Finanças'
+  },
+  {
+    value: 'tecnologia_inovacao_tecnica',
+    label: 'Departamento de Tecnologia e Inovação (Técnico)'
+  }
+]
+
+// Permissões baseadas nos itens da Sidebar para referência
+const sidebarPermissions: OptionType[] = [
+  { value: 'view_dashboard', label: 'Ver Dashboard' },
+  { value: 'manage_passengers', label: 'Gerenciar Passageiros' },
+  { value: 'manage_drivers', label: 'Gerenciar Motoristas' },
+  { value: 'manage_admins', label: 'Gerenciar Admins & Operadores' },
+  { value: 'manage_applications', label: 'Gerenciar Candidaturas' },
+  { value: 'view_rides', label: 'Ver Todas as Corridas' },
+  { value: 'view_realtime_map', label: 'Monitoramento em Tempo Real' },
+  { value: 'manage_wallet', label: 'Carteira & Transações' },
+  { value: 'manage_topup_requests', label: 'Solicitação de Recarga' },
+  { value: 'manage_missions', label: 'Gerenciar Missões' },
+  { value: 'manage_notifications', label: 'Gerenciar Notificações' },
+  { value: 'view_metrics', label: 'Ver Métricas' },
+  { value: 'manage_settings', label: 'Configurações do Sistema' }
 ]
 
 export const adminRolePermissionsMap: Record<string, OptionType[]> = {
-  // Acesso total
-  superadmin: [{ value: 'manage_all', label: 'Gerenciar Tudo' }],
+  direcao_geral: [...sidebarPermissions], // Acesso total
 
-  // Gerência com acesso amplo e variado
-  manager: [
-    // Gestão de usuários e permissões
-    { value: 'manage_users', label: 'Gerenciar Usuários' },
-    {
-      value: 'assign_roles_permissions',
-      label: 'Atribuir Funções e Permissões'
-    },
-
-    // Gestão de dados e relatórios
-    { value: 'export_data', label: 'Exportar Dados' },
-    { value: 'generate_reports', label: 'Gerar Relatórios' },
-    {
-      value: 'generate_financial_reports',
-      label: 'Gerar Relatórios Financeiros'
-    },
-    { value: 'view_statistics', label: 'Visualizar Estatísticas' },
-    {
-      value: 'view_performance_dashboard',
-      label: 'Ver Painel de Desempenho'
-    },
-
-    // Sistema e logs
-    { value: 'audit_logs', label: 'Ver Logs' },
-    { value: 'system_settings', label: 'Configurações do Sistema' },
-
-    // Suporte
-    { value: 'view_support_tickets', label: 'Visualizar Chamados' },
-    { value: 'respond_support_tickets', label: 'Responder Chamados' },
-    { value: 'send_notifications', label: 'Enviar Notificações' },
-    { value: 'manage_faq', label: 'Gerenciar FAQ' },
-
-    // Pacientes
-    { value: 'manage_patient', label: 'Gerenciar Paciente' },
-    {
-      value: 'assign_technician_to_patient',
-      label: 'Atribuir Tecnico ao Paciente'
-    },
-
-    // Técnicos
-    { value: 'manage_technician', label: 'Gerenciar Tecnico' },
-    {
-      value: 'view_technician_schedule',
-      label: 'Ver Agenda do Tecnico'
-    },
-
-    // 🏥 Parceiros
-    { value: 'manage_partners', label: 'Gerenciar Parceiros' },
-    { value: 'view_partner_reports', label: 'Ver Relatórios de Parceiros' },
-    // 🧾 Serviços
-    { value: 'manage_services', label: 'Gerenciar Serviços' },
-    {
-      value: 'manage_service_categories',
-      label: 'Gerenciar categorias de serviços'
-    },
-    { value: 'manage_service_prices', label: 'Gerenciar Preços de Serviços' },
-    // 📋 Solicitações
-    { value: 'view_service_requests', label: 'Ver Solicitações de Serviço' },
-    {
-      value: 'assign_service_requests',
-      label: 'Assign Service Requests'
-    },
-    // 💊 Medicamentos e Lembretes
-    { value: 'manage_medications', label: 'Gerenciar Medicamentos' },
-    { value: 'manage_reminders', label: 'Gerenciar Lembretes' },
-
-    // Atendimentos
-    { value: 'manage_appointment', label: 'Gerenciar Consultas' },
-    {
-      value: 'assign_technician_to_appointment',
-      label: 'Atribuir Tecnico ao Atendimento'
-    },
-
-    // 💼 Financeiro
-    { value: 'manage_billing', label: 'Gerenciar Cobranças' },
-    { label: 'Ver Pagamentos', value: 'view_payments' },
-    { label: 'Gerenciar Assinaturas', value: 'manage_subscriptions' },
-    { label: 'Gerenciar Pagamentos', value: 'manage_payouts' },
-    { label: 'Ver Relatórios Financeiros', value: 'view_finance_reports' },
-    { label: 'Gerenciar Promoções', value: 'manage_promotions' },
-    {
-      value: 'manage_partner_services',
-      label: 'Gerenciar Serviços de Parceiros'
-    },
-    { value: 'manage_products', label: 'Gerenciar Produtos' },
-    // 🛒 Carrinho
-    { value: 'view_carts', label: 'Ver Carrinhos' },
-    { value: 'manage_cart_items', label: 'Gerenciar Itens do Carrinho' }
+  operacoes_qualidade: [
+    { value: 'view_dashboard', label: 'Ver Dashboard' },
+    { value: 'manage_drivers', label: 'Gerenciar Motoristas' },
+    { value: 'manage_applications', label: 'Gerenciar Candidaturas' },
+    { value: 'view_rides', label: 'Ver Todas as Corridas' },
+    { value: 'view_realtime_map', label: 'Monitoramento em Tempo Real' },
+    { value: 'manage_missions', label: 'Gerenciar Missões' },
+    { value: 'view_metrics', label: 'Ver Métricas' }
   ],
 
-  // Financeiro
-  finance: [
-    { value: 'manage_payments', label: 'Gerenciar Pagamentos' },
-    { value: 'manage_subscriptions', label: 'Gerenciar assinaturas' },
-    { value: 'process_payout', label: 'Processar Pagamento' },
-    {
-      value: 'generate_financial_reports',
-      label: 'Gerar Relatórios Financeiros'
-    },
-    { value: 'export_data', label: 'Exportar Dados' }
+  administracao_financas: [
+    { value: 'view_dashboard', label: 'Ver Dashboard' },
+    { value: 'manage_wallet', label: 'Carteira & Transações' },
+    { value: 'manage_topup_requests', label: 'Solicitação de Recarga' },
+    { value: 'manage_missions', label: 'Gerenciar Missões' },
+    { value: 'view_metrics', label: 'Ver Métricas' },
+    { value: 'manage_settings', label: 'Configurações do Sistema' }
   ],
 
-  // Conteúdo e desempenho
-  content: [
-    { value: 'generate_reports', label: 'Gerar Relatórios' },
-    {
-      value: 'view_performance_dashboard',
-      label: 'Ver Painel de Desempenho'
-    },
-    { value: 'view_statistics', label: 'Visualizar Estatísticas' },
-    { value: 'manage_faq', label: 'Gerenciar FAQ' },
-    { value: 'send_notifications', label: 'Enviar Notificações' }
+  tecnologia_inovacao: [
+    { value: 'view_dashboard', label: 'Ver Dashboard' },
+    { value: 'manage_admins', label: 'Gerenciar Admins & Operadores' },
+    { value: 'manage_notifications', label: 'Gerenciar Notificações' },
+    { value: 'view_metrics', label: 'Ver Métricas' },
+    { value: 'manage_settings', label: 'Configurações do Sistema' }
   ],
 
-  // Suporte
-  support: [
-    { value: 'view_patients', label: 'Visualizar Pacientes' },
-    { value: 'view_appointments', label: 'Visualizar Atendimentos' },
-    { value: 'view_support_tickets', label: 'Visualizar Chamados' },
-    { value: 'respond_support_tickets', label: 'Responder Chamados' },
-    { value: 'send_notifications', label: 'Enviar Notificações' }
+  seguranca_qualidade_operacional: [
+    { value: 'view_dashboard', label: 'Ver Dashboard' },
+    { value: 'manage_drivers', label: 'Gerenciar Motoristas' },
+    { value: 'manage_applications', label: 'Gerenciar Candidaturas' },
+    { value: 'view_rides', label: 'Ver Todas as Corridas' },
+    { value: 'view_realtime_map', label: 'Monitoramento em Tempo Real' }
+  ],
+
+  negocios_imagem_institucional: [
+    { value: 'view_dashboard', label: 'Ver Dashboard' },
+    { value: 'manage_notifications', label: 'Gerenciar Notificações' },
+    { value: 'view_metrics', label: 'Ver Métricas' },
+    { value: 'manage_settings', label: 'Configurações do Sistema' }
+  ],
+
+  capital_humano: [
+    { value: 'view_dashboard', label: 'Ver Dashboard' },
+    { value: 'manage_admins', label: 'Gerenciar Admins & Operadores' }
+  ],
+
+  contabilidade_financas: [
+    { value: 'view_dashboard', label: 'Ver Dashboard' },
+    { value: 'manage_wallet', label: 'Carteira & Transações' },
+    { value: 'manage_topup_requests', label: 'Solicitação de Recarga' },
+    { value: 'view_metrics', label: 'Ver Métricas' }
+  ],
+
+  tecnologia_inovacao_tecnica: [
+    { value: 'view_dashboard', label: 'Ver Dashboard' },
+    { value: 'manage_notifications', label: 'Gerenciar Notificações' },
+    { value: 'manage_settings', label: 'Configurações do Sistema' }
   ]
 }
 

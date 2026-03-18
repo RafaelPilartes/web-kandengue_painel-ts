@@ -33,11 +33,24 @@ const formSchema = z.object({
   status: z.enum(['active', 'inactive', 'pending'], {
     error: () => ({ message: "Selecione 'Ativo', 'Inativo' ou 'Pendente'" })
   }),
-  role: z.enum(['superadmin', 'manager', 'finance', 'content', 'support'], {
-    error: () => ({
-      message: 'Selecione uma função válida para o administrador.'
-    })
-  }),
+  role: z.enum(
+    [
+      'direcao_geral',
+      'operacoes_qualidade',
+      'administracao_financas',
+      'tecnologia_inovacao',
+      'seguranca_qualidade_operacional',
+      'negocios_imagem_institucional',
+      'capital_humano',
+      'contabilidade_financas',
+      'tecnologia_inovacao_tecnica'
+    ],
+    {
+      error: () => ({
+        message: 'Selecione uma função válida para o administrador.'
+      })
+    }
+  ),
   permissions: z
     .array(
       z.object({

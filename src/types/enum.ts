@@ -51,11 +51,15 @@ export type NotificationCategory = 'driver' | 'passenger' | 'admin' | 'all'
 
 // =========================================================================
 export type AdminRole =
-  | 'superadmin'
-  | 'manager'
-  | 'finance'
-  | 'content'
-  | 'support'
+  | 'direcao_geral'
+  | 'operacoes_qualidade'
+  | 'administracao_financas'
+  | 'tecnologia_inovacao'
+  | 'seguranca_qualidade_operacional'
+  | 'negocios_imagem_institucional'
+  | 'capital_humano'
+  | 'contabilidade_financas'
+  | 'tecnologia_inovacao_tecnica'
 
 export type LogActionType =
   // Sessão e autenticação
