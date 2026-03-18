@@ -98,5 +98,11 @@ export const routsNameMain = {
   // LOGS
   logs: {
     index: '/logs'
+  },
+
+  // ============================================
+  // MISSIONS
+  missions: {
+    index: '/missions'
   }
 }

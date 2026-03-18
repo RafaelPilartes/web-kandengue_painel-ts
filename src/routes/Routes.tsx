@@ -28,6 +28,7 @@ import { DriverViewPage } from '@/pages/main/Drivers/DriverDetails'
 import { UserViewPage } from '@/pages/main/Passengers/UserDetails'
 import { ApplicationPage } from '@/pages/main/Application'
 import { ApplicationViewPage } from '@/pages/main/Application/ApplicationDetails'
+import { MissionsPage } from '@/pages/main/Missions'
 
 // Page
 
@@ -228,6 +229,17 @@ export function Router() {
               <React.Suspense fallback={<Loading />}>
                 <Private>
                   <SettingsPage />
+                </Private>
+              </React.Suspense>
+            }
+          />
+          {/* Missions */}
+          <Route
+            path={routsNameMain.missions.index}
+            element={
+              <React.Suspense fallback={<Loading />}>
+                <Private>
+                  <MissionsPage />
                 </Private>
               </React.Suspense>
             }

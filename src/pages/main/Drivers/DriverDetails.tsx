@@ -54,6 +54,7 @@ import { mapFirebaseError } from '@/helpers/mapFirebaseError'
 import type { DocumentStatus } from '@/types/enum'
 import { userStatusOptions } from '@/data/selectOption'
 import { SelectCustom } from '@/components/selects/SelectCustom'
+import { DriverProgressTracker } from '@/components/drivers/DriverProgressTracker'
 
 export function DriverViewPage() {
   const { driverId } = useParams<{ driverId: string }>()
@@ -631,6 +632,7 @@ export function DriverViewPage() {
                 <TabsTrigger value="rides">Corridas</TabsTrigger>
                 <TabsTrigger value="vehicles">Veículos</TabsTrigger>
                 <TabsTrigger value="docs">Documentos</TabsTrigger>
+                <TabsTrigger value="missions">Missões</TabsTrigger>
               </TabsList>
 
               {/* Carteira */}
@@ -896,6 +898,13 @@ export function DriverViewPage() {
                       </tbody>
                     </table>
                   </div>
+                </div>
+              </TabsContent>
+
+              {/* Missões */}
+              <TabsContent value="missions">
+                <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-md dark:border-gray-700">
+                  <DriverProgressTracker driver_id={driverId!} />
                 </div>
               </TabsContent>
             </Tabs>

@@ -26,6 +26,8 @@ export type RideStatusType =
   | 'completed' // Entrega concluída 🎉 & saldo atualizado
   | 'canceled' // cancelado (por qualquer lado)
 
+export type MissionType = 'daily' | 'weekly' | 'monthly'
+
 export type RideType = 'car' | 'motorcycle' | 'bicycle' | 'delivery'
 
 export type DocumentStatus = 'pending' | 'approved' | 'rejected'
@@ -36,6 +38,7 @@ export type TransactionCategoryType =
   | 'ride_fee'
   | 'pension'
   | 'bonus'
+  | 'mission_bonus'
   | 'refund'
 
 export type TransactionStatus = 'pending' | 'approved' | 'rejected'

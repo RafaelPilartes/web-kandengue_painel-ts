@@ -107,5 +107,17 @@ export const firebaseCollections = {
   logs: {
     root: 'logs',
     single: (logId: string) => `logs/${logId}`
+  },
+
+  // ============================================
+  // MISSIONS
+  missions: {
+    root: 'missions',
+    single: (missionId: string) => `missions/${missionId}`
+  },
+
+  missionProgress: {
+    root: 'missionProgress',
+    single: (progressId: string) => `missionProgress/${progressId}`
   }
 }

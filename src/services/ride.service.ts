@@ -1,7 +1,9 @@
-// services/rides.service.ts
 import { rideRepository } from '@/modules/Api'
 import { RideEntity } from '@/core/entities/Ride'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
+import { MissionService } from './mission.service'
+
+const missionService = new MissionService()
 
 export class RideService {
   async getAll(
@@ -73,7 +75,16 @@ export class RideService {
 
   async update(id: string, ride: Partial<RideEntity>): Promise<RideEntity> {
     try {
-      return await rideRepository.update(id, ride)
+      const updatedRide = await rideRepository.update(id, ride)
+
+      // Se a corrida for marcada como 'completed', atualiza o progresso das missões do motorista
+      if (ride.status === 'completed' && updatedRide.driver?.id) {
+        missionService.updateDriverProgress(updatedRide.driver.id).catch(err => {
+          console.error('Erro ao atualizar progresso de missões:', err)
+        })
+      }
+
+      return updatedRide
     } catch (error: any) {
       console.error(`Erro ao atualizar corrida ${id}:`, error)
       throw new Error(error.message || 'Erro ao atualizar corrida')

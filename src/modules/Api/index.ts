@@ -26,6 +26,8 @@ import type { IFileRepository } from '@/core/interfaces/IFileRepository'
 import { FirebaseFileDAO } from './firebase/file.dao'
 import type { IApplicationRepository } from '@/core/interfaces/IApplicationRepository'
 import { FirebaseApplicationDAO } from './firebase/application.dao'
+import type { IMissionRepository } from '@/core/interfaces/IMissionRepository'
+import { FirebaseMissionDAO } from './firebase/mission.dao'
 // import { RestUserDAO } from "./rest/users.dao"; // Futuro
 
 // Factory para escolher implementação
@@ -47,5 +49,7 @@ export const walletTopupRequestRepository: IWalletTopupRequestRepository =
   new FirebaseWalletTopupRequestDAO()
 export const applicationRepository: IApplicationRepository =
   new FirebaseApplicationDAO()
+
+export const missionRepository: IMissionRepository = new FirebaseMissionDAO()
 
 export const fileRepository: IFileRepository = new FirebaseFileDAO()

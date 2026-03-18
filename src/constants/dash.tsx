@@ -11,7 +11,8 @@ import {
   Map,
   CarFront,
   Wallet,
-  FileInput
+  FileInput,
+  Trophy
 } from 'lucide-react'
 import { routsNameMain } from './routsName'
 
@@ -98,6 +99,12 @@ const dashItem = [
         label: 'Solicitação de Recarga',
         icon: <CreditCard size={16} />,
         to: routsNameMain.finance.walletTopupRequest,
+        notification: 0
+      },
+      {
+        label: 'Missões',
+        icon: <Trophy size={16} />,
+        to: routsNameMain.missions.index,
         notification: 0
       }
       // {

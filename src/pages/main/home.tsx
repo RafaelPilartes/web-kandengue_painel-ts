@@ -68,13 +68,6 @@ export function Home() {
   const revenueByMonth = rideCalculation.getRevenueByMonth(rides)
   const ridesByType = rideCalculation.getRidesByType(rides)
 
-  // Localização dos drivers (mock)
-  const driverLocations: [number, number][] = [
-    [-8.83999, 13.28955],
-    [-8.83973, 13.23415],
-    [-8.81089, 13.22872]
-  ]
-
   // Top Motoristas (simples: ordena por número de corridas)
   const topDrivers = drivers
     .map(driver => ({
@@ -92,6 +85,14 @@ export function Home() {
       r.status !== 'completed' &&
       r.status !== 'canceled'
   )
+
+  // Localização dos drivers return [number, number]
+  const driverLocations: [number, number][] = activeRides
+    .map(r => r.driver?.current_location)
+    .filter((loc): loc is NonNullable<typeof loc> => !!loc)
+    .map(loc => [loc.latitude, loc.longitude])
+
+  const defaultCenter: [number, number] = [-8.839988, 13.289437] // Luanda, Angola
 
   return (
     <div className="w-full h-full flex flex-col gap-6 overflow-x-hidden">
@@ -191,25 +192,6 @@ export function Home() {
             </div>
           )}
         </div>
-
-        {/* Mapa dos motoristas */}
-        <div className="p-6 rounded-xl bg-white dark:bg-gray-800 shadow-md hover:shadow-lg transition-shadow">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-            Localização dos Motoristas
-          </h3>
-          <MapContainer
-            center={driverLocations[0]}
-            zoom={13}
-            style={{ height: '300px', width: '100%', zIndex: 0 }}
-          >
-            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-            {driverLocations.map((point, index) => (
-              <Marker key={index} position={point} icon={customIcon}>
-                <Popup>Motorista {index + 1}</Popup>
-              </Marker>
-            ))}
-          </MapContainer>
-        </div>
       </div>
 
       {/* Top Motoristas */}
@@ -259,6 +241,25 @@ export function Home() {
           </h3>
           <Bar data={revenueByMonth} />
         </div>
+      </div>
+
+      {/* Mapa dos motoristas */}
+      <div className="p-6 rounded-xl bg-white dark:bg-gray-800 shadow-md hover:shadow-lg transition-shadow">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+          Localização dos Motoristas
+        </h3>
+        <MapContainer
+          center={driverLocations.length > 0 ? driverLocations[0] : defaultCenter}
+          zoom={13}
+          style={{ height: '500px', width: '100%', zIndex: 0 }}
+        >
+          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+          {driverLocations.map((point, index) => (
+            <Marker key={index} position={point} icon={customIcon}>
+              <Popup>Motorista {index + 1}</Popup>
+            </Marker>
+          ))}
+        </MapContainer>
       </div>
 
       {/* Corridas em andamento */}
