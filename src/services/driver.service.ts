@@ -104,4 +104,11 @@ export class DriverService {
       throw new Error(error.message || 'Erro ao deletar motorista')
     }
   }
+
+  listenOnlineDrivers(
+    onUpdate: (drivers: DriverEntity[]) => void,
+    onError?: (err: Error) => void
+  ): () => void {
+    return driverRepository.listenOnlineDrivers(onUpdate, onError)
+  }
 }

@@ -4,7 +4,7 @@ import { DriverService } from '@/services/driver.service'
 import { DriverEntity } from '@/core/entities/Driver'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
-import { useMemo } from 'react'
+import { useMemo, useEffect, useState } from 'react'
 import { getUserStatusLabel } from '@/utils/gettersLabels'
 
 const driverService = new DriverService()
@@ -143,4 +143,27 @@ export function useDriversViewModel(
 
     dataToExport
   }
+}
+
+export function useDriversOnlineRealtime() {
+  const [drivers, setDrivers] = useState<DriverEntity[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    setIsLoading(true)
+    const unsubscribe = driverService.listenOnlineDrivers(
+      data => {
+        setDrivers(data)
+        setIsLoading(false)
+      },
+      err => {
+        console.error('Erro no listener de motoristas online:', err)
+        setIsLoading(false)
+      }
+    )
+
+    return () => unsubscribe()
+  }, [])
+
+  return { drivers, isLoading }
 }

@@ -1,5 +1,5 @@
 // pages/rides/RidesPage.tsx
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   MapContainer,
   TileLayer,
@@ -12,7 +12,8 @@ import { Package } from 'lucide-react'
 import { RideListSidebar } from './components/RideListSidebar'
 import { RideDetailsPanel } from './components/RideDetailsPanel'
 import { useRidesViewModel } from '@/viewModels/RideViewModel'
-import { useRideTrackingsViewModel } from '@/viewModels/RideTrackingViewModel'
+import { useRideTrackingRealtime } from '@/viewModels/RideTrackingViewModel'
+import { useDriversOnlineRealtime } from '@/viewModels/DriverViewModel'
 import type { RideInterface } from '@/interfaces/IRide'
 import useDirections from '@/hook/useDirections'
 import { snapToRoads } from '@/utils/snapToRoads'
@@ -43,14 +44,28 @@ export function RealtimePage() {
     filters
   )
 
-  const { rideTrackings } = useRideTrackingsViewModel()
   const { routeCoords, fetchRoute } = useDirections()
+
+  const [selectedRide, setSelectedRide] = useState<RideInterface | null>(null)
+
+  // Hooks Realtime
+  const { tracking: liveTracking } = useRideTrackingRealtime(selectedRide?.id)
+  const { drivers: onlineDrivers } = useDriversOnlineRealtime()
 
   const [coordsTracking, setCoordsTracking] = useState<
     { latitude: number; longitude: number }[]
   >([])
 
-  const [selectedRide, setSelectedRide] = useState<RideInterface | null>(null)
+  // Sincronizar coordsTracking com liveTracking
+  useEffect(() => {
+    console.log('onlineDrivers', onlineDrivers)
+
+    if (liveTracking?.path) {
+      snapToRoads(liveTracking.path).then(setCoordsTracking)
+    } else if (!selectedRide) {
+      setCoordsTracking([])
+    }
+  }, [liveTracking, selectedRide])
 
   const [mapCenter, setMapCenter] = useState<{
     latitude: number
@@ -81,11 +96,6 @@ export function RealtimePage() {
       })
 
       await fetchRoute(ride.pickup, ride.dropoff)
-
-      const tracking = rideTrackings.find(t => t.ride_id === ride.id)
-
-      const snapped = await snapToRoads(tracking?.path || [])
-      setCoordsTracking(snapped)
     } catch (error) {
       console.error('Erro ao carregar rota:', error)
     }
@@ -176,6 +186,32 @@ export function RealtimePage() {
           {/* Eventos do mapa */}
           <MapEvents />
 
+          {/* Frota de Motoristas Online (quando nenhuma corrida está selecionada) */}
+          {!selectedRide &&
+            onlineDrivers.map(
+              driver =>
+                driver.current_location && (
+                  <Marker
+                    key={driver.id}
+                    position={[
+                      driver.current_location.latitude,
+                      driver.current_location.longitude
+                    ]}
+                    icon={customCarIcon}
+                  >
+                    <Popup>
+                      <div className="flex flex-col">
+                        <p className="font-bold text-sm">{driver.name}</p>
+                        <p className="text-xs text-gray-500">{driver.phone}</p>
+                        <p className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full w-fit">
+                          Disponível
+                        </p>
+                      </div>
+                    </Popup>
+                  </Marker>
+                )
+            )}
+
           {selectedRide && (
             <>
               {/* Pickup */}
@@ -218,8 +254,8 @@ export function RealtimePage() {
                 />
               )}
 
-              {/* Última posição = veículo atual */}
-              {coordsTracking.length >= 2 && (
+              {/* Última posição = veículo atual (Tempo Real) */}
+              {coordsTracking.length >= 1 && (
                 <Marker
                   position={[
                     coordsTracking[coordsTracking.length - 1].latitude,
@@ -227,7 +263,16 @@ export function RealtimePage() {
                   ]}
                   icon={customCarIcon}
                 >
-                  <Popup>Veículo em tempo real</Popup>
+                  <Popup>
+                    <div className="flex flex-col gap-1">
+                      <p className="font-bold text-sm">
+                        Motorista: {selectedRide.driver?.name || '---'}
+                      </p>
+                      <p className="text-xs text-blue-600 font-medium">
+                        Em viagem para: {selectedRide.dropoff.name}
+                      </p>
+                    </div>
+                  </Popup>
                 </Marker>
               )}
             </>
@@ -244,7 +289,7 @@ export function RealtimePage() {
         )}
 
         {/* Empty State Overlay */}
-        {!selectedRide && (
+        {!selectedRide && onlineDrivers.length === 0 && (
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-[400] bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 text-center max-w-sm">
             <div className="mb-4 flex justify-center">
               <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">

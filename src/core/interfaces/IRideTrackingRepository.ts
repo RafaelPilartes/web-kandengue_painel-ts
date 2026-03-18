@@ -25,4 +25,9 @@ export interface IRideTrackingRepository {
     RideTracking: Partial<RideTrackingEntity>
   ): Promise<RideTrackingEntity>
   delete(id: string): Promise<void>
+  listenByRideId(
+    rideId: string,
+    onUpdate: (tracking: RideTrackingEntity) => void,
+    onError?: (err: Error) => void
+  ): () => void
 }

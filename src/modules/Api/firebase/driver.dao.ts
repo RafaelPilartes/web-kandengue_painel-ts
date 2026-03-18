@@ -14,8 +14,10 @@ import {
   orderBy,
   limit as fbLimit,
   startAfter,
-  getCountFromServer
+  getCountFromServer,
+  onSnapshot
 } from 'firebase/firestore'
+import type { QuerySnapshot, QueryDocumentSnapshot } from 'firebase/firestore'
 import { db } from '@/config/firebase.config'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
@@ -208,5 +210,31 @@ export class FirebaseDriverDAO implements IDriverRepository {
 
   async delete(id: string): Promise<void> {
     await deleteDoc(doc(this.driversRef, id))
+  }
+
+  listenOnlineDrivers(
+    onUpdate: (drivers: DriverEntity[]) => void,
+    onError?: (err: Error) => void
+  ): () => void {
+    const q = query(
+      this.driversRef,
+      where('is_online', '==', true),
+      orderBy('updated_at', 'desc')
+    )
+
+    return onSnapshot(
+      q,
+      (snapshot: QuerySnapshot) => {
+        const drivers = snapshot.docs.map((docSnap: QueryDocumentSnapshot) => {
+          const data = docSnap.data() as DriverEntity
+          return new DriverEntity({ ...data, id: docSnap.id })
+        })
+        onUpdate(drivers)
+      },
+      (err: Error) => {
+        console.error('Erro ao escutar motoristas online:', err)
+        onError?.(err)
+      }
+    )
   }
 }

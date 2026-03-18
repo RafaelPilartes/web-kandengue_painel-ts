@@ -101,4 +101,12 @@ export class RideTrackingService {
       throw new Error(error.message || 'Erro ao deletar trajetoria de viagem')
     }
   }
+
+  listenByRideId(
+    rideId: string,
+    onUpdate: (tracking: RideTrackingEntity) => void,
+    onError?: (err: Error) => void
+  ): () => void {
+    return rideTrackingRepository.listenByRideId(rideId, onUpdate, onError)
+  }
 }

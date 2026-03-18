@@ -4,6 +4,7 @@ import { RideTrackingService } from '@/services/rideTracking.service'
 import { RideTrackingEntity } from '@/core/entities/RideTracking'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
+import { useEffect, useState } from 'react'
 
 const rideTrackingService = new RideTrackingService()
 
@@ -131,4 +132,33 @@ export function useRideTrackingsViewModel(
     deleteRideTracking,
     fetchRideTrackingById
   }
+}
+
+export function useRideTrackingRealtime(rideId?: string) {
+  const [tracking, setTracking] = useState<RideTrackingEntity | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    if (!rideId) {
+      setTracking(null)
+      return
+    }
+
+    setIsLoading(true)
+    const unsubscribe = rideTrackingService.listenByRideId(
+      rideId,
+      data => {
+        setTracking(data)
+        setIsLoading(false)
+      },
+      err => {
+        console.error(`Erro no listener de tracking da corrida ${rideId}:`, err)
+        setIsLoading(false)
+      }
+    )
+
+    return () => unsubscribe()
+  }, [rideId])
+
+  return { tracking, isLoading }
 }

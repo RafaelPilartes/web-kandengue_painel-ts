@@ -14,8 +14,10 @@ import {
   orderBy,
   limit as fbLimit,
   startAfter,
-  getCountFromServer
+  getCountFromServer,
+  onSnapshot
 } from 'firebase/firestore'
+import type { QuerySnapshot } from 'firebase/firestore'
 import { db } from '@/config/firebase.config'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
@@ -200,5 +202,28 @@ export class FirebaseRideTrackingDAO implements IRideTrackingRepository {
 
   async delete(id: string): Promise<void> {
     await deleteDoc(doc(this.rideTrackingsRef, id))
+  }
+
+  listenByRideId(
+    rideId: string,
+    onUpdate: (tracking: RideTrackingEntity) => void,
+    onError?: (err: Error) => void
+  ): () => void {
+    const q = query(this.rideTrackingsRef, where('ride_id', '==', rideId))
+
+    return onSnapshot(
+      q,
+      (snapshot: QuerySnapshot) => {
+        if (!snapshot.empty) {
+          const docSnap = snapshot.docs[0]
+          const data = docSnap.data() as RideTrackingEntity
+          onUpdate(new RideTrackingEntity({ ...data, id: docSnap.id }))
+        }
+      },
+      (err: Error) => {
+        console.error(`Erro ao escutar trajetoria da corrida ${rideId}:`, err)
+        onError?.(err)
+      }
+    )
   }
 }
