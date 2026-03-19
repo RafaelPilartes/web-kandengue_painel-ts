@@ -6,6 +6,7 @@ import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
 import { useMemo, useEffect, useState } from 'react'
 import { getUserStatusLabel } from '@/utils/gettersLabels'
+import { withAudit } from '@/services/audit.service'
 
 const driverService = new DriverService()
 
@@ -69,7 +70,14 @@ export function useDriversViewModel(
   /** Criar motorista */
   const createDriver = useMutation({
     mutationFn: (driver: Omit<DriverEntity, 'id'>) =>
-      driverService.create(driver),
+      withAudit(() => driverService.create(driver), {
+        action: 'create',
+        module: 'drivers',
+        description: `Criou motorista: ${driver.name} (${driver.phone})`,
+        target_type: 'driver',
+        target_label: driver.name,
+        new_data: driver
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [firebaseCollections.drivers.root]
@@ -79,13 +87,24 @@ export function useDriversViewModel(
 
   /** Atualizar motorista */
   const updateDriver = useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       id,
       driver
     }: {
       id: string
       driver: Partial<DriverEntity>
-    }) => driverService.update(id, driver),
+    }) => {
+      const previous_data = await driverService.getById(id).catch(() => null)
+      return withAudit(() => driverService.update(id, driver), {
+        action: 'update',
+        module: 'drivers',
+        description: `Atualizou os dados do motorista - ID: ${id}`,
+        target_id: id,
+        target_type: 'driver',
+        previous_data: previous_data || undefined,
+        new_data: driver
+      })
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [firebaseCollections.drivers.root]
@@ -95,7 +114,18 @@ export function useDriversViewModel(
 
   /** Deletar motorista */
   const deleteDriver = useMutation({
-    mutationFn: (id: string) => driverService.delete(id),
+    mutationFn: async (id: string) => {
+      const previous_data = await driverService.getById(id).catch(() => null)
+      return withAudit(() => driverService.delete(id), {
+        action: 'delete',
+        module: 'drivers',
+        description: `Excluiu o motorista - ID: ${id}`,
+        target_id: id,
+        target_type: 'driver',
+        previous_data: previous_data || undefined,
+        severity: 'critical'
+      })
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [firebaseCollections.drivers.root]

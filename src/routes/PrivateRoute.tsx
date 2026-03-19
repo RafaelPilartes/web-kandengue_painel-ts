@@ -7,6 +7,7 @@ import { useEffect } from 'react'
 import { useAdminsViewModel } from '@/viewModels/AdminViewModel'
 import { showToast } from '@/utils/toasts'
 import { routsNameMain } from '@/constants/routsName'
+import { auditService } from '@/services/audit.service'
 
 export function Private({ children }: Props) {
   const { currentAdminData, removeAdmin } = useAdminStore()
@@ -44,6 +45,15 @@ export function Private({ children }: Props) {
     currentAdminData,
     removeAdmin
   ])
+
+  useEffect(() => {
+    if (currentAdminData) {
+      auditService.setAdmin(currentAdminData)
+      auditService.initialize()
+    } else {
+      auditService.setAdmin(null)
+    }
+  }, [currentAdminData])
 
   if (!currentAdminData) {
     return <Navigate to={routsNameMain.login} replace />

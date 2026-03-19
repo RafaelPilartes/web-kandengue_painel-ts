@@ -6,6 +6,7 @@ import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
 import { useMemo } from 'react'
 import { getApplicationStatusLabel } from '@/utils/gettersLabels'
+import { withAudit } from '@/services/audit.service'
 
 const applicationService = new ApplicationService()
 
@@ -71,7 +72,14 @@ export function useApplicationsViewModel(
   /** Criar usuário */
   const createApplication = useMutation({
     mutationFn: (application: Omit<ApplicationEntity, 'id'>) =>
-      applicationService.create(application),
+      withAudit(() => applicationService.create(application), {
+        action: 'create',
+        module: 'applications',
+        description: `Criou candidatura: ${application.first_name || ''} ${application.last_name || ''}`,
+        target_type: 'application',
+        target_label: application.email,
+        new_data: application
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [firebaseCollections.applications.root]
@@ -81,13 +89,24 @@ export function useApplicationsViewModel(
 
   /** Atualizar usuário */
   const updateApplication = useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       id,
       application
     }: {
       id: string
       application: Partial<ApplicationEntity>
-    }) => applicationService.update(id, application),
+    }) => {
+      const previous_data = await applicationService.getById(id).catch(() => null)
+      return withAudit(() => applicationService.update(id, application), {
+        action: 'update',
+        module: 'applications',
+        description: `Atualizou candidatura - ID: ${id}`,
+        target_id: id,
+        target_type: 'application',
+        previous_data: previous_data || undefined,
+        new_data: application
+      })
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [firebaseCollections.applications.root]
@@ -97,7 +116,18 @@ export function useApplicationsViewModel(
 
   /** Deletar usuário */
   const deleteApplication = useMutation({
-    mutationFn: (id: string) => applicationService.delete(id),
+    mutationFn: async (id: string) => {
+      const previous_data = await applicationService.getById(id).catch(() => null)
+      return withAudit(() => applicationService.delete(id), {
+        action: 'delete',
+        module: 'applications',
+        description: `Excluiu candidatura - ID: ${id}`,
+        target_id: id,
+        target_type: 'application',
+        previous_data: previous_data || undefined,
+        severity: 'critical'
+      })
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [firebaseCollections.applications.root]

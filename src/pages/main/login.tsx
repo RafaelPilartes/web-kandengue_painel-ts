@@ -15,6 +15,7 @@ import { useAdminsViewModel } from '@/viewModels/AdminViewModel'
 import { useAuthViewModel } from '@/viewModels/AuthViewModel'
 import type { AdminEntity } from '@/core/entities/Admin'
 import { mapFirebaseError } from '@/helpers/mapFirebaseError'
+import { auditService } from '@/services/audit.service'
 
 const loginUserSchema = z.object({
   email: z.string().nonempty('O email é obrigatório!').toLowerCase().trim(),
@@ -61,12 +62,20 @@ export function Login() {
 
         if (adminData) {
           addAdmin(adminData)
+
+          // Initialize audit service with admin data
+          auditService.setAdmin(adminData)
+          auditService.initialize()
+          await auditService.logLogin(true, dataForm.email)
+
           showToast('success', 'Login efetuado com sucesso!')
         } else {
+          await auditService.logLogin(false, dataForm.email, 'Dados do administrador não encontrados')
           showToast('error', 'Dados do administrador não encontrados.')
         }
       }
-    } catch (err) {
+    } catch (err: any) {
+      await auditService.logLogin(false, dataForm.email, err?.message || 'Erro desconhecido')
       console.error(err)
     }
   }

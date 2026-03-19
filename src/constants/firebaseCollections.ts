@@ -119,5 +119,12 @@ export const firebaseCollections = {
   missionProgress: {
     root: 'missionProgress',
     single: (progressId: string) => `missionProgress/${progressId}`
+  },
+
+  // ============================================
+  // AUDIT LOGS
+  auditLogs: {
+    root: 'auditLogs',
+    single: (logId: string) => `auditLogs/${logId}`
   }
 }

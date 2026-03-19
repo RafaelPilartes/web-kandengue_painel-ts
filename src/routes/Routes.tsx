@@ -29,6 +29,7 @@ import { UserViewPage } from '@/pages/main/Passengers/UserDetails'
 import { ApplicationPage } from '@/pages/main/Application'
 import { ApplicationViewPage } from '@/pages/main/Application/ApplicationDetails'
 import { MissionsPage } from '@/pages/main/Missions'
+import { AuditLogsPage } from '@/pages/main/AuditLogs'
 
 // Page
 
@@ -240,6 +241,17 @@ export function Router() {
               <React.Suspense fallback={<Loading />}>
                 <Private>
                   <MissionsPage />
+                </Private>
+              </React.Suspense>
+            }
+          />
+          {/* Audit Logs */}
+          <Route
+            path={routsNameMain.logs.index}
+            element={
+              <React.Suspense fallback={<Loading />}>
+                <Private>
+                  <AuditLogsPage />
                 </Private>
               </React.Suspense>
             }

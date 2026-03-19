@@ -4,6 +4,7 @@ import { VehicleService } from '@/services/vehicle.service'
 import { VehicleEntity } from '@/core/entities/Vehicle'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
+import { withAudit } from '@/services/audit.service'
 
 const vehicleService = new VehicleService()
 
@@ -53,7 +54,14 @@ export function useVehiclesViewModel(
   /** Criar veículo */
   const createVehicle = useMutation({
     mutationFn: (vehicle: Omit<VehicleEntity, 'id'>) =>
-      vehicleService.create(vehicle),
+      withAudit(() => vehicleService.create(vehicle), {
+        action: 'create',
+        module: 'vehicles',
+        description: `Criou novo veículo: ${vehicle.plate}`,
+        target_type: 'vehicle',
+        target_label: vehicle.plate,
+        new_data: vehicle
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [firebaseCollections.vehicles.root]
@@ -63,13 +71,24 @@ export function useVehiclesViewModel(
 
   /** Atualizar veículo */
   const updateVehicle = useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       id,
       vehicle
     }: {
       id: string
       vehicle: Partial<VehicleEntity>
-    }) => vehicleService.update(id, vehicle),
+    }) => {
+      const previous_data = await vehicleService.getById(id).catch(() => null)
+      return withAudit(() => vehicleService.update(id, vehicle), {
+        action: 'update',
+        module: 'vehicles',
+        description: `Atualizou veículo - ID: ${id}`,
+        target_id: id,
+        target_type: 'vehicle',
+        previous_data: previous_data || undefined,
+        new_data: vehicle
+      })
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [firebaseCollections.vehicles.root]
@@ -79,7 +98,18 @@ export function useVehiclesViewModel(
 
   /** Deletar veículo */
   const deleteVehicle = useMutation({
-    mutationFn: (id: string) => vehicleService.delete(id),
+    mutationFn: async (id: string) => {
+      const previous_data = await vehicleService.getById(id).catch(() => null)
+      return withAudit(() => vehicleService.delete(id), {
+        action: 'delete',
+        module: 'vehicles',
+        description: `Excluiu veículo - ID: ${id}`,
+        target_id: id,
+        target_type: 'vehicle',
+        previous_data: previous_data || undefined,
+        severity: 'critical'
+      })
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [firebaseCollections.vehicles.root]

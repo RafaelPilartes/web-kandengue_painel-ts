@@ -4,6 +4,7 @@ import {
   Bell,
   DoorOpen,
   Maximize,
+  ScrollText,
   User
 } from 'lucide-react'
 import { useContext } from 'react'
@@ -15,13 +16,15 @@ import { Link } from 'react-router-dom'
 import { routsNameMain } from '../../constants/routsName'
 import { DropdownInfo } from '../DropdownInfo'
 import { Chat } from 'phosphor-react'
+import { auditService } from '@/services/audit.service'
 
 export const Header = () => {
   const { currentAdminData, removeAdmin } = useAdminStore()
 
   const { menuIsVisible, setMenuIsVisible } = useContext(AppContext)
 
-  const logOut = () => {
+  const logOut = async () => {
+    await auditService.logLogout()
     removeAdmin()
   }
 
@@ -98,6 +101,15 @@ export const Header = () => {
               >
                 <Chat size={20} />
               </Link>
+
+              <Link
+                to={routsNameMain.logs.index}
+                title="Logs de Auditoria"
+                className="w-10 h-10  bg-gray-100/40 dark:bg-gray-500/60 border border-gray-200/30 dark:border-gray-500/60 rounded-full flex items-center justify-center transition-all duration-300 hover:text-primary-200 p-2 "
+              >
+                <ScrollText size={20} />
+              </Link>
+
               <button
                 onClick={toggleFullScreen}
                 className="w-10 h-10  bg-gray-100/40 dark:bg-gray-500/60 border border-gray-200/30 dark:border-gray-500/60 rounded-full flex items-center justify-center transition-all duration-300 hover:text-primary-200 p-2 "

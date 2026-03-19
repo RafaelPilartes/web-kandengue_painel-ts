@@ -5,6 +5,7 @@ import { WalletTopupRequestEntity } from '@/core/entities/WalletTopupRequest'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
 import { useMemo } from 'react'
+import { withAudit } from '@/services/audit.service'
 
 const walletTopupRequestService = new WalletTopupRequestService()
 
@@ -73,7 +74,13 @@ export function useWalletTopupRequestsViewModel(
   /** Criar carteira */
   const createWalletTopupRequest = useMutation({
     mutationFn: (walletTopupRequest: Omit<WalletTopupRequestEntity, 'id'>) =>
-      walletTopupRequestService.create(walletTopupRequest),
+      withAudit(() => walletTopupRequestService.create(walletTopupRequest), {
+        action: 'create',
+        module: 'topup_requests',
+        description: `Criou solicitação de recarga no valor de ${walletTopupRequest.amount}`,
+        target_type: 'topup_request',
+        new_data: walletTopupRequest
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [firebaseCollections.requests.root]
@@ -90,7 +97,19 @@ export function useWalletTopupRequestsViewModel(
       id: string
       walletTopupRequest: Partial<WalletTopupRequestEntity>
     }) => {
-      return await walletTopupRequestService.update(id, walletTopupRequest)
+      const previous_data = await walletTopupRequestService.getById(id).catch(() => null)
+      return await withAudit(
+        () => walletTopupRequestService.update(id, walletTopupRequest),
+        {
+          action: 'update',
+          module: 'topup_requests',
+          description: `Atualizou solicitação de recarga - ID: ${id}`,
+          target_id: id,
+          target_type: 'topup_request',
+          previous_data: previous_data || undefined,
+          new_data: walletTopupRequest
+        }
+      )
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
@@ -101,7 +120,18 @@ export function useWalletTopupRequestsViewModel(
 
   /** Deletar carteira */
   const deleteWalletTopupRequest = useMutation({
-    mutationFn: (id: string) => walletTopupRequestService.delete(id),
+    mutationFn: async (id: string) => {
+      const previous_data = await walletTopupRequestService.getById(id).catch(() => null)
+      return withAudit(() => walletTopupRequestService.delete(id), {
+        action: 'delete',
+        module: 'topup_requests',
+        description: `Excluiu solicitação de recarga - ID: ${id}`,
+        target_id: id,
+        target_type: 'topup_request',
+        previous_data: previous_data || undefined,
+        severity: 'critical'
+      })
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [firebaseCollections.requests.root]

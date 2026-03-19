@@ -5,6 +5,7 @@ import { WalletEntity } from '@/core/entities/Wallet'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
 import { useMemo } from 'react'
+import { withAudit } from '@/services/audit.service'
 
 const walletService = new WalletService()
 
@@ -66,9 +67,14 @@ export function useWalletsViewModel(
 
   /** Criar carteira */
   const createWallet = useMutation({
-    mutationFn: async (wallet: Omit<WalletEntity, 'id'>) => {
-      return walletService.create(wallet)
-    },
+    mutationFn: async (wallet: Omit<WalletEntity, 'id'>) =>
+      withAudit(() => walletService.create(wallet), {
+        action: 'create',
+        module: 'wallet',
+        description: `Criou carteira para o usuário: ${wallet.user?.name}`,
+        target_type: 'wallet',
+        new_data: wallet
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [firebaseCollections.wallets.root]
@@ -78,13 +84,24 @@ export function useWalletsViewModel(
 
   /** Atualizar carteira */
   const updateWallet = useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       id,
       wallet
     }: {
       id: string
       wallet: Partial<WalletEntity>
-    }) => walletService.update(id, wallet),
+    }) => {
+      const previous_data = await walletService.getById(id).catch(() => null)
+      return withAudit(() => walletService.update(id, wallet), {
+        action: 'update',
+        module: 'wallet',
+        description: `Atualizou carteira - ID: ${id}`,
+        target_id: id,
+        target_type: 'wallet',
+        previous_data: previous_data || undefined,
+        new_data: wallet
+      })
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [firebaseCollections.wallets.root]
@@ -95,7 +112,16 @@ export function useWalletsViewModel(
   /** Deletar carteira */
   const deleteWallet = useMutation({
     mutationFn: async (id: string) => {
-      return walletService.delete(id)
+      const previous_data = await walletService.getById(id).catch(() => null)
+      return withAudit(() => walletService.delete(id), {
+        action: 'delete',
+        module: 'wallet',
+        description: `Excluiu carteira - ID: ${id}`,
+        target_id: id,
+        target_type: 'wallet',
+        previous_data: previous_data || undefined,
+        severity: 'critical'
+      })
     },
     onSuccess: () => {
       queryClient.invalidateQueries({

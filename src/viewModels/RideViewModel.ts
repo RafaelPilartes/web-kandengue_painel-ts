@@ -8,6 +8,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import { getRideStatusLabel, getRideTypeLabel } from '@/utils/gettersLabels'
 import type { BreakdownType, RideFareInterface } from '@/interfaces/IRideFare'
 import type { PayoutsType } from '@/types/ride'
+import { withAudit } from '@/services/audit.service'
 
 const rideService = new RideService()
 
@@ -57,7 +58,14 @@ export function useRidesViewModel(
 
   /** Criar corrida */
   const createRide = useMutation({
-    mutationFn: (ride: Omit<RideEntity, 'id'>) => rideService.create(ride),
+    mutationFn: (ride: Omit<RideEntity, 'id'>) =>
+      withAudit(() => rideService.create(ride), {
+        action: 'create',
+        module: 'rides',
+        description: `Criou nova corrida: ${ride.pickup?.description ?? 'N/A'} para ${ride.dropoff?.description ?? 'N/A'}`,
+        target_type: 'ride',
+        new_data: ride
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [firebaseCollections.rides.root]
@@ -67,8 +75,18 @@ export function useRidesViewModel(
 
   /** Atualizar corrida */
   const updateRide = useMutation({
-    mutationFn: ({ id, ride }: { id: string; ride: Partial<RideEntity> }) =>
-      rideService.update(id, ride),
+    mutationFn: async ({ id, ride }: { id: string; ride: Partial<RideEntity> }) => {
+      const previous_data = await rideService.getById(id).catch(() => null)
+      return withAudit(() => rideService.update(id, ride), {
+        action: 'update',
+        module: 'rides',
+        description: `Atualizou os dados da corrida - ID: ${id}`,
+        target_id: id,
+        target_type: 'ride',
+        previous_data: previous_data || undefined,
+        new_data: ride
+      })
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [firebaseCollections.rides.root]
@@ -78,7 +96,18 @@ export function useRidesViewModel(
 
   /** Deletar corrida */
   const deleteRide = useMutation({
-    mutationFn: (id: string) => rideService.delete(id),
+    mutationFn: async (id: string) => {
+      const previous_data = await rideService.getById(id).catch(() => null)
+      return withAudit(() => rideService.delete(id), {
+        action: 'delete',
+        module: 'rides',
+        description: `Excluiu corrida - ID: ${id}`,
+        target_id: id,
+        target_type: 'ride',
+        previous_data: previous_data || undefined,
+        severity: 'critical'
+      })
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [firebaseCollections.rides.root]

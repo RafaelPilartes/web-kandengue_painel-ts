@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { NotificationService } from '@/services/notification.service'
 import { NotificationEntity } from '@/core/entities/Notification'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
+import { withAudit } from '@/services/audit.service'
 
 const notificationService = new NotificationService()
 
@@ -52,7 +53,14 @@ export function useNotificationsViewModel(
   /** Criar notificação */
   const createNotification = useMutation({
     mutationFn: (notification: Omit<NotificationEntity, 'id'>) =>
-      notificationService.create(notification),
+      withAudit(() => notificationService.create(notification), {
+        action: 'create',
+        module: 'notifications',
+        description: `Criou notificação: ${notification.title}`,
+        target_type: 'notification',
+        target_label: notification.title,
+        new_data: notification
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] })
     }
@@ -60,13 +68,24 @@ export function useNotificationsViewModel(
 
   /** Atualizar notificação */
   const updateNotification = useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       id,
       notification
     }: {
       id: string
       notification: Partial<NotificationEntity>
-    }) => notificationService.update(id, notification),
+    }) => {
+      const previous_data = await notificationService.getById(id).catch(() => null)
+      return withAudit(() => notificationService.update(id, notification), {
+        action: 'update',
+        module: 'notifications',
+        description: `Atualizou notificação - ID: ${id}`,
+        target_id: id,
+        target_type: 'notification',
+        previous_data: previous_data || undefined,
+        new_data: notification
+      })
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] })
     }
@@ -74,7 +93,18 @@ export function useNotificationsViewModel(
 
   /** Deletar notificação */
   const deleteNotification = useMutation({
-    mutationFn: (id: string) => notificationService.delete(id),
+    mutationFn: async (id: string) => {
+      const previous_data = await notificationService.getById(id).catch(() => null)
+      return withAudit(() => notificationService.delete(id), {
+        action: 'delete',
+        module: 'notifications',
+        description: `Excluiu notificação - ID: ${id}`,
+        target_id: id,
+        target_type: 'notification',
+        previous_data: previous_data || undefined,
+        severity: 'critical'
+      })
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] })
     }

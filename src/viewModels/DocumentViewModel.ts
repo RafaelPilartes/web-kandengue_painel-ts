@@ -4,6 +4,7 @@ import { DocumentService } from '@/services/document.service'
 import { DocumentEntity } from '@/core/entities/Document'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
+import { withAudit } from '@/services/audit.service'
 
 const documentService = new DocumentService()
 
@@ -53,7 +54,14 @@ export function useDocumentsViewModel(
   /** Criar documento */
   const createDocument = useMutation({
     mutationFn: (document: Omit<DocumentEntity, 'id'>) =>
-      documentService.create(document),
+      withAudit(() => documentService.create(document), {
+        action: 'create',
+        module: 'documents',
+        description: `Criou documento: ${document.type}`,
+        target_type: 'document',
+        target_label: document.type,
+        new_data: document
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [firebaseCollections.documents.root]
@@ -63,13 +71,24 @@ export function useDocumentsViewModel(
 
   /** Atualizar documento */
   const updateDocument = useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       id,
       document
     }: {
       id: string
       document: Partial<DocumentEntity>
-    }) => documentService.update(id, document),
+    }) => {
+      const previous_data = await documentService.getById(id).catch(() => null)
+      return withAudit(() => documentService.update(id, document), {
+        action: 'update',
+        module: 'documents',
+        description: `Atualizou documento - ID: ${id}`,
+        target_id: id,
+        target_type: 'document',
+        previous_data: previous_data || undefined,
+        new_data: document
+      })
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [firebaseCollections.documents.root]
@@ -79,7 +98,18 @@ export function useDocumentsViewModel(
 
   /** Deletar documento */
   const deleteDocument = useMutation({
-    mutationFn: (id: string) => documentService.delete(id),
+    mutationFn: async (id: string) => {
+      const previous_data = await documentService.getById(id).catch(() => null)
+      return withAudit(() => documentService.delete(id), {
+        action: 'delete',
+        module: 'documents',
+        description: `Excluiu documento - ID: ${id}`,
+        target_id: id,
+        target_type: 'document',
+        previous_data: previous_data || undefined,
+        severity: 'critical'
+      })
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [firebaseCollections.documents.root]

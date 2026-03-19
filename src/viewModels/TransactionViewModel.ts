@@ -6,6 +6,7 @@ import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
 import { WalletService } from '@/services/wallet.service'
 import type { TransactionType, TransactionCategoryType } from '@/types/enum'
+import { withAudit } from '@/services/audit.service'
 
 const transactionService = new TransactionService()
 const walletService = new WalletService()
@@ -57,7 +58,13 @@ export function useTransactionsViewModel(
   /** Criar transação */
   const createTransaction = useMutation({
     mutationFn: (transaction: Omit<TransactionEntity, 'id'>) =>
-      transactionService.create(transaction),
+      withAudit(() => transactionService.create(transaction), {
+        action: 'create',
+        module: 'transactions',
+        description: `Criou transação de ${transaction.type} no valor de ${transaction.amount}`,
+        target_type: 'transaction',
+        new_data: transaction
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [firebaseCollections.transactions.root]
@@ -67,13 +74,24 @@ export function useTransactionsViewModel(
 
   /** Atualizar transação */
   const updateTransaction = useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       id,
       transaction
     }: {
       id: string
       transaction: Partial<TransactionEntity>
-    }) => transactionService.update(id, transaction),
+    }) => {
+      const previous_data = await transactionService.getById(id).catch(() => null)
+      return withAudit(() => transactionService.update(id, transaction), {
+        action: 'update',
+        module: 'transactions',
+        description: `Atualizou transação - ID: ${id}`,
+        target_id: id,
+        target_type: 'transaction',
+        previous_data: previous_data || undefined,
+        new_data: transaction
+      })
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [firebaseCollections.transactions.root]
@@ -83,7 +101,18 @@ export function useTransactionsViewModel(
 
   /** Deletar transação */
   const deleteTransaction = useMutation({
-    mutationFn: (id: string) => transactionService.delete(id),
+    mutationFn: async (id: string) => {
+      const previous_data = await transactionService.getById(id).catch(() => null)
+      return withAudit(() => transactionService.delete(id), {
+        action: 'delete',
+        module: 'transactions',
+        description: `Excluiu transação - ID: ${id}`,
+        target_id: id,
+        target_type: 'transaction',
+        previous_data: previous_data || undefined,
+        severity: 'critical'
+      })
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [firebaseCollections.transactions.root]
@@ -116,31 +145,42 @@ export function useTransactionsViewModel(
       category: TransactionCategoryType
       description?: string
     }) => {
-      // 1. Buscar carteira atual
-      const wallet = await walletService.getById(walletId)
-      if (!wallet) throw new Error('Transação não encontrada')
+      return withAudit(
+        async () => {
+          // 1. Buscar carteira atual
+          const wallet = await walletService.getById(walletId)
+          if (!wallet) throw new Error('Transação não encontrada')
 
-      // 2. Calcular novo saldo
-      const newBalance =
-        type === 'credit' ? wallet.balance + amount : wallet.balance - amount
+          // 2. Calcular novo saldo
+          const newBalance =
+            type === 'credit' ? wallet.balance + amount : wallet.balance - amount
 
-      // 3. Atualiza saldo da carteira
-      const updatedWallet = await walletService.update(walletId, {
-        balance: newBalance
-      })
+          // 3. Atualiza saldo da carteira
+          const updatedWallet = await walletService.update(walletId, {
+            balance: newBalance
+          })
 
-      // 4. Cria a transação correspondente
-      const transaction: Omit<TransactionEntity, 'id'> = {
-        wallet_id: walletId,
-        amount,
-        type,
-        category,
-        description: description ?? ''
-      }
+          // 4. Cria a transação correspondente
+          const transaction: Omit<TransactionEntity, 'id'> = {
+            wallet_id: walletId,
+            amount,
+            type,
+            category,
+            description: description ?? ''
+          }
 
-      const createdTransaction = await transactionService.create(transaction)
+          const createdTransaction = await transactionService.create(transaction)
 
-      return { updatedWallet, createdTransaction }
+          return { updatedWallet, createdTransaction }
+        },
+        {
+          action: 'create',
+          module: 'transactions',
+          description: `Criou transação ${type} de ${amount} para a carteira ${walletId}`,
+          target_id: walletId,
+          target_type: 'wallet'
+        }
+      )
     }
   })
 

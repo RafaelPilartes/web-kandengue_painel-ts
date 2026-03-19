@@ -6,6 +6,7 @@ import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
 import { useMemo } from 'react'
 import { getUserStatusLabel } from '@/utils/gettersLabels'
+import { withAudit } from '@/services/audit.service'
 
 const userService = new UserService()
 
@@ -68,7 +69,15 @@ export function useUsersViewModel(
 
   /** Criar usuário */
   const createUser = useMutation({
-    mutationFn: (user: Omit<UserEntity, 'id'>) => userService.create(user),
+    mutationFn: (user: Omit<UserEntity, 'id'>) =>
+      withAudit(() => userService.create(user), {
+        action: 'create',
+        module: 'passengers',
+        description: `Criou passageiro: ${user.name} (${user.email || user.phone})`,
+        target_type: 'user',
+        target_label: user.name,
+        new_data: user
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [firebaseCollections.users.root]
@@ -78,8 +87,18 @@ export function useUsersViewModel(
 
   /** Atualizar usuário */
   const updateUser = useMutation({
-    mutationFn: ({ id, user }: { id: string; user: Partial<UserEntity> }) =>
-      userService.update(id, user),
+    mutationFn: async ({ id, user }: { id: string; user: Partial<UserEntity> }) => {
+      const previous_data = await userService.getById(id).catch(() => null)
+      return withAudit(() => userService.update(id, user), {
+        action: 'update',
+        module: 'passengers',
+        description: `Atualizou passageiro - ID: ${id}`,
+        target_id: id,
+        target_type: 'user',
+        previous_data: previous_data || undefined,
+        new_data: user
+      })
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [firebaseCollections.users.root]
@@ -89,7 +108,18 @@ export function useUsersViewModel(
 
   /** Deletar usuário */
   const deleteUser = useMutation({
-    mutationFn: (id: string) => userService.delete(id),
+    mutationFn: async (id: string) => {
+      const previous_data = await userService.getById(id).catch(() => null)
+      return withAudit(() => userService.delete(id), {
+        action: 'delete',
+        module: 'passengers',
+        description: `Excluiu passageiro - ID: ${id}`,
+        target_id: id,
+        target_type: 'user',
+        previous_data: previous_data || undefined,
+        severity: 'critical'
+      })
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [firebaseCollections.users.root]

@@ -4,6 +4,7 @@ import { RideRateService } from '@/services/rideRate.service'
 import { RideRateEntity } from '@/core/entities/RideRate'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
+import { withAudit } from '@/services/audit.service'
 
 const rideRateService = new RideRateService()
 
@@ -53,7 +54,13 @@ export function useRideRatesViewModel(
   /** Criar ride */
   const createRideRate = useMutation({
     mutationFn: (rideRate: Omit<RideRateEntity, 'id'>) =>
-      rideRateService.create(rideRate),
+      withAudit(() => rideRateService.create(rideRate), {
+        action: 'create',
+        module: 'system',
+        description: `Criou nova taxa de viagem`,
+        target_type: 'ride_rate',
+        new_data: rideRate
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [firebaseCollections.rideRates.root]
@@ -63,13 +70,24 @@ export function useRideRatesViewModel(
 
   /** Atualizar ride */
   const updateRideRate = useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       id,
       rideRate
     }: {
       id: string
       rideRate: Partial<RideRateEntity>
-    }) => rideRateService.update(id, rideRate),
+    }) => {
+      const previous_data = await rideRateService.getById(id).catch(() => null)
+      return withAudit(() => rideRateService.update(id, rideRate), {
+        action: 'update',
+        module: 'system',
+        description: `Atualizou taxa de viagem - ID: ${id}`,
+        target_id: id,
+        target_type: 'ride_rate',
+        previous_data: previous_data || undefined,
+        new_data: rideRate
+      })
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [firebaseCollections.rideRates.root]
@@ -79,7 +97,18 @@ export function useRideRatesViewModel(
 
   /** Deletar ride */
   const deleteRideRate = useMutation({
-    mutationFn: (id: string) => rideRateService.delete(id),
+    mutationFn: async (id: string) => {
+      const previous_data = await rideRateService.getById(id).catch(() => null)
+      return withAudit(() => rideRateService.delete(id), {
+        action: 'delete',
+        module: 'system',
+        description: `Excluiu taxa de viagem - ID: ${id}`,
+        target_id: id,
+        target_type: 'ride_rate',
+        previous_data: previous_data || undefined,
+        severity: 'critical'
+      })
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [firebaseCollections.rideRates.root]

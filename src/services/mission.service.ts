@@ -21,6 +21,10 @@ export class MissionService {
     })
   }
 
+  async getById(id: string) {
+    return await missionRepository.getById(id)
+  }
+
   async createMission(mission: Omit<MissionEntity, 'id'>) {
     return await missionRepository.create(mission)
   }

@@ -6,6 +6,7 @@ import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
 import { useMemo } from 'react'
 import { getAdminRoleLabel, getUserStatusLabel } from '@/utils/gettersLabels'
+import { withAudit } from '@/services/audit.service'
 
 const adminService = new AdminService()
 
@@ -93,7 +94,15 @@ export function useAdminsViewModel(
 
   /** Criar administrador */
   const createAdmin = useMutation({
-    mutationFn: (admin: Omit<AdminEntity, 'id'>) => adminService.create(admin),
+    mutationFn: (admin: Omit<AdminEntity, 'id'>) =>
+      withAudit(() => adminService.create(admin), {
+        action: 'create',
+        module: 'admins',
+        description: `Criou administrador: ${admin.name} (${admin.email})`,
+        target_type: 'admin',
+        target_label: admin.name,
+        new_data: admin
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [firebaseCollections.admins.root]
@@ -103,8 +112,18 @@ export function useAdminsViewModel(
 
   /** Atualizar administrador */
   const updateAdmin = useMutation({
-    mutationFn: ({ id, admin }: { id: string; admin: Partial<AdminEntity> }) =>
-      adminService.update(id, admin),
+    mutationFn: async ({ id, admin }: { id: string; admin: Partial<AdminEntity> }) => {
+      const previous_data = await adminService.getById(id).catch(() => null)
+      return withAudit(() => adminService.update(id, admin), {
+        action: 'update',
+        module: 'admins',
+        description: `Atualizou os dados do administrador - ID: ${id}`,
+        target_id: id,
+        target_type: 'admin',
+        previous_data: previous_data || undefined,
+        new_data: admin
+      })
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [firebaseCollections.admins.root]
@@ -114,7 +133,18 @@ export function useAdminsViewModel(
 
   /** Deletar administrador */
   const deleteAdmin = useMutation({
-    mutationFn: (id: string) => adminService.delete(id),
+    mutationFn: async (id: string) => {
+      const previous_data = await adminService.getById(id).catch(() => null)
+      return withAudit(() => adminService.delete(id), {
+        action: 'delete',
+        module: 'admins',
+        description: `Excluiu o administrador - ID: ${id}`,
+        target_id: id,
+        target_type: 'admin',
+        previous_data: previous_data || undefined,
+        severity: 'critical'
+      })
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [firebaseCollections.admins.root]
