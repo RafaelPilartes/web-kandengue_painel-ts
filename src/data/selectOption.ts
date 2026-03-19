@@ -28,6 +28,14 @@ export const walletTopupMethodOptions: OptionType[] = [
   { value: 'automated', label: 'Automático' },
   { value: 'cash', label: 'Dinheiro' }
 ]
+
+export const paymentMethodOptions: OptionType[] = [
+  { value: 'cash', label: 'Dinheiro' },
+  { value: 'wallet', label: 'Carteira' },
+  { value: 'credit_card', label: 'Cartão de Crédito' },
+  { value: 'multicaixa', label: 'Multicaixa' }
+]
+
 export const userStatusOptions: OptionType[] = [
   { value: 'inactive', label: 'Inativo' },
   { value: 'active', label: 'Ativo' },

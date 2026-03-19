@@ -1,10 +1,9 @@
 import dayjs from 'dayjs'
 
-import { Timestamp } from 'firebase/firestore'
-
 // formatDateTimeFromFirestore
-export function formatDateTimeFromFirestore(timestamp: Timestamp) {
-  const date = timestamp.toDate()
+export function formatDateTimeFromFirestore(timestamp: any) {
+  if (!timestamp) return { date: '-', time: '-' }
+  const date = typeof timestamp?.toDate === 'function' ? timestamp.toDate() : new Date(timestamp)
 
   const formattedDate = date.toLocaleDateString('pt-BR', {
     day: '2-digit',

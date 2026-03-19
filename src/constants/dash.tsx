@@ -106,13 +106,13 @@ const dashItem = [
         icon: <Trophy size={16} />,
         to: routsNameMain.missions.index,
         notification: 0
+      },
+      {
+        label: 'Relatórios Financeiros',
+        icon: <BarChart2 size={16} />,
+        to: routsNameMain.finance.reports.index,
+        notification: 0
       }
-      // {
-      //   label: 'Relatórios Financeiros',
-      //   icon: <BarChart2 size={16} />,
-      //   to: routsNameMain.finance.reports.index,
-      //   notification: 0
-      // }
     ],
     notification: 0,
     accordion: true

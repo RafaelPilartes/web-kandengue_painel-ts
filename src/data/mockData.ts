@@ -120,12 +120,12 @@ export const vehicles: VehicleInterface[] = [
 export const admin: AdminInterface[] = [
   {
     ...users[2],
-    role: 'superadmin',
+    role: 'direcao_geral',
     permissions: [{ value: 'manage_all', label: 'Gerenciar Tudo' }]
   },
   {
     ...users[3],
-    role: 'manager',
+    role: 'direcao_geral',
     permissions: [
       { value: 'manage_users', label: 'Gerenciar Usuários' },
       {

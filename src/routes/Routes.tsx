@@ -18,6 +18,7 @@ import { UserPage } from '@/pages/main/Passengers'
 import { DriverPage } from '@/pages/main/Drivers'
 import { RidesPage } from '@/pages/main/Rides'
 import { RealtimePage } from '@/pages/main/Rides/realtime'
+import { FinancePage } from '@/pages/main/Finance'
 import { FinancesPage } from '@/pages/main/Finances'
 import { WalletsPage } from '@/pages/main/Finances/wallet'
 import { NotificationsPage } from '@/pages/main/Notifications'
@@ -159,6 +160,16 @@ export function Router() {
             }
           />
           {/* Finances */}
+          <Route
+            path={routsNameMain.finance.reports.index}
+            element={
+              <React.Suspense fallback={<Loading />}>
+                <Private>
+                  <FinancePage />
+                </Private>
+              </React.Suspense>
+            }
+          />
           <Route
             path={routsNameMain.finance.index}
             element={
