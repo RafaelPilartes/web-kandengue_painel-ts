@@ -48,7 +48,10 @@ export class MissionService {
 
       return res
     } catch (error) {
-      console.error(`Error in getDriverProgress for driver ${driver_id}:`, error)
+      console.error(
+        `Error in getDriverProgress for driver ${driver_id}:`,
+        error
+      )
       throw error
     }
   }
@@ -101,7 +104,9 @@ export class MissionService {
       progress.last_updated &&
       isAfter(startDate, progress.last_updated)
     ) {
-      console.log(`[processMissionProgress] Resetting progress for a new cycle.`)
+      console.log(
+        `[processMissionProgress] Resetting progress for a new cycle.`
+      )
       progress.current_count = 0
       progress.completed_ride_ids = []
       progress.is_completed = false
@@ -164,7 +169,9 @@ export class MissionService {
       }
 
       if (progress.current_count >= mission.target && !progress.is_completed) {
-        console.log(`[processMissionProgress] Goal reached for mission ${mission.id}`)
+        console.log(
+          `[processMissionProgress] Goal reached for mission ${mission.id}`
+        )
         progress.is_completed = true
         progress.completed_at = now
         // Automatic payment REMOVED as per user request
@@ -193,7 +200,7 @@ export class MissionService {
     )
 
     const progress = await missionRepository.getProgress(driver_id, mission_id)
-    
+
     if (!progress) throw new Error('Progresso não encontrado')
     if (!progress.is_completed) throw new Error('Missão ainda não concluída')
     if (progress.is_paid) throw new Error('Missão já paga')
@@ -208,7 +215,7 @@ export class MissionService {
     progress.is_paid = true
     progress.type_paid = type_paid
     await missionRepository.updateProgress(progress)
-    
+
     return progress
   }
 
@@ -220,7 +227,9 @@ export class MissionService {
     // Attempt to find wallet by driver_id OR user.id
     let wallet = await walletRepository.getOneByField('driver_id', driver_id)
     if (!wallet) {
-      console.log(`[payMissionBonus] Wallet not found by driver_id, trying user.id...`)
+      console.log(
+        `[payMissionBonus] Wallet not found by driver_id, trying user.id...`
+      )
       wallet = await walletRepository.getOneByField('user.id', driver_id)
     }
 
@@ -230,14 +239,18 @@ export class MissionService {
       throw new Error(errorMsg)
     }
 
-    console.log(`[payMissionBonus] Found wallet ${wallet.id}. Creating transaction...`)
+    console.log(
+      `[payMissionBonus] Found wallet ${wallet.id}. Creating transaction...`
+    )
     const transactionId = generateId('tra')
     const transaction = new TransactionEntity({
       id: transactionId,
+      user_id: driver_id,
       wallet_id: wallet.id!,
       type: 'credit',
       category: 'mission_bonus' as any,
       amount: mission.reward,
+      status: 'success',
       description: `Bônus de Missão: ${mission.type} (${mission.target} entregas)`,
       reference_id: mission.id,
       created_at: new Date()

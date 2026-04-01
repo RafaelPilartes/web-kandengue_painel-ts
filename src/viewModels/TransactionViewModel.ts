@@ -163,9 +163,11 @@ export function useTransactionsViewModel(
           // 4. Cria a transação correspondente
           const transaction: Omit<TransactionEntity, 'id'> = {
             wallet_id: walletId,
+            user_id: (wallet as any).user?.id ?? walletId,
             amount,
             type,
             category,
+            status: 'success',
             description: description ?? ''
           }
 

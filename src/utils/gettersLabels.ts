@@ -34,7 +34,8 @@ import type {
   UserStatus,
   VehicleStatusEnumType,
   VehicleType,
-  WalletTopupMethodType
+  WalletTopupMethodType,
+  WalletTopupStatus
 } from '../types/enum'
 import type { DocumentType } from '@/types/document'
 
@@ -45,6 +46,22 @@ export const getStatusLabel = (value: StatusEnumType): string => {
 export const getRequestStatusLabel = (value: RequestStatus): string => {
   const found = requestStatusOptions.find(option => option.value === value)
   return found ? found.label : value
+}
+
+const walletTopupStatusLabels: Record<WalletTopupStatus, string> = {
+  pending: 'Pendente',
+  processing: 'Processando',
+  approved: 'Aprovado',
+  rejected: 'Rejeitado',
+  success: 'Sucesso',
+  failed: 'Falhou',
+  cancelled: 'Cancelado',
+  timeout: 'Sem resposta',
+  reversed: 'Estornado'
+}
+
+export const getWalletTopupStatusLabel = (value: WalletTopupStatus): string => {
+  return walletTopupStatusLabels[value] ?? value
 }
 
 export const getWalletTopupMethodTypeLabel = (

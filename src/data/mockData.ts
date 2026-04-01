@@ -190,24 +190,27 @@ export const documents: DocumentInterface[] = [
   }
 ]
 
-// ====================== TRANSACTIONS ======================
 export const transactions: TransactionInterface[] = [
   {
     id: 't1',
     wallet_id: 'w1',
+    user_id: 'u5',
     type: 'credit',
     category: 'wallet_topup',
     amount: 5000,
+    status: 'success',
     description: 'Carregamento aprovado via referência bancária',
-    reference_id: 'req1', // relaciona com WalletTopupRequest
+    reference_id: 'req1',
     created_at: new Date()
   },
   {
     id: 't2',
     wallet_id: 'w2',
+    user_id: 'u6',
     type: 'debit',
     category: 'ride_fee',
     amount: 1000,
+    status: 'success',
     description: 'Taxa de corrida (25% + 2% pensão)',
     reference_id: 'ride123',
     created_at: new Date()
@@ -215,18 +218,22 @@ export const transactions: TransactionInterface[] = [
   {
     id: 't3',
     wallet_id: 'w2',
+    user_id: 'u6',
     type: 'credit',
     category: 'bonus',
     amount: 200,
+    status: 'success',
     description: 'Bónus semanal por desempenho',
     created_at: new Date()
   },
   {
     id: 't4',
     wallet_id: 'w1',
+    user_id: 'u5',
     type: 'refund',
     category: 'refund',
     amount: 1500,
+    status: 'success',
     description: 'Estorno por corrida cancelada',
     reference_id: 'ride456',
     created_at: new Date()
@@ -563,19 +570,25 @@ export const walletTopupRequests: WalletTopupRequestInterface[] = [
   {
     id: 'req1',
     wallet_id: 'w1',
+    user_id: 'u5',
     amount: 5000,
+    currency: 'AOA',
     method: 'bank_transfer',
+    idempotency_key: 'idem-req1',
     proof_url: 'https://cdn.app.com/proofs/proof1.png',
     status: 'approved',
     created_at: new Date('2025-09-01T10:00:00Z'),
     updated_at: new Date('2025-09-01T12:00:00Z'),
-    reviewed_by: admin[0]
+    reviewed_by: admin[0].id
   },
   {
     id: 'req2',
     wallet_id: 'w2',
+    user_id: 'u6',
     amount: 3000,
+    currency: 'AOA',
     method: 'bank_transfer',
+    idempotency_key: 'idem-req2',
     proof_url: 'https://cdn.app.com/proofs/proof2.png',
     status: 'pending',
     created_at: new Date('2025-09-12T15:30:00Z')
@@ -583,12 +596,15 @@ export const walletTopupRequests: WalletTopupRequestInterface[] = [
   {
     id: 'req3',
     wallet_id: 'w1',
+    user_id: 'u5',
     amount: 2000,
+    currency: 'AOA',
     method: 'bank_transfer',
+    idempotency_key: 'idem-req3',
     status: 'rejected',
     created_at: new Date('2025-09-10T11:00:00Z'),
     updated_at: new Date('2025-09-10T13:00:00Z'),
-    reviewed_by: admin[1]
+    reviewed_by: admin[1].id
   }
 ]
 

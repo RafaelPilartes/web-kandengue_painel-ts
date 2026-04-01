@@ -1,8 +1,8 @@
 import { ActionsMenu } from '@/components/ActionsMenu'
 import type { WalletTopupRequestInterface } from '@/interfaces/IWalletTopupRequest'
-import type { RequestStatus } from '@/types/enum'
+import type { WalletTopupStatus } from '@/types/enum'
 import {
-  getRequestStatusLabel,
+  getWalletTopupStatusLabel,
   getWalletTopupMethodTypeLabel
 } from '@/utils/gettersLabels'
 import { formatMoney } from '@/utils/number'
@@ -14,10 +14,10 @@ interface TableRowWalletTopupRequestProps {
   openPageViewRow?: (item: WalletTopupRequestInterface) => void
   handleApprove: (
     id: string,
-    type: RequestStatus,
+    type: WalletTopupStatus,
     item?: WalletTopupRequestInterface
   ) => void
-  handleReject: (id: string, type: RequestStatus) => void
+  handleReject: (id: string, type: WalletTopupStatus) => void
 }
 
 export default function TableRowWalletTopupRequest({
@@ -41,13 +41,13 @@ export default function TableRowWalletTopupRequest({
               : 'bg-red-100 text-red-700'
           }`}
         >
-          {getRequestStatusLabel(rowItem.status)}
+          {getWalletTopupStatusLabel(rowItem.status)}
         </span>
       </td>
       <td className="px-3 py-3">
         <span
           className={`px-2 py-1 rounded-lg text-xs ${
-            rowItem.method === 'automated'
+            rowItem.method === 'unitel_money'
               ? 'bg-green-100 text-green-700'
               : 'bg-blue-100 text-blue-700'
           }`}

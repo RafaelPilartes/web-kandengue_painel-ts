@@ -15,7 +15,7 @@ import TableRow from '../../../components/table/TableRowWalletTopupRequest'
 
 // ViewModel (simulação, depois ligamos com API)
 import { useWalletTopupRequestsViewModel } from '@/viewModels/WalletTopupRequestViewModel'
-import type { RequestStatus } from '@/types/enum'
+import type { WalletTopupStatus } from '@/types/enum'
 import { useTransactionsViewModel } from '@/viewModels/TransactionViewModel'
 import type { WalletTopupRequestInterface } from '@/interfaces/IWalletTopupRequest'
 import { useAdminStore } from '@/stores/userStore'
@@ -69,7 +69,7 @@ export function WalletTopupRequestsPage() {
   // Excluir (se for preciso remover carteira ou transação)
   function handleAction(
     docId: string,
-    status: RequestStatus,
+    status: WalletTopupStatus,
     item?: WalletTopupRequestInterface
   ) {
     if (status === 'approved') {
@@ -86,7 +86,7 @@ export function WalletTopupRequestsPage() {
               id: docId,
               walletTopupRequest: {
                 status: 'approved',
-                reviewed_by: currentAdminData
+                reviewed_by: currentAdminData?.id ?? null
               }
             })
 
@@ -152,7 +152,7 @@ export function WalletTopupRequestsPage() {
               walletTopupRequest: {
                 status: 'rejected',
                 rejected_reason: rejectionReason,
-                reviewed_by: currentAdminData
+                reviewed_by: currentAdminData?.id ?? null
               }
             })
 

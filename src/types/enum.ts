@@ -41,10 +41,21 @@ export type TransactionCategoryType =
   | 'mission_bonus'
   | 'refund'
 
-export type TransactionStatus = 'pending' | 'approved' | 'rejected'
+export type TransactionStatus = 'pending' | 'success' | 'failed' | 'reversed'
 export type RequestStatus = 'pending' | 'approved' | 'rejected'
 
-export type WalletTopupMethodType = 'bank_transfer' | 'automated' | 'cash'
+export type WalletTopupStatus =
+  | 'pending' // criado localmente
+  | 'processing' // enviado para Unitel
+  | 'approved' // aprovado
+  | 'rejected' // rejeitado
+  | 'success' // confirmado
+  | 'failed' // falhou
+  | 'cancelled' // cancelado
+  | 'timeout' // sem resposta
+  | 'reversed' // estornado
+
+export type WalletTopupMethodType = 'unitel_money' | 'bank_transfer' | 'cash'
 
 export type NotificationType = 'ride' | 'wallet' | 'document' | 'system'
 export type NotificationCategory = 'driver' | 'passenger' | 'admin' | 'all'

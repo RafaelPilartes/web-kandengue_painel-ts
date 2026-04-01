@@ -167,7 +167,7 @@ export class FinanceService {
 
       const authorId = topup.wallet_id || (topup as any).author?.id || ''
       if (filters.driver_id && authorId !== filters.driver_id) continue
-      if (filters.admin_id && topup.reviewed_by?.id !== filters.admin_id) continue
+      if (filters.admin_id && topup.reviewed_by !== filters.admin_id) continue
 
       const amount = Number(topup.amount || 0)
 
@@ -179,7 +179,7 @@ export class FinanceService {
       const driverNameStr =
         (topup as any).author?.name || topup.wallet_id || 'N/A'
       const reviewNameStr =
-        topup.reviewed_by?.name || (topup as any).reviewer?.name || 'N/A'
+        topup.reviewed_by || (topup as any).reviewer?.name || 'N/A'
       const payMethodStr =
         topup.method || (topup as any).payment_method?.type || 'cash'
 

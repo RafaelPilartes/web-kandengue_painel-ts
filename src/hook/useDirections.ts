@@ -58,5 +58,7 @@ export default function useDirections() {
     }
   }
 
-  return { routeCoords, fetchRoute }
+  const clearRoute = () => setRouteCoords([])
+
+  return { routeCoords, fetchRoute, clearRoute }
 }
