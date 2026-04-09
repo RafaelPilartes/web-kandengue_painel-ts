@@ -18,7 +18,8 @@ import {
   onSnapshot
 } from 'firebase/firestore'
 import type { QuerySnapshot, QueryDocumentSnapshot } from 'firebase/firestore'
-import { db } from '@/config/firebase.config'
+import { db, auth } from '@/config/firebase.config'
+import { deleteUser } from 'firebase/auth'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
 import { generateId } from '@/helpers/generateId'
@@ -210,6 +211,17 @@ export class FirebaseDriverDAO implements IDriverRepository {
 
   async delete(id: string): Promise<void> {
     await deleteDoc(doc(this.driversRef, id))
+  }
+
+  async softDelete(id: string, firebaseUid?: string): Promise<void> {
+    await updateDoc(doc(this.driversRef, id), {
+      status: 'deleted',
+      updated_at: new Date()
+    })
+
+    if (firebaseUid && auth.currentUser?.uid === firebaseUid) {
+      await deleteUser(auth.currentUser)
+    }
   }
 
   listenOnlineDrivers(

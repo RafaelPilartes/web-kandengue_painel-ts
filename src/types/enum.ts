@@ -4,7 +4,12 @@ export type GenderType = 'male' | 'female' | 'other'
 export type MonthEnumType = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12
 export type currencyEnumType = 'AOA' | 'USD'
 // =========================================================================
-export type UserStatus = 'active' | 'inactive' | 'pending' | 'banned'
+export type UserStatus =
+  | 'active'
+  | 'inactive'
+  | 'pending'
+  | 'banned'
+  | 'deleted'
 
 // =========================================================================
 export type ApplicationStatus = 'pending' | 'approved' | 'rejected'

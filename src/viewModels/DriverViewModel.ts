@@ -133,6 +133,33 @@ export function useDriversViewModel(
     }
   })
 
+  /** Soft delete motorista (Firestore: status=deleted + Auth: removeUser) */
+  const softDeleteDriver = useMutation({
+    mutationFn: async ({
+      id,
+      firebaseUid
+    }: {
+      id: string
+      firebaseUid?: string
+    }) => {
+      const previous_data = await driverService.getById(id).catch(() => null)
+      return withAudit(() => driverService.softDelete(id, firebaseUid), {
+        action: 'delete',
+        module: 'drivers',
+        description: `Soft-deletou motorista - ID: ${id}`,
+        target_id: id,
+        target_type: 'driver',
+        previous_data: previous_data || undefined,
+        severity: 'critical'
+      })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [firebaseCollections.drivers.root]
+      })
+    }
+  })
+
   /** Buscar motorista único (on-demand) */
   const fetchDriverById = async (id: string) => {
     try {
@@ -169,6 +196,7 @@ export function useDriversViewModel(
     createDriver,
     updateDriver,
     deleteDriver,
+    softDeleteDriver,
     fetchDriverById,
 
     dataToExport

@@ -21,6 +21,7 @@ export interface IDriverRepository {
   create(Driver: Omit<DriverEntity, 'id'>): Promise<DriverEntity>
   update(id: string, Driver: Partial<DriverEntity>): Promise<DriverEntity>
   delete(id: string): Promise<void>
+  softDelete(id: string, firebaseUid?: string): Promise<void>
   listenOnlineDrivers(
     onUpdate: (drivers: DriverEntity[]) => void,
     onError?: (err: Error) => void

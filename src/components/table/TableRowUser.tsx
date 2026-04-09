@@ -12,7 +12,7 @@ import { formatDateTimeFromFirestore } from '@/utils/date'
 interface TableRowProps {
   rowItem: UserInterface
   openPageViewRow?: (id: string) => void
-  handleDeleteRow: (action: string) => void
+  handleDeleteRow: (action: UserInterface) => void
   openModalEditRow: (action: any) => void
 }
 
@@ -59,8 +59,8 @@ const TableRow: React.FC<TableRowProps> = ({
             rowItem.status == 'active'
               ? 'blue'
               : rowItem.status == 'inactive'
-              ? 'yellow'
-              : 'red'
+                ? 'yellow'
+                : 'red'
           }
           label={getUserStatusLabel(rowItem.status)}
         />
@@ -85,7 +85,7 @@ const TableRow: React.FC<TableRowProps> = ({
               {
                 icon: <AiFillDelete size={16} />,
                 label: 'Excluir',
-                onClick: () => handleDeleteRow(rowItem.id as string),
+                onClick: () => handleDeleteRow(rowItem),
                 className:
                   'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900'
               }

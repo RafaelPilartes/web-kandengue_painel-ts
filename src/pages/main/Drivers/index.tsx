@@ -41,7 +41,14 @@ export function DriverPage() {
   const [currentPage, setCurrentPage] = useState(0) // página atual (0-based)
   const [docsPerPage, setDocsPerPage] = useState(8) // limite por página
 
-  const { drivers, pagination, isLoadingDrivers, deleteDriver, dataToExport } =
+  const {
+    drivers,
+    pagination,
+    isLoadingDrivers,
+    deleteDriver,
+    softDeleteDriver,
+    dataToExport
+  } =
     useDriversViewModel(
       docsPerPage,
       currentPage * docsPerPage,
@@ -105,7 +112,7 @@ export function DriverPage() {
   }
 
   // Exclusão com confirmação
-  function handleDeleteRow(id: string) {
+  function handleDeleteRow(item: DriverInterface) {
     swal({
       title: 'Tem certeza?',
       text: 'Uma vez excluído, não poderá recuperar!',
@@ -115,7 +122,10 @@ export function DriverPage() {
     }).then(async willDelete => {
       if (willDelete) {
         try {
-          await deleteDriver.mutateAsync(id)
+          await softDeleteDriver.mutateAsync({
+            id: item.id as string,
+            firebaseUid: item.firebase_uid
+          })
 
           swal('Excluído com sucesso', {
             title: 'Usuario com sucesso',

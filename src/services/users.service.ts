@@ -101,4 +101,13 @@ export class UserService {
       throw new Error(error.message || 'Erro ao deletar usuário')
     }
   }
+
+  async softDelete(id: string, firebaseUid?: string): Promise<void> {
+    try {
+      return await userRepository.softDelete(id, firebaseUid)
+    } catch (error: any) {
+      console.error(`Erro ao soft-deletar usuário ${id}:`, error)
+      throw new Error(error.message || 'Erro ao soft-deletar usuário')
+    }
+  }
 }

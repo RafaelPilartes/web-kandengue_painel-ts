@@ -284,6 +284,8 @@ export function MetricsPage() {
       { name: string; count: number; revenue: number }
     > = {}
     for (const ride of filteredRides) {
+      if (ride.status !== 'completed') continue
+
       const id = ride.driver?.id ?? 'unknown'
       const name = ride.driver?.name ?? '—'
       if (!map[id]) map[id] = { name, count: 0, revenue: 0 }

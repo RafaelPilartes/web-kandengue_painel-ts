@@ -16,7 +16,8 @@ import {
   startAfter,
   getCountFromServer
 } from 'firebase/firestore'
-import { db } from '@/config/firebase.config'
+import { deleteUser } from 'firebase/auth'
+import { db, auth } from '@/config/firebase.config'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
 import { generateId } from '@/helpers/generateId'
@@ -205,5 +206,16 @@ export class FirebaseUserDAO implements IUserRepository {
 
   async delete(id: string): Promise<void> {
     await deleteDoc(doc(this.usersRef, id))
+  }
+
+  async softDelete(id: string, firebaseUid?: string): Promise<void> {
+    await updateDoc(doc(this.usersRef, id), {
+      status: 'deleted',
+      updated_at: new Date()
+    })
+
+    if (firebaseUid && auth.currentUser?.uid === firebaseUid) {
+      await deleteUser(auth.currentUser)
+    }
   }
 }

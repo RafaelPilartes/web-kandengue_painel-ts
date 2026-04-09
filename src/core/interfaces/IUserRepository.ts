@@ -21,4 +21,5 @@ export interface IUserRepository {
   create(User: Omit<UserEntity, 'id'>): Promise<UserEntity>
   update(id: string, User: Partial<UserEntity>): Promise<UserEntity>
   delete(id: string): Promise<void>
+  softDelete(id: string, firebaseUid?: string): Promise<void>
 }

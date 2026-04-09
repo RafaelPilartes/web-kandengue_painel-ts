@@ -127,6 +127,33 @@ export function useUsersViewModel(
     }
   })
 
+  /** Soft delete usuário (Firestore: status=deleted + Auth: removeUser) */
+  const softDeleteUser = useMutation({
+    mutationFn: async ({
+      id,
+      firebaseUid
+    }: {
+      id: string
+      firebaseUid?: string
+    }) => {
+      const previous_data = await userService.getById(id).catch(() => null)
+      return withAudit(() => userService.softDelete(id, firebaseUid), {
+        action: 'delete',
+        module: 'passengers',
+        description: `Soft-deletou passageiro - ID: ${id}`,
+        target_id: id,
+        target_type: 'user',
+        previous_data: previous_data || undefined,
+        severity: 'critical'
+      })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [firebaseCollections.users.root]
+      })
+    }
+  })
+
   /** Buscar usuário único (on-demand) */
   const fetchUserById = async (id: string) => {
     try {
@@ -174,6 +201,7 @@ export function useUsersViewModel(
     createUser,
     updateUser,
     deleteUser,
+    softDeleteUser,
     fetchUserById,
 
     dataToExport

@@ -72,7 +72,7 @@ export function Home() {
   const topDrivers = drivers
     .map(driver => ({
       ...driver,
-      rideCount: rides.filter(r => r.driver?.id === driver.id).length
+      rideCount: rides.filter(r => r.driver?.id === driver.id && r.status === 'completed').length
     }))
     .sort((a, b) => b.rideCount - a.rideCount)
     .slice(0, 5)

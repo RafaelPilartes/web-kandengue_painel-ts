@@ -291,7 +291,7 @@ export function FinancePage() {
                 <StatBox label="Volume Bruto (Transacionado)" value={overview.total_gross_volume} icon={CreditCard} />
                 <StatBox label="Receita Empresa (Corridas)" value={overview.total_company_revenue} icon={TrendingUp} color="blue" />
                 <StatBox label="Topups Aprovados (Carteira)" value={overview.total_topups_approved} icon={Wallet} color="blue" />
-                <StatBox label="Saldo Gerado (Empresa + Topups)" value={overview.net_balance} icon={CheckCircle} color="green" />
+
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

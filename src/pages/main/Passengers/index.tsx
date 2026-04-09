@@ -38,7 +38,14 @@ export function UserPage() {
   const [currentPage, setCurrentPage] = useState(0) // página atual (0-based)
   const [docsPerPage, setDocsPerPage] = useState(8) // limite por página
 
-  const { users, pagination, isLoadingUsers, deleteUser, dataToExport } =
+  const {
+    users,
+    pagination,
+    isLoadingUsers,
+    deleteUser,
+    softDeleteUser,
+    dataToExport
+  } =
     useUsersViewModel(
       docsPerPage,
       currentPage * docsPerPage,
@@ -98,7 +105,7 @@ export function UserPage() {
   }
 
   // Exclusão com confirmação
-  function handleDeleteRow(id: string) {
+  function handleDeleteRow(item: UserInterface) {
     swal({
       title: 'Tem certeza?',
       text: 'Uma vez excluído, você não poderá recuperar!',
@@ -107,7 +114,10 @@ export function UserPage() {
       dangerMode: true
     }).then(async willDelete => {
       if (willDelete) {
-        deleteUser.mutate(id)
+        softDeleteUser.mutate({
+          id: item.id as string,
+          firebaseUid: item.firebase_uid
+        })
       } else {
         swal('O registro está seguro!', { icon: 'error' })
       }

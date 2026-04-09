@@ -105,6 +105,15 @@ export class DriverService {
     }
   }
 
+  async softDelete(id: string, firebaseUid?: string): Promise<void> {
+    try {
+      return await driverRepository.softDelete(id, firebaseUid)
+    } catch (error: any) {
+      console.error(`Erro ao soft-deletar motorista ${id}:`, error)
+      throw new Error(error.message || 'Erro ao soft-deletar motorista')
+    }
+  }
+
   listenOnlineDrivers(
     onUpdate: (drivers: DriverEntity[]) => void,
     onError?: (err: Error) => void
