@@ -12,7 +12,11 @@ export class NotificationEntity implements NotificationInterface {
   category: NotificationCategory
   specific_user?: boolean
   user?: UserInterface
+  user_id?: string
+  user_role?: 'driver' | 'passenger'
   is_read?: boolean
+  sent?: boolean
+  sent_at?: Date
   created_at?: Date
 
   constructor(params: NotificationInterface) {
@@ -23,7 +27,11 @@ export class NotificationEntity implements NotificationInterface {
     this.category = params.category
     this.specific_user = params.specific_user
     this.user = params.user
+    this.user_id = params.user_id
+    this.user_role = params.user_role
     this.is_read = params.is_read
+    this.sent = params.sent
+    this.sent_at = params.sent_at
     this.created_at = params.created_at
   }
 }

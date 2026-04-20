@@ -227,7 +227,7 @@ export function ModalCreateAdmin({
         return
       }
 
-      await register({
+      const authResult = await register({
         email: dataForm.email,
         password: dataForm.password
       })
@@ -259,9 +259,8 @@ export function ModalCreateAdmin({
 
       const dataToSave: Omit<any, 'id'> = {
         ...dataForm,
-        photo: imageUploaded
-        // role: 'superadmin',
-        // permissions: []
+        photo: imageUploaded,
+        firebase_uid: authResult?.user?.uid
       }
 
       console.log('dataToSave =>', dataToSave)

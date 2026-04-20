@@ -1,5 +1,8 @@
 // services/notifications.service.ts
-import { notificationRepository } from '@/modules/Api'
+import {
+  notificationRepository,
+  pushNotificationRepository
+} from '@/modules/Api'
 import { NotificationEntity } from '@/core/entities/Notification'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 
@@ -78,6 +81,38 @@ export class NotificationService {
     } catch (error: any) {
       console.error('Erro ao criar notificação:', error)
       throw new Error(error.message || 'Erro ao criar notificação')
+    }
+  }
+
+  async createAndSendPush(
+    notification: Omit<NotificationEntity, 'id'>
+  ): Promise<NotificationEntity> {
+    try {
+      // 1. Grava no Firebase
+      const createdDoc = await notificationRepository.create(notification)
+
+      // 2. Dispara o Push via Fastify API
+      try {
+        const { auth } = await import('@/config/firebase.config')
+        const token = await auth.currentUser?.getIdToken()
+        if (token) {
+          await pushNotificationRepository.send(createdDoc.id, token)
+        } else {
+          console.warn(
+            'Usuário não autenticado, token ausente para disparar Push'
+          )
+        }
+      } catch (err) {
+        console.error(
+          'Falha ao disparar push notification via camada REST:',
+          err
+        )
+      }
+
+      return createdDoc
+    } catch (error: any) {
+      console.error('Erro ao criar e disparar notificação:', error)
+      throw new Error(error.message || 'Erro ao criar e disparar notificação')
     }
   }
 

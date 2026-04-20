@@ -28,6 +28,8 @@ import type { IApplicationRepository } from '@/core/interfaces/IApplicationRepos
 import { FirebaseApplicationDAO } from './firebase/application.dao'
 import type { IMissionRepository } from '@/core/interfaces/IMissionRepository'
 import { FirebaseMissionDAO } from './firebase/mission.dao'
+import type { IPushNotificationRepository } from '@/core/interfaces/IPushNotificationRepository'
+import { PushNotificationDAO } from './rest/pushNotification.dao'
 // import { RestUserDAO } from "./rest/users.dao"; // Futuro
 
 // Factory para escolher implementação
@@ -53,3 +55,5 @@ export const applicationRepository: IApplicationRepository =
 export const missionRepository: IMissionRepository = new FirebaseMissionDAO()
 
 export const fileRepository: IFileRepository = new FirebaseFileDAO()
+
+export const pushNotificationRepository: IPushNotificationRepository = new PushNotificationDAO()

@@ -117,13 +117,20 @@ export function ModalSendNotification({
       return
     }
 
+    const userRole =
+      category === 'all' || category === 'admin' ? undefined : category
+
     const payload: Omit<NotificationInterface, 'id'> = {
       title: title.trim(),
       message: message.trim(),
       type,
       category,
       specific_user: specificUser,
-      user: specificUser ? selectedUser : undefined
+      user: specificUser ? selectedUser : undefined,
+      user_id: specificUser ? selectedUser?.id : undefined,
+      user_role: userRole,
+      is_read: false,
+      sent: false
     }
 
     console.log('payload =>', payload)

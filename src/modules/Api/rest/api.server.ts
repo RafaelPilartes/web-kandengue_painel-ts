@@ -1,2 +1,3 @@
-export const ApiServer = 'http://localhost:8000'
-// export const ApiServer = 'https://saudeemcasa-apisystem.tchossy.com'
+export const ApiServer = 'https://russetlike-diversely-flynn.ngrok-free.dev'
+// export const ApiServer =
+//   'https://node-fastify-kandengueatrevido-ts-production.up.railway.app'

@@ -34,7 +34,7 @@ type loginUserType = z.infer<typeof loginUserSchema>
 export function Login() {
   const { addAdmin } = useAdminStore()
 
-  const { fetchAllAdminsByField } = useAdminsViewModel()
+  const { fetchAllAdminsByField, updateAdmin } = useAdminsViewModel()
   const { login, isLoggingIn, loginError } = useAuthViewModel()
 
   const {
@@ -61,6 +61,19 @@ export function Login() {
         const adminData: AdminEntity | null = response?.data[0] ?? null
 
         if (adminData) {
+          // Actualiza o firebase_uid se não existir
+          if (!adminData.firebase_uid && adminData.id) {
+            try {
+              await updateAdmin.mutateAsync({
+                id: adminData.id,
+                admin: { firebase_uid: authRes.user.uid }
+              })
+              adminData.firebase_uid = authRes.user.uid
+            } catch (updateErr) {
+              console.error('Erro ao atualizar firebase_uid do admin:', updateErr)
+            }
+          }
+
           addAdmin(adminData)
 
           // Initialize audit service with admin data

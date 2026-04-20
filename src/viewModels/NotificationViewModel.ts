@@ -52,15 +52,19 @@ export function useNotificationsViewModel(
 
   /** Criar notificação */
   const createNotification = useMutation({
-    mutationFn: (notification: Omit<NotificationEntity, 'id'>) =>
-      withAudit(() => notificationService.create(notification), {
+    mutationFn: async (notification: Omit<NotificationEntity, 'id'>) => {
+      // 1. Gravar na Firebase + Disparar Push via API (com auditoria cruzada)
+      const createdDoc = await withAudit(() => notificationService.createAndSendPush(notification), {
         action: 'create',
         module: 'notifications',
         description: `Criou notificação: ${notification.title}`,
         target_type: 'notification',
         target_label: notification.title,
         new_data: notification
-      }),
+      })
+
+      return createdDoc
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] })
     }
