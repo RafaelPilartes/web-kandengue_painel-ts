@@ -5,7 +5,7 @@ export class PushNotificationDAO implements IPushNotificationRepository {
   async send(notificationId: string, token: string): Promise<void> {
     try {
       await ApiDAO.post(
-        '/notifications/send',
+        '/api/v1/notifications/send',
         { notificationId },
         { Authorization: `Bearer ${token}` }
       )
