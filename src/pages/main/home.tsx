@@ -55,9 +55,9 @@ const customIcon = new L.Icon({
 export function Home() {
   const { users, isLoadingUsers } = useUsersViewModel()
   const { drivers, isLoadingDrivers } = useDriversViewModel()
-  const { rides, isLoadingRides, ridesMetrics } = useRidesViewModel()
+  const { rides, isLoadingRides, ridesMetrics, calculateCompanyProfit } = useRidesViewModel()
 
-  // const companyProfit = calculateCompanyProfit(rides)
+  const companyProfit = calculateCompanyProfit(rides)
 
   const itemsBreadcrumbs = [
     { label: 'Painel', to: routsNameMain.home },
@@ -110,14 +110,14 @@ export function Home() {
                   className="text-orange-600 dark:text-orange-400"
                 />
                 <span className="text-sm font-medium text-orange-800 dark:text-orange-300 uppercase tracking-wide">
-                  Total de Corridas
+                  Total de Corridas Completas
                 </span>
               </div>
               {isLoadingRides ? (
                 <Spinner size={32} className="text-orange-600 animate-spin" />
               ) : (
                 <div className="text-6xl font-bold text-orange-900 dark:text-orange-100 tracking-tight">
-                  {rides.length}
+                  {ridesMetrics.completed}
                 </div>
               )}
               <p className="text-sm text-orange-700 dark:text-orange-400 mt-2">
@@ -139,7 +139,7 @@ export function Home() {
               className="text-amber-600 dark:text-amber-400"
             />
             <span className="text-xs font-medium text-amber-800 dark:text-amber-300 uppercase tracking-wide">
-              Receita Total
+              Receita Total (Completas)
             </span>
           </div>
           {isLoadingRides ? (
@@ -147,7 +147,7 @@ export function Home() {
           ) : (
             <>
               <div className="text-3xl font-bold text-amber-900 dark:text-amber-100 tracking-tight">
-                AOA {formatMoney(ridesMetrics.payoutsTotals.company)}
+                AOA {formatMoney(companyProfit)}
               </div>
               <p className="text-xs text-amber-700 dark:text-amber-400 mt-2">
                 Faturamento da empresa

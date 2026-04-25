@@ -3,12 +3,13 @@ import {
   useParams
   // useNavigate
 } from 'react-router-dom'
-import { Spinner, Star } from 'phosphor-react'
+import { Spinner} from 'phosphor-react'
 
 // Components do teu projeto (ajusta imports conforme necessário)
 import { Avatar } from '@/components/ui/avatar'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { ClipboardList, Mail, MapPin, Phone, Wallet } from 'lucide-react'
+import { ClipboardList, Mail, Phone, Wallet, XCircle } from 'lucide-react'
+import { RideDetailsDrawer } from './components/RideDetailsDrawer'
 import { useUsersViewModel } from '@/viewModels/UserViewModel'
 import type { UserInterface } from '@/interfaces/IUser'
 import { useRidesViewModel } from '@/viewModels/RideViewModel'
@@ -35,6 +36,10 @@ export function UserViewPage() {
     null
   )
   const [passengerExpenses, setPassengerExpenses] = useState<number>(0)
+
+  // Drawer state
+  const [selectedRide, setSelectedRide] = useState<RideInterface | null>(null)
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false)
 
   // Function
   useEffect(() => {
@@ -104,6 +109,12 @@ export function UserViewPage() {
   return (
     <div className="w-full flex flex-col gap-6">
       <ToastContainer />
+      
+      <RideDetailsDrawer 
+        ride={selectedRide} 
+        isOpen={isDrawerOpen} 
+        onClose={() => setIsDrawerOpen(false)} 
+      />
 
       {/* Header */}
       <div className="w-full flex items-center gap-4 border-b border-gray-400 dark:border-gray-600 pb-4 max-w-s-640:flex-col">
@@ -130,13 +141,6 @@ export function UserViewPage() {
               <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
                 {rowDataUser.name}
               </h2>
-
-              <div className="flex flex-wrap gap-2 justify-center items-center">
-                <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-yellow-50 dark:bg-yellow-900/30 text-yellow-800 text-sm">
-                  <Star size={14} />{' '}
-                  <span className="ml-1 font-medium">{'5.0'}</span>
-                </div>
-              </div>
             </div>
 
             {/* Contact */}
@@ -147,10 +151,6 @@ export function UserViewPage() {
               <span className="hidden text-sm xs:inline">|</span>
               <div className="flex flex-row justify-start items-center gap-1">
                 <Mail size={14} /> {rowDataUser.email}
-              </div>
-              <span className="hidden text-sm xs:inline">|</span>
-              <div className="flex flex-row justify-start items-center gap-1">
-                <MapPin size={14} /> 775 Rolling Green Rd.
               </div>
             </div>
           </div>
@@ -177,7 +177,12 @@ export function UserViewPage() {
         <Card
           title="Corridas Concluídas"
           icon={<ClipboardList />}
-          value={`${rowsDataRides?.length}`}
+          value={`${rowsDataRides?.filter((r) => r.status === 'completed').length || 0}`}
+        />
+        <Card
+          title="Corridas Canceladas"
+          icon={<XCircle className="text-red-500" />}
+          value={`${rowsDataRides?.filter((r) => r.status === 'canceled').length || 0}`}
         />
       </div>
 
@@ -211,7 +216,11 @@ export function UserViewPage() {
                         {rowsDataRides?.map((ride, idx) => (
                           <tr
                             key={ride.id}
-                            className="border-b border-gray-100 dark:border-gray-700"
+                            className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors"
+                            onClick={() => {
+                              setSelectedRide(ride)
+                              setIsDrawerOpen(true)
+                            }}
                           >
                             <td className="px-3 py-2 text-gray-700 dark:text-gray-200">
                               {idx + 1}
