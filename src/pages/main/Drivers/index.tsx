@@ -45,7 +45,6 @@ export function DriverPage() {
     drivers,
     pagination,
     isLoadingDrivers,
-    deleteDriver,
     softDeleteDriver,
     dataToExport
   } =

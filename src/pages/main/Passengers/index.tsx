@@ -42,7 +42,6 @@ export function UserPage() {
     users,
     pagination,
     isLoadingUsers,
-    deleteUser,
     softDeleteUser,
     dataToExport
   } =

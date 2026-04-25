@@ -8,7 +8,7 @@ import type { FinanceFilters, FinancialLedgerEntry } from '@/interfaces/IFinance
 import { formatDateTimeFromFirestore } from '@/utils/date'
 import { 
   FileText, Download, Wallet, CreditCard, 
-  TrendingUp, Activity, CheckCircle, Car, ArrowRightLeft 
+  TrendingUp, Activity, Car, ArrowRightLeft 
 } from 'lucide-react'
 import { Spinner } from 'phosphor-react'
 import { rideStatusOptions, paymentMethodOptions } from '@/data/selectOption'
