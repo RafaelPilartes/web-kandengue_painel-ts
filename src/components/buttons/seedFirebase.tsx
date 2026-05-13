@@ -1,4 +1,4 @@
-import { seedFirestore } from '@/routes/services/seedFirestore'
+import { seedFirestore } from '@/services/seedFirestore'
 
 export default function SeedFirebaseButton() {
   return (

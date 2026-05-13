@@ -1,9 +1,9 @@
 // viewModels/NotificationViewModel.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { NotificationService } from '@/routes/services/notification.service'
+import { NotificationService } from '@/services/notification.service'
 import { NotificationEntity } from '@/core/entities/Notification'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
-import { withAudit } from '@/routes/services/audit.service'
+import { withAudit } from '@/services/audit.service'
 
 const notificationService = new NotificationService()
 

@@ -1,11 +1,11 @@
 // viewModels/WalletViewModel.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { WalletService } from '@/routes/services/wallet.service'
+import { WalletService } from '@/services/wallet.service'
 import { WalletEntity } from '@/core/entities/Wallet'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
 import { useMemo } from 'react'
-import { withAudit } from '@/routes/services/audit.service'
+import { withAudit } from '@/services/audit.service'
 
 const walletService = new WalletService()
 

@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query'
-import { AuthService } from '@/routes/services/auth.service'
+import { AuthService } from '@/services/auth.service'
 
 export const useAuthViewModel = () => {
   const authService = new AuthService()

@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { firebaseCollections } from '@/constants/firebaseCollections'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import type { WithdrawalStatus } from '@/interfaces/IPromotion'
-import { WithdrawalService } from '@/routes/services/withdrawal.service'
+import { WithdrawalService } from '@/services/withdrawal.service'
 import { useAdminStore } from '@/stores/userStore'
 import {
   ReferralEarningEntity,

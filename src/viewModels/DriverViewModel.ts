@@ -1,12 +1,12 @@
 // viewModels/DriverViewModel.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { DriverService } from '@/routes/services/driver.service'
+import { DriverService } from '@/services/driver.service'
 import { DriverEntity } from '@/core/entities/Driver'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
 import { useMemo, useEffect, useState } from 'react'
 import { getUserStatusLabel } from '@/utils/gettersLabels'
-import { withAudit } from '@/routes/services/audit.service'
+import { withAudit } from '@/services/audit.service'
 
 const driverService = new DriverService()
 

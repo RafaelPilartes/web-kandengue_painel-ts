@@ -1,8 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { MissionService } from '@/routes/services/mission.service'
+import { MissionService } from '@/services/mission.service'
 import { MissionEntity } from '@/core/entities/Mission'
 import { firebaseCollections } from '@/constants/firebaseCollections'
-import { withAudit } from '@/routes/services/audit.service'
+import { withAudit } from '@/services/audit.service'
 
 const missionService = new MissionService()
 

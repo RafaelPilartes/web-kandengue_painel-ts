@@ -15,7 +15,7 @@ import { useAdminsViewModel } from '@/viewModels/AdminViewModel'
 import { useAuthViewModel } from '@/viewModels/AuthViewModel'
 import type { AdminEntity } from '@/core/entities/Admin'
 import { mapFirebaseError } from '@/helpers/mapFirebaseError'
-import { auditService } from '@/routes/services/audit.service'
+import { auditService } from '@/services/audit.service'
 
 const loginUserSchema = z.object({
   email: z.string().nonempty('O email é obrigatório!').toLowerCase().trim(),

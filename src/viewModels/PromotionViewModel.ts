@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { PromotionEntity } from '@/core/entities/Promotion'
 import { firebaseCollections } from '@/constants/firebaseCollections'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
-import { PromotionService } from '@/routes/services/promotion.service'
+import { PromotionService } from '@/services/promotion.service'
 import { useAdminStore } from '@/stores/userStore'
 
 const promotionService = new PromotionService()

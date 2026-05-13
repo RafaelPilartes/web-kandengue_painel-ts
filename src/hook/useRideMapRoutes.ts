@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import type { RideInterface } from '@/interfaces/IRide'
 import type { RideStatusType } from '@/types/enum'
-import { RideService } from '@/routes/services/ride.service'
+import { RideService } from '@/services/ride.service'
 import { useRideTrackingRealtime } from '@/viewModels/RideTrackingViewModel'
 import useDirections from '@/hook/useDirections'
 import { snapToRoads } from '@/utils/snapToRoads'

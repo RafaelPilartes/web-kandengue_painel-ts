@@ -1,12 +1,12 @@
 // viewModels/TransactionViewModel.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { TransactionService } from '@/routes/services/transaction.service'
+import { TransactionService } from '@/services/transaction.service'
 import { TransactionEntity } from '@/core/entities/Transaction'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
-import { WalletService } from '@/routes/services/wallet.service'
+import { WalletService } from '@/services/wallet.service'
 import type { TransactionType, TransactionCategoryType } from '@/types/enum'
-import { withAudit } from '@/routes/services/audit.service'
+import { withAudit } from '@/services/audit.service'
 
 const transactionService = new TransactionService()
 const walletService = new WalletService()

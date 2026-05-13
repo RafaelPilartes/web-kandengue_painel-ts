@@ -1,6 +1,6 @@
 // viewModels/AuditLogViewModel.ts
 import { useQuery } from '@tanstack/react-query'
-import { auditService } from '@/routes/services/audit.service'
+import { auditService } from '@/services/audit.service'
 import { firebaseCollections } from '@/constants/firebaseCollections'
 import type { AuditLogInterface, AuditModule } from '@/interfaces/IAuditLog'
 import type { LogActionType } from '@/types/enum'

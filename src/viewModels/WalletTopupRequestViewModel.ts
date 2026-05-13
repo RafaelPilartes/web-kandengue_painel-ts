@@ -1,11 +1,11 @@
 // viewModels/WalletTopupRequestViewModel.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { WalletTopupRequestService } from '@/routes/services/walletTopupRequest.service'
+import { WalletTopupRequestService } from '@/services/walletTopupRequest.service'
 import { WalletTopupRequestEntity } from '@/core/entities/WalletTopupRequest'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
 import { useMemo } from 'react'
-import { withAudit } from '@/routes/services/audit.service'
+import { withAudit } from '@/services/audit.service'
 
 const walletTopupRequestService = new WalletTopupRequestService()
 

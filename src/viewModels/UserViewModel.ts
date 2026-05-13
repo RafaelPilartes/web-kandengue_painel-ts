@@ -1,12 +1,12 @@
 // viewModels/UserViewModel.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { UserService } from '@/routes/services/users.service'
+import { UserService } from '@/services/users.service'
 import { UserEntity } from '@/core/entities/User'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
 import { useMemo } from 'react'
 import { getUserStatusLabel } from '@/utils/gettersLabels'
-import { withAudit } from '@/routes/services/audit.service'
+import { withAudit } from '@/services/audit.service'
 
 const userService = new UserService()
 

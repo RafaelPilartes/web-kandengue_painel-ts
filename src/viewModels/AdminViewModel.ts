@@ -1,12 +1,12 @@
 // viewModels/AdminViewModel.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { AdminService } from '@/routes/services/admins.service'
+import { AdminService } from '@/services/admins.service'
 import { AdminEntity } from '@/core/entities/Admin'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
 import { useMemo } from 'react'
 import { getAdminRoleLabel, getUserStatusLabel } from '@/utils/gettersLabels'
-import { withAudit } from '@/routes/services/audit.service'
+import { withAudit } from '@/services/audit.service'
 
 const adminService = new AdminService()
 

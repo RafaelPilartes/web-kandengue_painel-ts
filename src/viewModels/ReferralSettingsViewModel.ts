@@ -1,7 +1,7 @@
 // viewModels/ReferralSettingsViewModel.ts
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { IReferralSettings } from '@/interfaces/IPromotion'
-import { AppConfigService } from '@/routes/services/appConfig.service'
+import { AppConfigService } from '@/services/appConfig.service'
 import { useAdminStore } from '@/stores/userStore'
 
 const service = new AppConfigService()
