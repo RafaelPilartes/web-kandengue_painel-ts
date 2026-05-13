@@ -1,10 +1,10 @@
 // viewModels/RideRateViewModel.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { RideRateService } from '@/services/rideRate.service'
+import { RideRateService } from '@/routes/services/rideRate.service'
 import { RideRateEntity } from '@/core/entities/RideRate'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
-import { withAudit } from '@/services/audit.service'
+import { withAudit } from '@/routes/services/audit.service'
 
 const rideRateService = new RideRateService()
 

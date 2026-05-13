@@ -1,10 +1,10 @@
 // viewModels/VehicleViewModel.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { VehicleService } from '@/services/vehicle.service'
+import { VehicleService } from '@/routes/services/vehicle.service'
 import { VehicleEntity } from '@/core/entities/Vehicle'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
-import { withAudit } from '@/services/audit.service'
+import { withAudit } from '@/routes/services/audit.service'
 
 const vehicleService = new VehicleService()
 

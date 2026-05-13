@@ -1,6 +1,6 @@
 // src/viewModels/FileUploadViewModel.ts
 import { useCallback, useRef, useState } from 'react'
-import { FileService, type UploadResult } from '@/services/files.service'
+import { FileService, type UploadResult } from '@/routes/services/files.service'
 import {
   getDownloadURL,
   ref,

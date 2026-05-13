@@ -1,9 +1,9 @@
 // viewModels/NotificationViewModel.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { NotificationService } from '@/services/notification.service'
+import { NotificationService } from '@/routes/services/notification.service'
 import { NotificationEntity } from '@/core/entities/Notification'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
-import { withAudit } from '@/services/audit.service'
+import { withAudit } from '@/routes/services/audit.service'
 
 const notificationService = new NotificationService()
 
@@ -54,14 +54,17 @@ export function useNotificationsViewModel(
   const createNotification = useMutation({
     mutationFn: async (notification: Omit<NotificationEntity, 'id'>) => {
       // 1. Gravar na Firebase + Disparar Push via API (com auditoria cruzada)
-      const createdDoc = await withAudit(() => notificationService.createAndSendPush(notification), {
-        action: 'create',
-        module: 'notifications',
-        description: `Criou notificação: ${notification.title}`,
-        target_type: 'notification',
-        target_label: notification.title,
-        new_data: notification
-      })
+      const createdDoc = await withAudit(
+        () => notificationService.createAndSendPush(notification),
+        {
+          action: 'create',
+          module: 'notifications',
+          description: `Criou notificação: ${notification.title}`,
+          target_type: 'notification',
+          target_label: notification.title,
+          new_data: notification
+        }
+      )
 
       return createdDoc
     },
@@ -79,7 +82,9 @@ export function useNotificationsViewModel(
       id: string
       notification: Partial<NotificationEntity>
     }) => {
-      const previous_data = await notificationService.getById(id).catch(() => null)
+      const previous_data = await notificationService
+        .getById(id)
+        .catch(() => null)
       return withAudit(() => notificationService.update(id, notification), {
         action: 'update',
         module: 'notifications',
@@ -98,7 +103,9 @@ export function useNotificationsViewModel(
   /** Deletar notificação */
   const deleteNotification = useMutation({
     mutationFn: async (id: string) => {
-      const previous_data = await notificationService.getById(id).catch(() => null)
+      const previous_data = await notificationService
+        .getById(id)
+        .catch(() => null)
       return withAudit(() => notificationService.delete(id), {
         action: 'delete',
         module: 'notifications',

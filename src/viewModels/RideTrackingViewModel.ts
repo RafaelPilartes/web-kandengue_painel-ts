@@ -1,6 +1,6 @@
 // viewModels/RideTrackingViewModel.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { RideTrackingService } from '@/services/rideTracking.service'
+import { RideTrackingService } from '@/routes/services/rideTracking.service'
 import { RideTrackingEntity } from '@/core/entities/RideTracking'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'

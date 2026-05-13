@@ -104,5 +104,26 @@ export const routsNameMain = {
   // MISSIONS
   missions: {
     index: '/missions'
+  },
+
+  // ============================================
+  // PROMOTIONS
+  promotions: {
+    index: '/promotions',
+    create: '/promotions/create',
+    view: '/promotions/view/:code',
+    viewStr: '/promotions/view/',
+    edit: '/promotions/edit/:code',
+    editStr: '/promotions/edit/'
+  },
+
+  // ============================================
+  // REFERRAL — saques de ganhos de referência
+  referral: {
+    withdrawals: {
+      index: '/referral/withdrawals',
+      view: '/referral/withdrawals/view/:withdrawalId',
+      viewStr: '/referral/withdrawals/view/'
+    }
   }
 }

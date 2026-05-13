@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import ExcelJS from 'exceljs'
 import { saveAs } from 'file-saver'
-import { financeService } from '@/services/finance.service'
+import { financeService } from '@/routes/services/finance.service'
 import type {
   FinanceFilters,
   FinancialLedgerEntry,

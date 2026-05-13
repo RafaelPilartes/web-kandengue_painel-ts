@@ -1,6 +1,6 @@
 // viewModels/RideViewModel.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { RideService } from '@/services/ride.service'
+import { RideService } from '@/routes/services/ride.service'
 import { RideEntity } from '@/core/entities/Ride'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
@@ -8,7 +8,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import { getRideStatusLabel, getRideTypeLabel } from '@/utils/gettersLabels'
 import type { BreakdownType, RideFareInterface } from '@/interfaces/IRideFare'
 import type { PayoutsType } from '@/types/ride'
-import { withAudit } from '@/services/audit.service'
+import { withAudit } from '@/routes/services/audit.service'
 
 const rideService = new RideService()
 
@@ -75,7 +75,13 @@ export function useRidesViewModel(
 
   /** Atualizar corrida */
   const updateRide = useMutation({
-    mutationFn: async ({ id, ride }: { id: string; ride: Partial<RideEntity> }) => {
+    mutationFn: async ({
+      id,
+      ride
+    }: {
+      id: string
+      ride: Partial<RideEntity>
+    }) => {
       const previous_data = await rideService.getById(id).catch(() => null)
       return withAudit(() => rideService.update(id, ride), {
         action: 'update',

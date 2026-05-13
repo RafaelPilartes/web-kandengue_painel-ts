@@ -30,6 +30,12 @@ import type { IMissionRepository } from '@/core/interfaces/IMissionRepository'
 import { FirebaseMissionDAO } from './firebase/mission.dao'
 import type { IPushNotificationRepository } from '@/core/interfaces/IPushNotificationRepository'
 import { PushNotificationDAO } from './rest/pushNotification.dao'
+import type { IPromotionRepository } from '@/core/interfaces/IPromotionRepository'
+import { FirebasePromotionDAO } from './firebase/promotion.dao'
+import type { IWithdrawalRepository } from '@/core/interfaces/IWithdrawalRepository'
+import { FirebaseWithdrawalDAO } from './firebase/withdrawal.dao'
+import type { IAppConfigRepository } from '@/core/interfaces/IAppConfigRepository'
+import { FirebaseAppConfigDAO } from './firebase/appConfig.dao'
 // import { RestUserDAO } from "./rest/users.dao"; // Futuro
 
 // Factory para escolher implementação
@@ -57,3 +63,8 @@ export const missionRepository: IMissionRepository = new FirebaseMissionDAO()
 export const fileRepository: IFileRepository = new FirebaseFileDAO()
 
 export const pushNotificationRepository: IPushNotificationRepository = new PushNotificationDAO()
+
+// ─────────────── Promoções ───────────────
+export const promotionRepository: IPromotionRepository = new FirebasePromotionDAO()
+export const withdrawalRepository: IWithdrawalRepository = new FirebaseWithdrawalDAO()
+export const appConfigRepository: IAppConfigRepository = new FirebaseAppConfigDAO()

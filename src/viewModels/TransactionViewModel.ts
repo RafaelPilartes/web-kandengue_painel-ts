@@ -1,12 +1,12 @@
 // viewModels/TransactionViewModel.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { TransactionService } from '@/services/transaction.service'
+import { TransactionService } from '@/routes/services/transaction.service'
 import { TransactionEntity } from '@/core/entities/Transaction'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
-import { WalletService } from '@/services/wallet.service'
+import { WalletService } from '@/routes/services/wallet.service'
 import type { TransactionType, TransactionCategoryType } from '@/types/enum'
-import { withAudit } from '@/services/audit.service'
+import { withAudit } from '@/routes/services/audit.service'
 
 const transactionService = new TransactionService()
 const walletService = new WalletService()
@@ -81,7 +81,9 @@ export function useTransactionsViewModel(
       id: string
       transaction: Partial<TransactionEntity>
     }) => {
-      const previous_data = await transactionService.getById(id).catch(() => null)
+      const previous_data = await transactionService
+        .getById(id)
+        .catch(() => null)
       return withAudit(() => transactionService.update(id, transaction), {
         action: 'update',
         module: 'transactions',
@@ -102,7 +104,9 @@ export function useTransactionsViewModel(
   /** Deletar transação */
   const deleteTransaction = useMutation({
     mutationFn: async (id: string) => {
-      const previous_data = await transactionService.getById(id).catch(() => null)
+      const previous_data = await transactionService
+        .getById(id)
+        .catch(() => null)
       return withAudit(() => transactionService.delete(id), {
         action: 'delete',
         module: 'transactions',
@@ -153,7 +157,9 @@ export function useTransactionsViewModel(
 
           // 2. Calcular novo saldo
           const newBalance =
-            type === 'credit' ? wallet.balance + amount : wallet.balance - amount
+            type === 'credit'
+              ? wallet.balance + amount
+              : wallet.balance - amount
 
           // 3. Atualiza saldo da carteira
           const updatedWallet = await walletService.update(walletId, {
@@ -171,7 +177,8 @@ export function useTransactionsViewModel(
             description: description ?? ''
           }
 
-          const createdTransaction = await transactionService.create(transaction)
+          const createdTransaction =
+            await transactionService.create(transaction)
 
           return { updatedWallet, createdTransaction }
         },

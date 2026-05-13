@@ -1,11 +1,11 @@
 // viewModels/WalletTopupRequestViewModel.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { WalletTopupRequestService } from '@/services/walletTopupRequest.service'
+import { WalletTopupRequestService } from '@/routes/services/walletTopupRequest.service'
 import { WalletTopupRequestEntity } from '@/core/entities/WalletTopupRequest'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
 import { useMemo } from 'react'
-import { withAudit } from '@/services/audit.service'
+import { withAudit } from '@/routes/services/audit.service'
 
 const walletTopupRequestService = new WalletTopupRequestService()
 
@@ -97,7 +97,9 @@ export function useWalletTopupRequestsViewModel(
       id: string
       walletTopupRequest: Partial<WalletTopupRequestEntity>
     }) => {
-      const previous_data = await walletTopupRequestService.getById(id).catch(() => null)
+      const previous_data = await walletTopupRequestService
+        .getById(id)
+        .catch(() => null)
       return await withAudit(
         () => walletTopupRequestService.update(id, walletTopupRequest),
         {
@@ -121,7 +123,9 @@ export function useWalletTopupRequestsViewModel(
   /** Deletar carteira */
   const deleteWalletTopupRequest = useMutation({
     mutationFn: async (id: string) => {
-      const previous_data = await walletTopupRequestService.getById(id).catch(() => null)
+      const previous_data = await walletTopupRequestService
+        .getById(id)
+        .catch(() => null)
       return withAudit(() => walletTopupRequestService.delete(id), {
         action: 'delete',
         module: 'topup_requests',

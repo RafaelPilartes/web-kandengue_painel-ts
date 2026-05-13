@@ -1,10 +1,10 @@
 // viewModels/DocumentViewModel.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { DocumentService } from '@/services/document.service'
+import { DocumentService } from '@/routes/services/document.service'
 import { DocumentEntity } from '@/core/entities/Document'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
-import { withAudit } from '@/services/audit.service'
+import { withAudit } from '@/routes/services/audit.service'
 
 const documentService = new DocumentService()
 

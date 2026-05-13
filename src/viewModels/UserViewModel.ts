@@ -1,12 +1,12 @@
 // viewModels/UserViewModel.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { UserService } from '@/services/users.service'
+import { UserService } from '@/routes/services/users.service'
 import { UserEntity } from '@/core/entities/User'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
 import { useMemo } from 'react'
 import { getUserStatusLabel } from '@/utils/gettersLabels'
-import { withAudit } from '@/services/audit.service'
+import { withAudit } from '@/routes/services/audit.service'
 
 const userService = new UserService()
 
@@ -87,7 +87,13 @@ export function useUsersViewModel(
 
   /** Atualizar usuário */
   const updateUser = useMutation({
-    mutationFn: async ({ id, user }: { id: string; user: Partial<UserEntity> }) => {
+    mutationFn: async ({
+      id,
+      user
+    }: {
+      id: string
+      user: Partial<UserEntity>
+    }) => {
       const previous_data = await userService.getById(id).catch(() => null)
       return withAudit(() => userService.update(id, user), {
         action: 'update',

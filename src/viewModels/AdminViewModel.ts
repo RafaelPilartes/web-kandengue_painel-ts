@@ -1,12 +1,12 @@
 // viewModels/AdminViewModel.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { AdminService } from '@/services/admins.service'
+import { AdminService } from '@/routes/services/admins.service'
 import { AdminEntity } from '@/core/entities/Admin'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
 import { useMemo } from 'react'
 import { getAdminRoleLabel, getUserStatusLabel } from '@/utils/gettersLabels'
-import { withAudit } from '@/services/audit.service'
+import { withAudit } from '@/routes/services/audit.service'
 
 const adminService = new AdminService()
 
@@ -112,7 +112,13 @@ export function useAdminsViewModel(
 
   /** Atualizar administrador */
   const updateAdmin = useMutation({
-    mutationFn: async ({ id, admin }: { id: string; admin: Partial<AdminEntity> }) => {
+    mutationFn: async ({
+      id,
+      admin
+    }: {
+      id: string
+      admin: Partial<AdminEntity>
+    }) => {
       const previous_data = await adminService.getById(id).catch(() => null)
       return withAudit(() => adminService.update(id, admin), {
         action: 'update',

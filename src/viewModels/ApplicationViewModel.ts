@@ -1,12 +1,12 @@
 // viewModels/ApplicationViewModel.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ApplicationService } from '@/services/applications.service'
+import { ApplicationService } from '@/routes/services/applications.service'
 import { ApplicationEntity } from '@/core/entities/Application'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
 import { useMemo } from 'react'
 import { getApplicationStatusLabel } from '@/utils/gettersLabels'
-import { withAudit } from '@/services/audit.service'
+import { withAudit } from '@/routes/services/audit.service'
 
 const applicationService = new ApplicationService()
 
@@ -96,7 +96,9 @@ export function useApplicationsViewModel(
       id: string
       application: Partial<ApplicationEntity>
     }) => {
-      const previous_data = await applicationService.getById(id).catch(() => null)
+      const previous_data = await applicationService
+        .getById(id)
+        .catch(() => null)
       return withAudit(() => applicationService.update(id, application), {
         action: 'update',
         module: 'applications',
@@ -117,7 +119,9 @@ export function useApplicationsViewModel(
   /** Deletar usuário */
   const deleteApplication = useMutation({
     mutationFn: async (id: string) => {
-      const previous_data = await applicationService.getById(id).catch(() => null)
+      const previous_data = await applicationService
+        .getById(id)
+        .catch(() => null)
       return withAudit(() => applicationService.delete(id), {
         action: 'delete',
         module: 'applications',
