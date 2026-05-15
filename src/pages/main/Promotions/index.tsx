@@ -40,7 +40,7 @@ export function PromotionsPage() {
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all')
   const [searchTerm, setSearchTerm] = useState('')
 
-  const { promotions, loading, toggleActive } = usePromotionsViewModel(
+  const { promotions, loading, toggleActive, usedCounts } = usePromotionsViewModel(
     100,
     0,
     undefined,
@@ -165,7 +165,8 @@ export function PromotionsPage() {
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
               {filtered.map(p => {
                 const status = getStatusLabel(p)
-                const usage = `${p.used_count_approx}${
+                const usedReal = usedCounts[p.code] ?? p.used_count_approx
+                const usage = `${usedReal}${
                   p.usage_limit_total !== undefined
                     ? ` / ${p.usage_limit_total}`
                     : ''

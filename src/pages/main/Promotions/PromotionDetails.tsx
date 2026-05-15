@@ -103,8 +103,8 @@ export function PromotionDetailsPage() {
   }
 
   const total = promotion.usage_limit_total
-  const used = promotion.used_count_approx
-  const reserved = promotion.reserved_count_approx
+  const used = usageBreakdown.used
+  const reserved = usageBreakdown.reserved
   const remaining = total !== undefined ? total - used - reserved : '∞'
 
   const handleToggle = async () => {

@@ -239,4 +239,15 @@ export class FirebasePromotionDAO implements IPromotionRepository {
     const snap = await getDocs(q)
     return snap.docs.map(d => mapUsage(d.id, d.data()))
   }
+
+  async listUsedCountsByPromotion(): Promise<Record<string, number>> {
+    const q = query(this.usagesRef, where('status', '==', 'used'))
+    const snap = await getDocs(q)
+    const counts: Record<string, number> = {}
+    for (const d of snap.docs) {
+      const pid = d.data().promotion_id as string
+      if (pid) counts[pid] = (counts[pid] ?? 0) + 1
+    }
+    return counts
+  }
 }

@@ -37,6 +37,12 @@ export function usePromotionsViewModel(
     staleTime: 1000 * 30
   })
 
+  const { data: usedCountsData } = useQuery<Record<string, number>>({
+    queryKey: [firebaseCollections.promotions.root, 'used_counts'],
+    queryFn: () => promotionService.listUsedCountsByPromotion(),
+    staleTime: 1000 * 60
+  })
+
   const createPromotion = useMutation({
     mutationFn: (input: Omit<PromotionEntity, 'id'>) =>
       promotionService.create({
@@ -86,6 +92,7 @@ export function usePromotionsViewModel(
     loading,
     error,
     refetch,
+    usedCounts: usedCountsData ?? {},
     createPromotion,
     updatePromotion,
     toggleActive,
