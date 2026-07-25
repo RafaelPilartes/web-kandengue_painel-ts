@@ -28,12 +28,7 @@ export function useAuditLogViewModel(
     error,
     refetch
   } = useQuery<ListResponseType<AuditLogInterface[]>>({
-    queryKey: [
-      firebaseCollections.auditLogs.root,
-      limit,
-      offset,
-      filtersKey
-    ],
+    queryKey: [firebaseCollections.auditLogs.root, limit, offset, filtersKey],
     queryFn: () => auditService.getAll(limit, offset, filters),
     staleTime: 1000 * 30 // 30s cache
   })

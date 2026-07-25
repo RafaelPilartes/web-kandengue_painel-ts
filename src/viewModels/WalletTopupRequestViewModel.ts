@@ -97,7 +97,9 @@ export function useWalletTopupRequestsViewModel(
       id: string
       walletTopupRequest: Partial<WalletTopupRequestEntity>
     }) => {
-      const previous_data = await walletTopupRequestService.getById(id).catch(() => null)
+      const previous_data = await walletTopupRequestService
+        .getById(id)
+        .catch(() => null)
       return await withAudit(
         () => walletTopupRequestService.update(id, walletTopupRequest),
         {
@@ -121,7 +123,9 @@ export function useWalletTopupRequestsViewModel(
   /** Deletar carteira */
   const deleteWalletTopupRequest = useMutation({
     mutationFn: async (id: string) => {
-      const previous_data = await walletTopupRequestService.getById(id).catch(() => null)
+      const previous_data = await walletTopupRequestService
+        .getById(id)
+        .catch(() => null)
       return withAudit(() => walletTopupRequestService.delete(id), {
         action: 'delete',
         module: 'topup_requests',

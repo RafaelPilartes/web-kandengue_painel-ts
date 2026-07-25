@@ -5,6 +5,7 @@ import { Sidebar } from './components/Sidebar'
 import { TariffSettings } from './components/TariffSettings'
 import { PayoutSettings } from './components/PayoutSettings'
 import { GeneralSettings } from './components/GeneralSettings'
+import { ReferralSettings } from './components/ReferralSettings'
 import { useRideRatesViewModel } from '@/viewModels/RideRateViewModel'
 import { useRideRatesStore } from '@/stores/rideRatesStore'
 import { defaultRates } from '@/utils/rideRatesDefaults'
@@ -12,7 +13,7 @@ import { isEqual } from 'lodash' // 👈 para comparar objetos
 import { routsNameMain } from '@/constants/routsName'
 import { Breadcrumbs } from '@/components/Breadcrumbs'
 
-type SettingsOption = 'tariffs' | 'payouts' | 'general'
+type SettingsOption = 'tariffs' | 'payouts' | 'general' | 'referral'
 
 export function SettingsPage() {
   const { rideRates, isLoadingRideRates, updateRideRate } =
@@ -88,6 +89,8 @@ export function SettingsPage() {
         )
       case 'general':
         return <GeneralSettings />
+      case 'referral':
+        return <ReferralSettings />
       default:
         return null
     }

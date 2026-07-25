@@ -126,5 +126,47 @@ export const firebaseCollections = {
   auditLogs: {
     root: 'auditLogs',
     single: (logId: string) => `auditLogs/${logId}`
+  },
+
+  // ============================================
+  // PROMOTIONS
+  promotions: {
+    root: 'promotions',
+    single: (code: string) => `promotions/${code}`,
+    counters: (code: string) => `promotions/${code}/counters`,
+    counterShard: (code: string, shard: string) =>
+      `promotions/${code}/counters/${shard}`,
+    allowedUsers: (code: string) => `promotions/${code}/allowed_users`,
+    allowedUser: (code: string, userId: string) =>
+      `promotions/${code}/allowed_users/${userId}`
+  },
+
+  // ============================================
+  // PROMOTION USAGES
+  promotionUsages: {
+    root: 'promotion_usages',
+    single: (id: string) => `promotion_usages/${id}`
+  },
+
+  // ============================================
+  // REFERRAL EARNINGS
+  referralEarnings: {
+    root: 'referral_earnings',
+    single: (id: string) => `referral_earnings/${id}`
+  },
+
+  // ============================================
+  // WITHDRAWAL REQUESTS
+  withdrawalRequests: {
+    root: 'withdrawal_requests',
+    single: (id: string) => `withdrawal_requests/${id}`
+  },
+
+  // ============================================
+  // APP CONFIG
+  appConfig: {
+    root: 'app_config',
+    single: (id: string) => `app_config/${id}`,
+    referralSettings: 'app_config/referral_settings'
   }
 }

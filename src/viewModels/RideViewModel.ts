@@ -75,7 +75,13 @@ export function useRidesViewModel(
 
   /** Atualizar corrida */
   const updateRide = useMutation({
-    mutationFn: async ({ id, ride }: { id: string; ride: Partial<RideEntity> }) => {
+    mutationFn: async ({
+      id,
+      ride
+    }: {
+      id: string
+      ride: Partial<RideEntity>
+    }) => {
       const previous_data = await rideService.getById(id).catch(() => null)
       return withAudit(() => rideService.update(id, ride), {
         action: 'update',

@@ -31,6 +31,11 @@ import { ApplicationPage } from '@/pages/main/Application'
 import { ApplicationViewPage } from '@/pages/main/Application/ApplicationDetails'
 import { MissionsPage } from '@/pages/main/Missions'
 import { AuditLogsPage } from '@/pages/main/AuditLogs'
+import { PromotionsPage } from '@/pages/main/Promotions'
+import { PromotionFormPage } from '@/pages/main/Promotions/PromotionForm'
+import { PromotionDetailsPage } from '@/pages/main/Promotions/PromotionDetails'
+import { WithdrawalsPage } from '@/pages/main/Referral/Withdrawals'
+import { WithdrawalDetailsPage } from '@/pages/main/Referral/WithdrawalDetails'
 
 // Page
 
@@ -263,6 +268,68 @@ export function Router() {
               <React.Suspense fallback={<Loading />}>
                 <Private>
                   <AuditLogsPage />
+                </Private>
+              </React.Suspense>
+            }
+          />
+          {/* Promotions */}
+          <Route
+            path={routsNameMain.promotions.index}
+            element={
+              <React.Suspense fallback={<Loading />}>
+                <Private>
+                  <PromotionsPage />
+                </Private>
+              </React.Suspense>
+            }
+          />
+          <Route
+            path={routsNameMain.promotions.create}
+            element={
+              <React.Suspense fallback={<Loading />}>
+                <Private>
+                  <PromotionFormPage />
+                </Private>
+              </React.Suspense>
+            }
+          />
+          <Route
+            path={routsNameMain.promotions.edit}
+            element={
+              <React.Suspense fallback={<Loading />}>
+                <Private>
+                  <PromotionFormPage />
+                </Private>
+              </React.Suspense>
+            }
+          />
+          <Route
+            path={routsNameMain.promotions.view}
+            element={
+              <React.Suspense fallback={<Loading />}>
+                <Private>
+                  <PromotionDetailsPage />
+                </Private>
+              </React.Suspense>
+            }
+          />
+          {/* Referral withdrawals */}
+          <Route
+            path={routsNameMain.referral.withdrawals.index}
+            element={
+              <React.Suspense fallback={<Loading />}>
+                <Private>
+                  <WithdrawalsPage />
+                </Private>
+              </React.Suspense>
+            }
+          />
+          <Route
+            path={routsNameMain.referral.withdrawals.view}
+            element={
+              <React.Suspense fallback={<Loading />}>
+                <Private>
+                  <WithdrawalDetailsPage />
                 </Private>
               </React.Suspense>
             }

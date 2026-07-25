@@ -112,7 +112,13 @@ export function useAdminsViewModel(
 
   /** Atualizar administrador */
   const updateAdmin = useMutation({
-    mutationFn: async ({ id, admin }: { id: string; admin: Partial<AdminEntity> }) => {
+    mutationFn: async ({
+      id,
+      admin
+    }: {
+      id: string
+      admin: Partial<AdminEntity>
+    }) => {
       const previous_data = await adminService.getById(id).catch(() => null)
       return withAudit(() => adminService.update(id, admin), {
         action: 'update',

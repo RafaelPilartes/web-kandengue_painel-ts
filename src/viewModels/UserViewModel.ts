@@ -87,7 +87,13 @@ export function useUsersViewModel(
 
   /** Atualizar usuário */
   const updateUser = useMutation({
-    mutationFn: async ({ id, user }: { id: string; user: Partial<UserEntity> }) => {
+    mutationFn: async ({
+      id,
+      user
+    }: {
+      id: string
+      user: Partial<UserEntity>
+    }) => {
       const previous_data = await userService.getById(id).catch(() => null)
       return withAudit(() => userService.update(id, user), {
         action: 'update',

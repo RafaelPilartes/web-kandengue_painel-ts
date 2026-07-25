@@ -3,10 +3,11 @@ import {
   LayoutDashboard,
   CreditCard,
   Settings,
-  ChevronRight
+  ChevronRight,
+  Banknote
 } from 'lucide-react'
 
-type SettingsOption = 'tariffs' | 'payouts' | 'general'
+type SettingsOption = 'tariffs' | 'payouts' | 'general' | 'referral'
 
 interface SidebarProps {
   selectedOption: SettingsOption
@@ -32,6 +33,12 @@ export function Sidebar({ selectedOption, setSelectedOption }: SidebarProps) {
       label: 'Geral',
       icon: Settings,
       description: 'Preferências do sistema'
+    },
+    {
+      key: 'referral',
+      label: 'Referência',
+      icon: Banknote,
+      description: 'Mínimo de saque'
     }
   ] as const
 

@@ -11,6 +11,8 @@ export type UserStatus =
   | 'banned'
   | 'deleted'
 
+export type UserAvailability = 'available' | 'on_mission'
+
 // =========================================================================
 export type ApplicationStatus = 'pending' | 'approved' | 'rejected'
 

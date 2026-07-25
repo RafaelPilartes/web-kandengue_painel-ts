@@ -12,7 +12,9 @@ import {
   CarFront,
   Wallet,
   FileInput,
-  Trophy
+  Trophy,
+  Tag,
+  Banknote
 } from 'lucide-react'
 import { routsNameMain } from './routsName'
 
@@ -111,6 +113,27 @@ const dashItem = [
         label: 'Relatórios Financeiros',
         icon: <BarChart2 size={16} />,
         to: routsNameMain.finance.reports.index,
+        notification: 0
+      }
+    ],
+    notification: 0,
+    accordion: true
+  },
+  {
+    label: 'Promoções',
+    icon: <Tag size={16} />,
+    to: '/',
+    subMenus: [
+      {
+        label: 'Códigos promocionais',
+        icon: <Tag size={16} />,
+        to: routsNameMain.promotions.index,
+        notification: 0
+      },
+      {
+        label: 'Saques de referência',
+        icon: <Banknote size={16} />,
+        to: routsNameMain.referral.withdrawals.index,
         notification: 0
       }
     ],

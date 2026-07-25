@@ -70,7 +70,10 @@ export function Login() {
               })
               adminData.firebase_uid = authRes.user.uid
             } catch (updateErr) {
-              console.error('Erro ao atualizar firebase_uid do admin:', updateErr)
+              console.error(
+                'Erro ao atualizar firebase_uid do admin:',
+                updateErr
+              )
             }
           }
 
@@ -83,12 +86,20 @@ export function Login() {
 
           showToast('success', 'Login efetuado com sucesso!')
         } else {
-          await auditService.logLogin(false, dataForm.email, 'Dados do administrador não encontrados')
+          await auditService.logLogin(
+            false,
+            dataForm.email,
+            'Dados do administrador não encontrados'
+          )
           showToast('error', 'Dados do administrador não encontrados.')
         }
       }
     } catch (err: any) {
-      await auditService.logLogin(false, dataForm.email, err?.message || 'Erro desconhecido')
+      await auditService.logLogin(
+        false,
+        dataForm.email,
+        err?.message || 'Erro desconhecido'
+      )
       console.error(err)
     }
   }

@@ -1,7 +1,7 @@
 // services/applications.service.ts
-import { applicationRepository } from '../modules/Api'
-import { ApplicationEntity } from '../core/entities/Application'
-import type { ListResponseType } from '../interfaces/IApiResponse'
+import { applicationRepository } from '@/modules/Api'
+import { ApplicationEntity } from '@/core/entities/Application'
+import type { ListResponseType } from '@/interfaces/IApiResponse'
 
 export class ApplicationService {
   async getAll(

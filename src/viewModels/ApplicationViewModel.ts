@@ -96,7 +96,9 @@ export function useApplicationsViewModel(
       id: string
       application: Partial<ApplicationEntity>
     }) => {
-      const previous_data = await applicationService.getById(id).catch(() => null)
+      const previous_data = await applicationService
+        .getById(id)
+        .catch(() => null)
       return withAudit(() => applicationService.update(id, application), {
         action: 'update',
         module: 'applications',
@@ -117,7 +119,9 @@ export function useApplicationsViewModel(
   /** Deletar usuário */
   const deleteApplication = useMutation({
     mutationFn: async (id: string) => {
-      const previous_data = await applicationService.getById(id).catch(() => null)
+      const previous_data = await applicationService
+        .getById(id)
+        .catch(() => null)
       return withAudit(() => applicationService.delete(id), {
         action: 'delete',
         module: 'applications',

@@ -81,7 +81,9 @@ export function useTransactionsViewModel(
       id: string
       transaction: Partial<TransactionEntity>
     }) => {
-      const previous_data = await transactionService.getById(id).catch(() => null)
+      const previous_data = await transactionService
+        .getById(id)
+        .catch(() => null)
       return withAudit(() => transactionService.update(id, transaction), {
         action: 'update',
         module: 'transactions',
@@ -102,7 +104,9 @@ export function useTransactionsViewModel(
   /** Deletar transação */
   const deleteTransaction = useMutation({
     mutationFn: async (id: string) => {
-      const previous_data = await transactionService.getById(id).catch(() => null)
+      const previous_data = await transactionService
+        .getById(id)
+        .catch(() => null)
       return withAudit(() => transactionService.delete(id), {
         action: 'delete',
         module: 'transactions',
@@ -153,7 +157,9 @@ export function useTransactionsViewModel(
 
           // 2. Calcular novo saldo
           const newBalance =
-            type === 'credit' ? wallet.balance + amount : wallet.balance - amount
+            type === 'credit'
+              ? wallet.balance + amount
+              : wallet.balance - amount
 
           // 3. Atualiza saldo da carteira
           const updatedWallet = await walletService.update(walletId, {
@@ -171,7 +177,8 @@ export function useTransactionsViewModel(
             description: description ?? ''
           }
 
-          const createdTransaction = await transactionService.create(transaction)
+          const createdTransaction =
+            await transactionService.create(transaction)
 
           return { updatedWallet, createdTransaction }
         },

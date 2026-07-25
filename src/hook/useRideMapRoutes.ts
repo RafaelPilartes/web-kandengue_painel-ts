@@ -22,13 +22,7 @@ type RideMapRoutesReturn = {
   liveRide: RideInterface | null
 }
 
-
-
-
-const MOVEMENT_STATUSES: RideStatusType[] = [
-  'driver_on_the_way',
-  'picked_up'
-]
+const MOVEMENT_STATUSES: RideStatusType[] = ['driver_on_the_way', 'picked_up']
 
 const ROUTE_STYLES: Partial<
   Record<RideStatusType, { color: string; weight: number }>
@@ -82,9 +76,7 @@ export function useRideMapRoutes(
 
   // ─── Driver current position ──────────────────────────────────
   const driverPosition =
-    trackingCoords.length > 0
-      ? trackingCoords[trackingCoords.length - 1]
-      : null
+    trackingCoords.length > 0 ? trackingCoords[trackingCoords.length - 1] : null
 
   // ─── Reset when ride changes ──────────────────────────────────
   useEffect(() => {
@@ -130,10 +122,7 @@ export function useRideMapRoutes(
   const polylines: PolylineConfig[] = []
 
   // 1) Tracking path (gray dashed) — only during movement
-  if (
-    MOVEMENT_STATUSES.includes(liveStatus) &&
-    trackingCoords.length > 1
-  ) {
+  if (MOVEMENT_STATUSES.includes(liveStatus) && trackingCoords.length > 1) {
     polylines.push({
       id: 'tracking-path',
       coords: trackingCoords,
