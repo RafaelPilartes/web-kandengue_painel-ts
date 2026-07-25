@@ -1,6 +1,7 @@
 import {
   collection,
   doc,
+  documentId,
   getCountFromServer,
   getDoc,
   getDocs,
@@ -8,6 +9,7 @@ import {
   orderBy,
   query,
   runTransaction,
+  startAfter,
   Timestamp,
   where
 } from 'firebase/firestore'
@@ -60,23 +62,42 @@ export class FirebaseWithdrawalDAO implements IWithdrawalRepository {
 
   async getAll(
     limitValue: number = 50,
-    _offset = 0,
+    offset = 0,
     filters?: { status?: WithdrawalStatus; user_id?: string }
   ): Promise<ListResponseType<WithdrawalRequestEntity[]>> {
-    let q = query(this.withdrawalsRef, orderBy('created_at', 'desc'))
+    let baseQuery = query(this.withdrawalsRef, orderBy('created_at', 'desc'))
     if (filters?.status) {
-      q = query(q, where('status', '==', filters.status))
+      baseQuery = query(baseQuery, where('status', '==', filters.status))
     }
     if (filters?.user_id) {
-      q = query(q, where('user_id', '==', filters.user_id))
+      baseQuery = query(baseQuery, where('user_id', '==', filters.user_id))
     }
-    q = query(q, fbLimit(limitValue))
 
-    const snap = await getDocs(q)
+    let total = 0
+    try {
+      const countSnap = await getCountFromServer(baseQuery)
+      total = countSnap.data().count
+    } catch (err) {
+      console.warn('Erro ao obter count de saques:', err)
+    }
+
+    let finalQuery = query(baseQuery, fbLimit(limitValue))
+    if (offset > 0) {
+      // NOTE: este "skip" é caro para offsets grandes — mesmo padrão
+      // usado nos restantes DAOs deste projeto (ex: admins.dao.ts).
+      const skipSnap = await getDocs(query(baseQuery, fbLimit(offset)))
+      const lastVisible = skipSnap.docs[skipSnap.docs.length - 1]
+      if (!lastVisible) {
+        return { data: [], pagination: { limit: limitValue, offset, count: total } }
+      }
+      finalQuery = query(baseQuery, startAfter(lastVisible), fbLimit(limitValue))
+    }
+
+    const snap = await getDocs(finalQuery)
     const data = snap.docs.map(d => mapWithdrawal(d.id, d.data()))
     return {
       data,
-      pagination: { limit: limitValue, offset: 0, count: data.length }
+      pagination: { limit: limitValue, offset, count: total }
     }
   }
 
@@ -94,12 +115,20 @@ export class FirebaseWithdrawalDAO implements IWithdrawalRepository {
 
   async getEarningsByIds(ids: string[]): Promise<ReferralEarningEntity[]> {
     if (ids.length === 0) return []
-    const snaps = await Promise.all(
-      ids.map(id => getDoc(doc(this.earningsRef, id)))
-    )
-    return snaps
-      .filter(s => s.exists())
-      .map(s => mapEarning(s.id, s.data()))
+    // Firestore's `in` operator suporta no máximo 30 valores por query —
+    // agrupa em chunks em vez de um getDoc individual por earning.
+    const CHUNK = 30
+    const results: ReferralEarningEntity[] = []
+    for (let i = 0; i < ids.length; i += CHUNK) {
+      const slice = ids.slice(i, i + CHUNK)
+      const snap = await getDocs(
+        query(this.earningsRef, where(documentId(), 'in', slice))
+      )
+      results.push(
+        ...snap.docs.map(d => mapEarning(d.id, d.data()))
+      )
+    }
+    return results
   }
 
   async approve(id: string, adminId: string): Promise<void> {

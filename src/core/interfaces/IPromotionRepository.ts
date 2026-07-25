@@ -50,5 +50,4 @@ export interface IPromotionRepository {
     code: string,
     limit?: number
   ): Promise<PromotionUsageEntity[]>
-  listUsedCountsByPromotion(): Promise<Record<string, number>>
 }

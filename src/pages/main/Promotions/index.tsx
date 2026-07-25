@@ -23,6 +23,12 @@ function getStatusLabel(p: PromotionEntity): {
       className: 'bg-gray-200 text-gray-700'
     }
   }
+  if (now < p.valid_from.getTime()) {
+    return {
+      label: 'Agendada',
+      className: 'bg-blue-100 text-blue-700'
+    }
+  }
   if (!p.active) {
     return {
       label: 'Inativa',
@@ -40,7 +46,7 @@ export function PromotionsPage() {
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all')
   const [searchTerm, setSearchTerm] = useState('')
 
-  const { promotions, loading, toggleActive, usedCounts } = usePromotionsViewModel(
+  const { promotions, loading, toggleActive } = usePromotionsViewModel(
     100,
     0,
     undefined,
@@ -53,6 +59,7 @@ export function PromotionsPage() {
       if (statusFilter === 'active') {
         if (!p.active) return false
         if (now > p.valid_until.getTime()) return false
+        if (now < p.valid_from.getTime()) return false
       }
       if (statusFilter === 'inactive') {
         if (p.active && now <= p.valid_until.getTime()) return false
@@ -165,8 +172,7 @@ export function PromotionsPage() {
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
               {filtered.map(p => {
                 const status = getStatusLabel(p)
-                const usedReal = usedCounts[p.code] ?? p.used_count_approx
-                const usage = `${usedReal}${
+                const usage = `${p.used_count_approx}${
                   p.usage_limit_total !== undefined
                     ? ` / ${p.usage_limit_total}`
                     : ''

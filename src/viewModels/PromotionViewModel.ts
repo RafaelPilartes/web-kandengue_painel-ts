@@ -5,6 +5,7 @@ import { firebaseCollections } from '@/constants/firebaseCollections'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { PromotionService } from '@/services/promotion.service'
 import { useAdminStore } from '@/stores/userStore'
+import { withAudit } from '@/services/audit.service'
 
 const promotionService = new PromotionService()
 
@@ -37,18 +38,26 @@ export function usePromotionsViewModel(
     staleTime: 1000 * 30
   })
 
-  const { data: usedCountsData } = useQuery<Record<string, number>>({
-    queryKey: [firebaseCollections.promotions.root, 'used_counts'],
-    queryFn: () => promotionService.listUsedCountsByPromotion(),
-    staleTime: 1000 * 60
-  })
-
   const createPromotion = useMutation({
     mutationFn: (input: Omit<PromotionEntity, 'id'>) =>
-      promotionService.create({
-        ...input,
-        created_by: input.created_by ?? adminId
-      }),
+      withAudit(
+        () =>
+          promotionService.create({
+            ...input,
+            // `||` (não `??`) — o formulário envia sempre created_by como
+            // string vazia, que não é "nullish" e por isso nunca acionaria o
+            // fallback via ??.
+            created_by: input.created_by || adminId
+          }),
+        {
+          action: 'create',
+          module: 'promotions',
+          description: `Criou promoção - Código: ${input.code}`,
+          target_id: input.code,
+          target_type: 'promotion',
+          new_data: input
+        }
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [firebaseCollections.promotions.root]
@@ -57,13 +66,26 @@ export function usePromotionsViewModel(
   })
 
   const updatePromotion = useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       code,
       patch
     }: {
       code: string
       patch: Partial<PromotionEntity>
-    }) => promotionService.update(code, patch),
+    }) => {
+      const previous_data = await promotionService
+        .getByCode(code)
+        .catch(() => null)
+      return withAudit(() => promotionService.update(code, patch), {
+        action: 'update',
+        module: 'promotions',
+        description: `Atualizou promoção - Código: ${code}`,
+        target_id: code,
+        target_type: 'promotion',
+        previous_data: previous_data || undefined,
+        new_data: patch
+      })
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [firebaseCollections.promotions.root]
@@ -73,7 +95,14 @@ export function usePromotionsViewModel(
 
   const toggleActive = useMutation({
     mutationFn: ({ code, active }: { code: string; active: boolean }) =>
-      promotionService.setActive(code, active),
+      withAudit(() => promotionService.setActive(code, active), {
+        action: 'update',
+        module: 'promotions',
+        description: `${active ? 'Ativou' : 'Desativou'} promoção - Código: ${code}`,
+        target_id: code,
+        target_type: 'promotion',
+        new_data: { active }
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [firebaseCollections.promotions.root]
@@ -92,7 +121,6 @@ export function usePromotionsViewModel(
     loading,
     error,
     refetch,
-    usedCounts: usedCountsData ?? {},
     createPromotion,
     updatePromotion,
     toggleActive,

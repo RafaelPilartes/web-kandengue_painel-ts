@@ -93,8 +93,4 @@ export class PromotionService {
   ): Promise<PromotionUsageEntity[]> {
     return promotionRepository.listUsages(code, limit)
   }
-
-  async listUsedCountsByPromotion(): Promise<Record<string, number>> {
-    return promotionRepository.listUsedCountsByPromotion()
-  }
 }

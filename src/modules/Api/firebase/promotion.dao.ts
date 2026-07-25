@@ -1,12 +1,15 @@
 import {
   collection,
+  deleteField,
   doc,
+  getCountFromServer,
   getDoc,
   getDocs,
   limit as fbLimit,
   orderBy,
   query,
   setDoc,
+  startAfter,
   Timestamp,
   updateDoc,
   where,
@@ -68,26 +71,58 @@ export class FirebasePromotionDAO implements IPromotionRepository {
     ) as T
   }
 
+  // Para updateDoc(): um valor `undefined` significa "o admin limpou este
+  // campo" e deve apagá-lo de facto no Firestore via deleteField() — ao
+  // contrário de sanitize(), que apenas omite a chave (e por isso nunca
+  // consegue limpar um valor já persistido).
+  private sanitizeForUpdate(
+    data: Record<string, any>
+  ): Record<string, any> {
+    return Object.fromEntries(
+      Object.entries(data).map(([k, v]) => [k, v === undefined ? deleteField() : v])
+    )
+  }
+
   async getAll(
     limitValue: number = 100,
-    _offset = 0,
+    offset = 0,
     _searchTerm?: string,
     filters?: Partial<PromotionEntity>
   ): Promise<ListResponseType<PromotionEntity[]>> {
-    let q = query(this.ref, orderBy('created_at', 'desc'))
+    let baseQuery = query(this.ref, orderBy('created_at', 'desc'))
     if (filters) {
       Object.entries(filters).forEach(([field, value]) => {
         if (value !== undefined && value !== '' && value !== null) {
-          q = query(q, where(field, '==', value))
+          baseQuery = query(baseQuery, where(field, '==', value))
         }
       })
     }
-    q = query(q, fbLimit(limitValue))
-    const snap = await getDocs(q)
+
+    let total = 0
+    try {
+      const countSnap = await getCountFromServer(baseQuery)
+      total = countSnap.data().count
+    } catch (err) {
+      console.warn('Erro ao obter count de promoções:', err)
+    }
+
+    let finalQuery = query(baseQuery, fbLimit(limitValue))
+    if (offset > 0) {
+      // NOTE: este "skip" é caro para offsets grandes — mesmo padrão
+      // usado nos restantes DAOs deste projeto (ex: admins.dao.ts).
+      const skipSnap = await getDocs(query(baseQuery, fbLimit(offset)))
+      const lastVisible = skipSnap.docs[skipSnap.docs.length - 1]
+      if (!lastVisible) {
+        return { data: [], pagination: { limit: limitValue, offset, count: total } }
+      }
+      finalQuery = query(baseQuery, startAfter(lastVisible), fbLimit(limitValue))
+    }
+
+    const snap = await getDocs(finalQuery)
     const data = snap.docs.map(d => mapPromotion(d.data()))
     return {
       data,
-      pagination: { limit: limitValue, offset: 0, count: data.length }
+      pagination: { limit: limitValue, offset, count: total }
     }
   }
 
@@ -139,18 +174,28 @@ export class FirebasePromotionDAO implements IPromotionRepository {
     promotion: Partial<PromotionEntity>
   ): Promise<PromotionEntity> {
     const id = normalizeCode(code)
-    const patch: Record<string, any> = { ...this.sanitize(promotion) }
+    const patch: Record<string, any> = this.sanitizeForUpdate(promotion)
+
+    // rules é substituído por inteiro (não é merge profundo no Firestore),
+    // por isso undefined aqui significa apenas "não enviado" — nunca
+    // apagar o campo inteiro.
+    delete patch.rules
     if (promotion.rules !== undefined)
       patch.rules = this.sanitize(promotion.rules)
+
     if (promotion.valid_from)
       patch.valid_from = Timestamp.fromDate(promotion.valid_from)
     if (promotion.valid_until)
       patch.valid_until = Timestamp.fromDate(promotion.valid_until)
-    // Nunca permitir mudar o code (é o doc id)
+
+    // Nunca permitir mudar o code (é o doc id), os contadores, nem os
+    // campos de auditoria de criação — mesmo que o caller os envie.
     delete patch.id
     delete patch.code
     delete patch.used_count_approx
     delete patch.reserved_count_approx
+    delete patch.created_by
+    delete patch.created_at
 
     await updateDoc(doc(this.ref, id), patch)
     const updated = await this.getByCode(id)
@@ -238,16 +283,5 @@ export class FirebasePromotionDAO implements IPromotionRepository {
     )
     const snap = await getDocs(q)
     return snap.docs.map(d => mapUsage(d.id, d.data()))
-  }
-
-  async listUsedCountsByPromotion(): Promise<Record<string, number>> {
-    const q = query(this.usagesRef, where('status', '==', 'used'))
-    const snap = await getDocs(q)
-    const counts: Record<string, number> = {}
-    for (const d of snap.docs) {
-      const pid = d.data().promotion_id as string
-      if (pid) counts[pid] = (counts[pid] ?? 0) + 1
-    }
-    return counts
   }
 }

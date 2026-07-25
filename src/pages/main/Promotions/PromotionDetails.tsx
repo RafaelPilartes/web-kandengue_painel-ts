@@ -102,9 +102,13 @@ export function PromotionDetailsPage() {
     )
   }
 
+  // Métricas agregadas: usar os contadores shard autoritativos
+  // (used_count_approx/reserved_count_approx), não usageBreakdown — que
+  // só reflete os 200 registos mais recentes e subestima o uso real em
+  // promoções populares.
   const total = promotion.usage_limit_total
-  const used = usageBreakdown.used
-  const reserved = usageBreakdown.reserved
+  const used = promotion.used_count_approx
+  const reserved = promotion.reserved_count_approx
   const remaining = total !== undefined ? total - used - reserved : '∞'
 
   const handleToggle = async () => {

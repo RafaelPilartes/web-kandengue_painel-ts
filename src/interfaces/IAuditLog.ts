@@ -20,6 +20,8 @@ export type AuditModule =
   | 'documents'
   | 'vehicles'
   | 'transactions'
+  | 'promotions'
+  | 'withdrawals'
   | 'system'
 
 export interface AuditLocation {
