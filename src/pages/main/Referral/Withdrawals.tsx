@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Eye, Wallet } from 'lucide-react'
 import { Spinner } from 'phosphor-react'

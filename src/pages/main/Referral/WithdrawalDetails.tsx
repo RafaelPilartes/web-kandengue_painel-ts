@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Check, X, DollarSign } from 'lucide-react'
 import { Spinner } from 'phosphor-react'

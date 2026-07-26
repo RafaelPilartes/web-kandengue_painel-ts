@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Save } from 'lucide-react'
 import { Spinner } from 'phosphor-react'
 import { useReferralSettingsViewModel } from '@/viewModels/ReferralSettingsViewModel'
