@@ -10,7 +10,7 @@ import type {
   PromotionType,
   RideKind,
   RidePaymentMethod
-} from '@/interfaces/IPromotion'
+} from '@rafaelpilartes/kandengue-shared/promotion'
 import {
   usePromotionDetailViewModel,
   usePromotionsViewModel

@@ -1,5 +1,5 @@
 import type { ListResponseType } from '@/interfaces/IApiResponse'
-import type { IAllowedUser } from '@/interfaces/IPromotion'
+import type { AllowedUser } from '@rafaelpilartes/kandengue-shared/promotion'
 import {
   PromotionEntity,
   PromotionUsageEntity
@@ -43,7 +43,7 @@ export interface IPromotionRepository {
     addedBy: string
   ): Promise<void>
   removeAllowedUser(code: string, userId: string): Promise<void>
-  listAllowedUsers(code: string): Promise<IAllowedUser[]>
+  listAllowedUsers(code: string): Promise<AllowedUser[]>
 
   // Usages — leitura para detalhe da promoção
   listUsages(

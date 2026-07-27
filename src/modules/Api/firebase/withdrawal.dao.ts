@@ -21,7 +21,7 @@ import {
 import type { IWithdrawalRepository } from '@/core/interfaces/IWithdrawalRepository'
 import { firebaseCollections } from '@/constants/firebaseCollections'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
-import type { WithdrawalStatus } from '@/interfaces/IPromotion'
+import type { WithdrawalStatus } from '@rafaelpilartes/kandengue-shared/withdrawal'
 
 function toDate(v: any): Date | undefined {
   if (!v) return undefined

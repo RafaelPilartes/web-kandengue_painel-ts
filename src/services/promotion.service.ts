@@ -4,7 +4,7 @@ import {
   PromotionUsageEntity
 } from '@/core/entities/Promotion'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
-import type { IAllowedUser } from '@/interfaces/IPromotion'
+import type { AllowedUser } from '@rafaelpilartes/kandengue-shared/promotion'
 import { promotionRepository } from '@/modules/Api'
 
 export class PromotionService {
@@ -83,7 +83,7 @@ export class PromotionService {
     return promotionRepository.removeAllowedUser(code, userId)
   }
 
-  async listAllowedUsers(code: string): Promise<IAllowedUser[]> {
+  async listAllowedUsers(code: string): Promise<AllowedUser[]> {
     return promotionRepository.listAllowedUsers(code)
   }
 

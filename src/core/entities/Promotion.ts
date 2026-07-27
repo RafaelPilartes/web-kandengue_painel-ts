@@ -1,18 +1,23 @@
 import type {
-  IPromotion,
-  IPromotionUsage,
-  IReferralEarning,
-  IWithdrawalRequest,
+  Promotion,
   PromotionRules,
   PromotionType,
-  PromotionUsageStatus,
-  EarningStatus,
-  WithdrawalStatus,
   ReferralConfig,
-  CancellationRecord
-} from '@/interfaces/IPromotion'
+  ReferralRewardType
+} from '@rafaelpilartes/kandengue-shared/promotion'
+import type {
+  CancellationRecord,
+  PromotionUsage,
+  PromotionUsageStatus
+} from '@rafaelpilartes/kandengue-shared/usage'
+import type { EarningStatus, ReferralEarning } from '@rafaelpilartes/kandengue-shared/referral'
+import type {
+  PaymentDetails,
+  WithdrawalRequest,
+  WithdrawalStatus
+} from '@rafaelpilartes/kandengue-shared/withdrawal'
 
-export class PromotionEntity implements IPromotion {
+export class PromotionEntity implements Promotion {
   id: string
   code: string
   type: PromotionType
@@ -31,7 +36,7 @@ export class PromotionEntity implements IPromotion {
   created_by: string
   created_at: Date
 
-  constructor(params: IPromotion) {
+  constructor(params: Promotion) {
     this.id = params.id
     this.code = params.code
     this.type = params.type
@@ -52,7 +57,7 @@ export class PromotionEntity implements IPromotion {
   }
 }
 
-export class PromotionUsageEntity implements IPromotionUsage {
+export class PromotionUsageEntity implements PromotionUsage {
   id: string
   promotion_id: string
   user_id: string
@@ -61,13 +66,13 @@ export class PromotionUsageEntity implements IPromotionUsage {
   discount_applied: number
   device_id?: string | null
   grace_cancel_count: number
-  driver_cancel_count: number
+  driver_cancel_counts: Record<string, number>
   cancellation_history: CancellationRecord[]
   expires_at: Date | null
   created_at: Date
   updated_at: Date
 
-  constructor(params: IPromotionUsage) {
+  constructor(params: PromotionUsage) {
     this.id = params.id
     this.promotion_id = params.promotion_id
     this.user_id = params.user_id
@@ -76,7 +81,7 @@ export class PromotionUsageEntity implements IPromotionUsage {
     this.discount_applied = params.discount_applied ?? 0
     this.device_id = params.device_id
     this.grace_cancel_count = params.grace_cancel_count ?? 0
-    this.driver_cancel_count = params.driver_cancel_count ?? 0
+    this.driver_cancel_counts = params.driver_cancel_counts ?? {}
     this.cancellation_history = params.cancellation_history ?? []
     this.expires_at = params.expires_at
     this.created_at = params.created_at
@@ -84,13 +89,13 @@ export class PromotionUsageEntity implements IPromotionUsage {
   }
 }
 
-export class ReferralEarningEntity implements IReferralEarning {
+export class ReferralEarningEntity implements ReferralEarning {
   id: string
   referrer_user_id: string
   referred_user_id: string
   promotion_id: string
   ride_id: string
-  reward_type: 'fixed' | 'percentage'
+  reward_type: ReferralRewardType
   reward_value: number
   reward_amount: number
   status: EarningStatus
@@ -98,7 +103,7 @@ export class ReferralEarningEntity implements IReferralEarning {
   paid_at?: Date | null
   created_at: Date
 
-  constructor(params: IReferralEarning) {
+  constructor(params: ReferralEarning) {
     this.id = params.id
     this.referrer_user_id = params.referrer_user_id
     this.referred_user_id = params.referred_user_id
@@ -114,24 +119,20 @@ export class ReferralEarningEntity implements IReferralEarning {
   }
 }
 
-export class WithdrawalRequestEntity implements IWithdrawalRequest {
+export class WithdrawalRequestEntity implements WithdrawalRequest {
   id: string
   user_id: string
   earning_ids: string[]
   total_amount: number
   status: WithdrawalStatus
-  payment_details: {
-    bank_name: string
-    account_number: string
-    account_holder: string
-  }
+  payment_details: PaymentDetails
   admin_notes?: string
   reviewed_by?: string
   reviewed_at?: Date
   paid_at?: Date
   created_at: Date
 
-  constructor(params: IWithdrawalRequest) {
+  constructor(params: WithdrawalRequest) {
     this.id = params.id
     this.user_id = params.user_id
     this.earning_ids = params.earning_ids ?? []

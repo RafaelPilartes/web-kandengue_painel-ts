@@ -2,7 +2,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { firebaseCollections } from '@/constants/firebaseCollections'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
-import type { WithdrawalStatus } from '@/interfaces/IPromotion'
+import type { WithdrawalStatus } from '@rafaelpilartes/kandengue-shared/withdrawal'
 import { WithdrawalService } from '@/services/withdrawal.service'
 import { useAdminStore } from '@/stores/userStore'
 import { withAudit } from '@/services/audit.service'

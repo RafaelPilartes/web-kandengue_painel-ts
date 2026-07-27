@@ -1,5 +1,5 @@
 import type { ListResponseType } from '@/interfaces/IApiResponse'
-import type { WithdrawalStatus } from '@/interfaces/IPromotion'
+import type { WithdrawalStatus } from '@rafaelpilartes/kandengue-shared/withdrawal'
 import {
   ReferralEarningEntity,
   WithdrawalRequestEntity

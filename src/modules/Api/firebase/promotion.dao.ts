@@ -23,7 +23,7 @@ import {
 import type { IPromotionRepository } from '@/core/interfaces/IPromotionRepository'
 import { firebaseCollections } from '@/constants/firebaseCollections'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
-import type { IAllowedUser } from '@/interfaces/IPromotion'
+import type { AllowedUser } from '@rafaelpilartes/kandengue-shared/promotion'
 
 const NUM_SHARDS = 10
 
@@ -255,7 +255,7 @@ export class FirebasePromotionDAO implements IPromotionRepository {
     await deleteDoc(ref)
   }
 
-  async listAllowedUsers(code: string): Promise<IAllowedUser[]> {
+  async listAllowedUsers(code: string): Promise<AllowedUser[]> {
     const id = normalizeCode(code)
     const snap = await getDocs(collection(this.ref, id, 'allowed_users'))
     return snap.docs.map(d => {
