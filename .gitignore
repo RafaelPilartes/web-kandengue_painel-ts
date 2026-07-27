@@ -25,3 +25,6 @@ dist-ssr
 
 # AI context
 CLAUDE.md
+
+# Claude Code worktrees
+.claude/
