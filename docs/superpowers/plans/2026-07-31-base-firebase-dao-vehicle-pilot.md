@@ -74,7 +74,7 @@ Estas restrições aplicam-se a **todas** as tasks. Violá-las parte o build.
 **Interfaces:**
 
 - Consumes: nada.
-- Produces: `src/test/firebase.emulator.ts` exporta `testDb: Firestore`, `testAuth: Auth`, `testStorage: FirebaseStorage`, e `clearCollection(path: string): Promise<void>`. Todas as tasks seguintes que testem contra o emulador importam daqui e fazem `vi.mock('@/config/firebase.config')` a apontar para estes.
+- Produces: `src/test/firebase.emulator.ts` exporta `testDb: Firestore`, `assertEmulatorRunning()` e `clearCollection(path: string): Promise<void>`. (Não exporta auth/storage: os `vi.mock` das tasks seguintes passam `{ auth: {}, storage: {} }`.) Todas as tasks seguintes que testem contra o emulador importam daqui e fazem `vi.mock('@/config/firebase.config')` a apontar para estes.
 
 **Contexto:** O emulador Firestore corre a partir do repo `node-fastify-kandengue_atrevido-ts` (`npm run dev:emulator`), na porta **8080**, projeto `kandengue-atrevido-5740d`. Este repo não tem `firebase.json` e não precisa de ter — os testes apenas se ligam ao emulador já em execução.
 
