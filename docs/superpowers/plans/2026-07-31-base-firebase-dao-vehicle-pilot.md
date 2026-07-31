@@ -1084,13 +1084,47 @@ echo "exit=$?"
 
 Expected: `exit=0`.
 
-`VehicleEntity` já não declara `implements VehicleInterface` (as datas divergem: `Date` vs `Date | undefined`). Se algum ficheiro passar `VehicleEntity` onde se espera `VehicleInterface`, o `tsc` acusa — nesse caso, **reportar** qual é o ficheiro em vez de alargar o tipo à sorte. Espera-se que não aconteça: `DriverDetails.tsx` recebe `VehicleInterface[]` do `fetchAllVehiclesByField`, e `VehicleEntity` é estruturalmente compatível (`Date` satisfaz `Date | undefined`).
+`VehicleEntity` já não declara `implements VehicleInterface`. As datas divergem em dois sítios, e só um é inofensivo:
+
+- `created_at: Date` **satisfaz** `Date | undefined` — sem erro.
+- `updated_at: Date | null` **NÃO satisfaz** `Date | undefined` — `null` não é `undefined`.
+
+Por isso `npx tsc -b` falha em `src/pages/main/Drivers/DriverDetails.tsx`, o único
+ficheiro que passa dados do repositório para estado tipado como `VehicleInterface[]`.
+Isso é esperado e corrige-se no Step 6b. **Não** alterar `VehicleInterface`, **não**
+mudar `updated_at` para `Date | undefined` (o DAO grava mesmo `null` — ver Task 7,
+que assevera `expect(created.updated_at).toBeNull()`), e **não** usar `as any`.
+
+- [ ] **Step 6b: Realinhar `DriverDetails.tsx` ao `VehicleEntity`**
+
+As 6 referências a `VehicleInterface` neste ficheiro descrevem dados que vêm do
+repositório — logo, são entidades. Substituir apenas o tipo, sem tocar na lógica:
+
+| Linha | Antes | Depois |
+| --- | --- | --- |
+| 30 | `import type { VehicleInterface } from '@/interfaces/IVehicle'` | `import type { VehicleEntity } from '@/core/entities/Vehicle'` |
+| 87 | `VehicleInterface[] | null` | `VehicleEntity[] | null` |
+| 117 | `(vehicle: VehicleInterface)` | `(vehicle: VehicleEntity)` |
+| 160 | `vehicle: VehicleInterface,` | `vehicle: VehicleEntity,` |
+| 164 | `Partial<VehicleInterface>` | `Partial<VehicleEntity>` |
+| 436 | `(vehicle: VehicleInterface)` | `(vehicle: VehicleEntity)` |
+
+Confirmar depois que `VehicleInterface` deixou de ser importado neste ficheiro
+(`noUnusedLocals` acusa se o import ficar). Os outros consumidores de
+`VehicleInterface` (`Driver.ts`, `IDriver.ts`, `mockData.ts`) **não** mudam.
+
+```bash
+npx tsc -b
+echo "exit=$?"
+```
+
+Expected: `exit=0`.
 
 - [ ] **Step 7: Correr toda a suite e commitar**
 
 ```bash
 npm run test
-git add src/interfaces/IVehicle.ts src/core/entities/Vehicle.ts src/core/entities/__tests__
+git add src/interfaces/IVehicle.ts src/core/entities/Vehicle.ts src/core/entities/__tests__ src/pages/main/Drivers/DriverDetails.tsx
 git commit -m "feat: adicionar VehicleDoc e vehicleConverter"
 ```
 
@@ -2886,7 +2920,7 @@ echo "exit=$?"
 
 Expected: `exit=0`.
 
-Se acusar em `DriverDetails.tsx` — provavelmente por `fetchAllVehiclesByField` ter perdido o 4º parâmetro `offset` — ajustar a **chamada** em `DriverDetails.tsx`, não a assinatura do ViewModel.
+As anotações de tipo de `DriverDetails.tsx` já foram realinhadas para `VehicleEntity` na Task 5 (Step 6b) — não repetir. Se o `tsc` acusar aqui, será por `fetchAllVehiclesByField` ter perdido o 4º parâmetro `offset`: ajustar a **chamada** em `DriverDetails.tsx`, não a assinatura do ViewModel.
 
 - [ ] **Step 5: Correr toda a suite**
 
