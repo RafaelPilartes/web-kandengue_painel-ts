@@ -2446,7 +2446,14 @@ describe('FirebaseVehicleDAO', () => {
 
 - [ ] **Step 5: Adaptar `vehicle.service.ts` à assinatura nova (temporário)**
 
-O service é apagado na Task 11, mas até lá tem de compilar. Substituir **apenas** os corpos de `getAll` e `getAllByField`:
+O service é apagado na Task 12, mas até lá tem de compilar. Acrescentar a
+constante no topo do ficheiro e substituir os corpos de `getAll` e `getAllByField`:
+
+```ts
+/** Default do DAO antigo. O motor usa 50; preservar o valor observável. */
+const LEGACY_PAGE_SIZE = 500
+```
+
 
 ```ts
   async getAll(
@@ -2457,7 +2464,13 @@ O service é apagado na Task 11, mas até lá tem de compilar. Substituir **apen
   ): Promise<ListResponseType<VehicleEntity[]>> {
     void offset // paginação por offset foi substituída por cursor
     try {
-      return await vehicleRepository.getAll({ limit, searchTerm, filters })
+      // O DAO antigo tinha `limitValue = 500`; o motor usa 50. Manter o 500
+      // explícito para o refactor não mudar o tamanho de página observável.
+      return await vehicleRepository.getAll({
+        limit: limit ?? LEGACY_PAGE_SIZE,
+        searchTerm,
+        filters
+      })
     } catch (error: any) {
       console.error('Erro ao buscar veículos:', error)
       throw new Error(error.message || 'Erro ao buscar veículos')
@@ -2477,7 +2490,7 @@ O service é apagado na Task 11, mas até lá tem de compilar. Substituir **apen
       const { data, pagination } = await vehicleRepository.getAllByField(
         field as keyof VehicleEntity,
         value,
-        { limit }
+        { limit: limit ?? LEGACY_PAGE_SIZE }
       )
       return { data, pagination }
     } catch (error: any) {
@@ -2510,6 +2523,8 @@ E substituir os corpos de `getOneByField` e `create`:
 
   async create(vehicle: Omit<VehicleEntity, 'id'>): Promise<VehicleEntity> {
     try {
+      // `as never` desliga a verificação de tipos de propósito — scaffolding
+      // temporário; o service desaparece na Task 12.
       return await vehicleRepository.create(vehicle as never)
     } catch (error: any) {
       console.error('Erro ao criar veículo:', error)
@@ -2896,6 +2911,9 @@ import { withAudit } from '@/services/audit.service'
 
 type NewVehicle = Omit<VehicleEntity, 'id' | 'created_at' | 'updated_at'>
 
+/** Default herdado do DAO antigo (o motor usa 50). Ver plano, Task 9. */
+const LEGACY_PAGE_SIZE = 500
+
 /** Query-key factory — invalidações precisas em vez de arrasar a raiz. */
 export const VEHICLE_KEYS = {
   all: ['vehicles'] as const,
@@ -2917,7 +2935,13 @@ export function useVehiclesViewModel(
   // mas a paginação passou a ser por cursor (ver QueryOptions.after).
   void offset
 
-  const options: QueryOptions<VehicleEntity> = { limit, searchTerm, filters }
+  // O DAO antigo devolvia 500 por omissão e o motor devolve 50. Manter o
+  // valor observável enquanto o tamanho de página não for decidido de propósito.
+  const options: QueryOptions<VehicleEntity> = {
+    limit: limit ?? LEGACY_PAGE_SIZE,
+    searchTerm,
+    filters
+  }
 
   const {
     data: vehiclesResponse,
@@ -2942,7 +2966,7 @@ export function useVehiclesViewModel(
       return await vehicleUseCase.executeGetAllByField(
         field as keyof VehicleEntity,
         value,
-        { limit: limitValue }
+        { limit: limitValue ?? LEGACY_PAGE_SIZE }
       )
     } catch (err) {
       console.error('Erro ao buscar veículos por campo:', err)
