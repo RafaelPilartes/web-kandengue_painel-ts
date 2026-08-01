@@ -2101,6 +2101,21 @@ describe('BaseFirebaseDAO — realtime', () => {
     expect(seen[0]).toEqual(['veh-a'])
   })
 
+  it('sem onError, um erro do listener é registado em vez de desaparecer', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      // `undefined` como valor de filtro é rejeitado pelo Firestore ao montar
+      // o listener — basta para provar que o erro chega ao console.
+      const dao2 = new TestDAO()
+      const unsubscribe = dao2.listenById('', () => {})
+      unsubs.push(unsubscribe)
+      await waitFor(() => spy.mock.calls.length > 0)
+      expect(spy).toHaveBeenCalled()
+    } finally {
+      spy.mockRestore()
+    }
+  })
+
   it('o unsubscribe pára de emitir', async () => {
     await seed('veh-a', { plate: 'aaa', created_at: ts('2026-01-01') })
 
@@ -2135,6 +2150,23 @@ Em `src/modules/Api/firebase/BaseFirebaseDAO.ts`, acrescentar `onSnapshot` ao im
 Colar dentro da classe, a seguir a `delete()`:
 
 ```ts
+  /**
+   * Um listener sem `onError` morrer em silêncio é caríssimo de diagnosticar:
+   * a UI só pára de actualizar. Sem handler, pelo menos regista.
+   */
+  protected onListenError(
+    op: string,
+    err: unknown,
+    onError?: (err: Error) => void
+  ): void {
+    const appError = toAppError(err, `[${this.path}.${op}]`)
+    if (onError) {
+      onError(appError)
+      return
+    }
+    console.error(appError.message, appError)
+  }
+
   listenById(
     id: string,
     onUpdate: (data: T | null) => void,
@@ -2143,7 +2175,7 @@ Colar dentro da classe, a seguir a `delete()`:
     return onSnapshot(
       doc(this.ref, id),
       snap => onUpdate(snap.exists() ? snap.data() : null),
-      err => onError?.(toAppError(err, `[${this.path}.listenById]`))
+      err => this.onListenError('listenById', err, onError)
     )
   }
 
@@ -2165,7 +2197,7 @@ Colar dentro da classe, a seguir a `delete()`:
       q,
       // Os documentos vêm no próprio snapshot — nunca re-fazer a query aqui.
       snap => onUpdate(snap.docs.map(d => d.data())),
-      err => onError?.(toAppError(err, `[${this.path}.listenAll]`))
+      err => this.onListenError('listenAll', err, onError)
     )
   }
 
@@ -2199,7 +2231,7 @@ export abstract class BaseFirebaseDAO<T extends { id: string }>
 npm run test -- src/modules/Api/firebase/__tests__/baseFirebaseDao.realtime.test.ts
 ```
 
-Expected: `7 passed`.
+Expected: `8 passed`.
 
 - [ ] **Step 7: Verificar tipos e commitar**
 
