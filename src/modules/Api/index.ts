@@ -68,3 +68,22 @@ export const pushNotificationRepository: IPushNotificationRepository = new PushN
 export const promotionRepository: IPromotionRepository = new FirebasePromotionDAO()
 export const withdrawalRepository: IWithdrawalRepository = new FirebaseWithdrawalDAO()
 export const appConfigRepository: IAppConfigRepository = new FirebaseAppConfigDAO()
+
+// ─────────────── ApiFactory (padrão novo — ver docs/superpowers/plans) ───────────────
+// Instancia à primeira utilização e memoiza. Substitui gradualmente os
+// exports acima, que criam as ~20 instâncias no momento do import.
+
+class ApiFactory {
+  private cache = new Map<string, unknown>()
+
+  private resolve<T>(key: string, make: () => T): T {
+    if (!this.cache.has(key)) this.cache.set(key, make())
+    return this.cache.get(key) as T
+  }
+
+  get vehicles(): IVehicleRepository {
+    return this.resolve('vehicles', () => new FirebaseVehicleDAO())
+  }
+}
+
+export const ApiRepository = new ApiFactory()
