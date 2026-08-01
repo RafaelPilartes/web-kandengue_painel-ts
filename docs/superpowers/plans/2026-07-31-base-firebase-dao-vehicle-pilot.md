@@ -461,7 +461,7 @@ describe('FirebaseVehicleDAO (legado) — caracterização', () => {
 npm run test -- src/modules/Api/firebase/__tests__/vehicle.dao.legacy.test.ts
 ```
 
-Expected: `8 passed`.
+Expected: `9 passed`.
 
 Se algum dos dois testes marcados como `BUG:` **passar ao contrário** (ou seja, falhar), significa que o comportamento actual é diferente do que este plano assume. **Parar e reportar** em vez de ajustar o teste — a diferença é informação.
 
@@ -1969,6 +1969,19 @@ class TestDAO extends BaseFirebaseDAO<InstanceType<typeof VehicleEntity>> {
   }
 }
 
+/** Expõe o helper protegido para se poderem testar as duas ramificações.
+ *  Um erro real de stream não é accionável a partir deste repo — dependeria
+ *  das Security Rules — e `doc(ref, '')` rebenta antes do `onSnapshot`. */
+class ErrorProbeDAO extends BaseFirebaseDAO<InstanceType<typeof VehicleEntity>> {
+  constructor() {
+    super(COLLECTION, vehicleConverter, 'veh', 'plate')
+  }
+
+  probe(op: string, err: unknown, onError?: (e: Error) => void): void {
+    this.onListenError(op, err, onError)
+  }
+}
+
 const ts = (iso: string) => Timestamp.fromDate(new Date(iso))
 
 async function seed(id: string, data: Record<string, unknown>) {
@@ -1987,6 +2000,7 @@ async function waitFor(predicate: () => boolean, timeoutMs = 5000) {
 
 describe('BaseFirebaseDAO — realtime', () => {
   let dao: TestDAO
+  let probe: ErrorProbeDAO
   const unsubs: Array<() => void> = []
 
   beforeAll(async () => {
@@ -1996,6 +2010,7 @@ describe('BaseFirebaseDAO — realtime', () => {
   beforeEach(async () => {
     await clearCollection(COLLECTION)
     dao = new TestDAO()
+    probe = new ErrorProbeDAO()
   })
 
   afterEach(() => {
@@ -2101,16 +2116,30 @@ describe('BaseFirebaseDAO — realtime', () => {
     expect(seen[0]).toEqual(['veh-a'])
   })
 
-  it('sem onError, um erro do listener é registado em vez de desaparecer', async () => {
+  it('onListenError chama o onError quando existe, sem escrever na consola', () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const received: Error[] = []
+    try {
+      probe.probe('listenAll', { code: 'firestore/permission-denied' }, e =>
+        received.push(e)
+      )
+      expect(received).toHaveLength(1)
+      expect((received[0] as { code?: string }).code).toBe('permission-denied')
+      expect(spy).not.toHaveBeenCalled()
+    } finally {
+      spy.mockRestore()
+    }
+  })
+
+  it('onListenError regista na consola quando não há onError', () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
     try {
-      // `undefined` como valor de filtro é rejeitado pelo Firestore ao montar
-      // o listener — basta para provar que o erro chega ao console.
-      const dao2 = new TestDAO()
-      const unsubscribe = dao2.listenById('', () => {})
-      unsubs.push(unsubscribe)
-      await waitFor(() => spy.mock.calls.length > 0)
-      expect(spy).toHaveBeenCalled()
+      probe.probe('listenAll', { code: 'firestore/permission-denied' })
+
+      // Sem isto o erro desaparecia por completo e o listener morria em
+      // silêncio — a UI apenas deixava de actualizar.
+      expect(spy).toHaveBeenCalledTimes(1)
+      expect(String(spy.mock.calls[0][0])).toContain('[test_vehicles.listenAll]')
     } finally {
       spy.mockRestore()
     }
