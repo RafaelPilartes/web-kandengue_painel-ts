@@ -8,7 +8,11 @@ import {
   orderBy,
   limit as fbLimit,
   startAfter,
-  getCountFromServer
+  getCountFromServer,
+  setDoc,
+  updateDoc,
+  deleteDoc,
+  serverTimestamp
 } from 'firebase/firestore'
 import type {
   CollectionReference,
@@ -23,14 +27,24 @@ import type {
   QueryOptions
 } from '@/core/interfaces/IBaseRepository'
 import { AppError, toAppError } from '@/domain/errors/AppError'
+import { generateId } from '@/helpers/generateId'
 
 /** Sentinela de fim de intervalo para pesquisa por prefixo no Firestore. */
 const PREFIX_END = ''
 
-export abstract class BaseFirebaseDAO<T extends { id: string }> implements Pick<
-  IBaseRepository<T>,
-  'getAll' | 'getById' | 'getAllByField' | 'getOneByField' | 'count'
-> {
+export abstract class BaseFirebaseDAO<T extends { id: string }>
+  implements Pick<
+    IBaseRepository<T>,
+    | 'getAll'
+    | 'getById'
+    | 'getAllByField'
+    | 'getOneByField'
+    | 'count'
+    | 'create'
+    | 'update'
+    | 'delete'
+  >
+{
   protected readonly ref: CollectionReference<T>
   protected readonly path: string
   protected readonly idPrefix: string
@@ -190,6 +204,62 @@ export abstract class BaseFirebaseDAO<T extends { id: string }> implements Pick<
         .count
     } catch (err) {
       this.fail('count', err)
+    }
+  }
+
+  async create(
+    data: Omit<T, 'id' | 'created_at' | 'updated_at'>,
+    id?: string
+  ): Promise<T> {
+    try {
+      const newId = id ?? generateId(this.idPrefix)
+
+      await setDoc(doc(this.ref, newId), {
+        ...(data as object),
+        id: newId,
+        created_at: serverTimestamp(),
+        updated_at: null
+      } as unknown as T)
+
+      // Read-back: devolve o que ficou realmente gravado (com o created_at do
+      // servidor resolvido), não uma reconstrução optimista que diverge.
+      const created = await this.getById(newId)
+      if (!created) {
+        this.fail('create', new Error('documento não encontrado após criação'))
+      }
+      return created
+    } catch (err) {
+      this.fail('create', err)
+    }
+  }
+
+  async update(id: string, data: Partial<T>): Promise<T> {
+    try {
+      // `id` e `created_at` são imutáveis: descartados em silêncio.
+      const rest = { ...(data as Record<string, unknown>) }
+      delete rest.id
+      delete rest.created_at
+
+      await updateDoc(doc(this.ref, id), {
+        ...rest,
+        updated_at: serverTimestamp()
+      })
+
+      const updated = await this.getById(id)
+      if (!updated) {
+        this.fail('update', new Error('documento não encontrado após update'))
+      }
+      return updated
+    } catch (err) {
+      this.fail('update', err)
+    }
+  }
+
+  async delete(id: string): Promise<void> {
+    try {
+      await deleteDoc(doc(this.ref, id))
+    } catch (err) {
+      this.fail('delete', err)
     }
   }
 }
