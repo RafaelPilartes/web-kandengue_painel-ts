@@ -1700,7 +1700,7 @@ describe('BaseFirebaseDAO — escrita', () => {
   })
 
   it('create descarta campos undefined em vez de rebentar', async () => {
-    const created = await dao.create({ ...NEW_VEHICLE, image: undefined })
+    const created = await dao.create({ ...(NEW_VEHICLE as object), image: undefined } as never)
 
     expect(created.image).toBeUndefined()
   })
