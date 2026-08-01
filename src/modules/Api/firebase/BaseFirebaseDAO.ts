@@ -12,12 +12,14 @@ import {
   setDoc,
   updateDoc,
   deleteDoc,
-  serverTimestamp
+  serverTimestamp,
+  onSnapshot
 } from 'firebase/firestore'
 import type {
   CollectionReference,
   FirestoreDataConverter,
-  QueryConstraint
+  QueryConstraint,
+  Query
 } from 'firebase/firestore'
 import { db } from '@/config/firebase.config'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
@@ -33,17 +35,7 @@ import { generateId } from '@/helpers/generateId'
 const PREFIX_END = ''
 
 export abstract class BaseFirebaseDAO<T extends { id: string }>
-  implements Pick<
-    IBaseRepository<T>,
-    | 'getAll'
-    | 'getById'
-    | 'getAllByField'
-    | 'getOneByField'
-    | 'count'
-    | 'create'
-    | 'update'
-    | 'delete'
-  >
+  implements IBaseRepository<T>
 {
   protected readonly ref: CollectionReference<T>
   protected readonly path: string
@@ -267,5 +259,52 @@ export abstract class BaseFirebaseDAO<T extends { id: string }>
     } catch (err) {
       this.fail('delete', err)
     }
+  }
+
+  listenById(
+    id: string,
+    onUpdate: (data: T | null) => void,
+    onError?: (err: Error) => void
+  ): () => void {
+    return onSnapshot(
+      doc(this.ref, id),
+      snap => onUpdate(snap.exists() ? snap.data() : null),
+      err => onError?.(toAppError(err, `[${this.path}.listenById]`))
+    )
+  }
+
+  listenAll(
+    onUpdate: (data: T[]) => void,
+    onError?: (err: Error) => void,
+    options: ListenOptions<T> = {}
+  ): () => void {
+    // Limite por omissão: um listener sem travão lê a colecção inteira a cada
+    // alteração e paga 1 leitura por documento.
+    const limitValue = options.limit ?? 50
+    const q: Query<T> = query(
+      this.ref,
+      ...this.constraints(options),
+      fbLimit(limitValue)
+    )
+
+    return onSnapshot(
+      q,
+      // Os documentos vêm no próprio snapshot — nunca re-fazer a query aqui.
+      snap => onUpdate(snap.docs.map(d => d.data())),
+      err => onError?.(toAppError(err, `[${this.path}.listenAll]`))
+    )
+  }
+
+  listenAllByField(
+    field: keyof T,
+    value: unknown,
+    onUpdate: (data: T[]) => void,
+    onError?: (err: Error) => void,
+    options: Omit<ListenOptions<T>, 'filters'> = {}
+  ): () => void {
+    return this.listenAll(onUpdate, onError, {
+      ...options,
+      filters: { [field]: value } as Partial<T>
+    })
   }
 }
