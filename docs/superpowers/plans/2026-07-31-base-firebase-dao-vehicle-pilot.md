@@ -2260,7 +2260,7 @@ export abstract class BaseFirebaseDAO<T extends { id: string }>
 npm run test -- src/modules/Api/firebase/__tests__/baseFirebaseDao.realtime.test.ts
 ```
 
-Expected: `8 passed`.
+Expected: `9 passed`.
 
 - [ ] **Step 7: Verificar tipos e commitar**
 
@@ -2524,7 +2524,7 @@ E substituir os corpos de `getOneByField` e `create`:
 npm run test -- src/modules/Api/firebase/__tests__/vehicle.dao.test.ts
 ```
 
-Expected: `8 passed`.
+Expected: `9 passed`.
 
 - [ ] **Step 7: Verificar tipos, toda a suite, e commitar**
 
