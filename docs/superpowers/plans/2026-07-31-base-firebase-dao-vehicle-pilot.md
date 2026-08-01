@@ -1797,7 +1797,10 @@ Colar dentro da classe, a seguir a `count()`:
       // servidor resolvido), não uma reconstrução optimista que diverge.
       const created = await this.getById(newId)
       if (!created) {
-        this.fail('create', new Error('documento não encontrado após criação'))
+        this.fail(
+          'create',
+          new AppError('not-found', 'documento não encontrado após criação')
+        )
       }
       return created
     } catch (err) {
@@ -1819,7 +1822,10 @@ Colar dentro da classe, a seguir a `count()`:
 
       const updated = await this.getById(id)
       if (!updated) {
-        this.fail('update', new Error('documento não encontrado após update'))
+        this.fail(
+          'update',
+          new AppError('not-found', 'documento não encontrado após update')
+        )
       }
       return updated
     } catch (err) {
@@ -1835,6 +1841,40 @@ Colar dentro da classe, a seguir a `count()`:
     }
   }
 ```
+
+- [ ] **Step 4b: Ligar `ignoreUndefinedProperties` na config de produção**
+
+Os DAOs antigos removiam `undefined` à mão (`sanitize()`); o `BaseFirebaseDAO`
+não o faz — depende desta flag. Sem ela, `create({ image: undefined })` passa nos
+testes (o harness já a liga) e **rebenta em produção** com
+`Unsupported field value: undefined`.
+
+Em `src/config/firebase.config.ts`, trocar `getFirestore` por
+`initializeFirestore` com a opção:
+
+```ts
+import { initializeFirestore } from 'firebase/firestore'
+```
+
+```ts
+// ignoreUndefinedProperties elimina o sanitize() manual de cada DAO: o
+// Firestore passa a descartar `undefined` em vez de rejeitar a escrita.
+// `null` continua a ser gravado — é um valor legítimo.
+export const db = initializeFirestore(app, {
+  ignoreUndefinedProperties: true
+})
+```
+
+`initializeFirestore` tem de correr antes de qualquer `getFirestore(app)`. Este
+ficheiro é o único ponto de inicialização, por isso basta a troca — mas confirmar
+com `grep -rn "getFirestore" src` que não sobra nenhuma outra chamada.
+
+```bash
+grep -rn "getFirestore" src
+npx tsc -b && echo "tsc ok"
+```
+
+Expected: só o import antigo (agora removido) aparecia; `exit=0`.
 
 - [ ] **Step 5: Alargar o `implements`**
 
