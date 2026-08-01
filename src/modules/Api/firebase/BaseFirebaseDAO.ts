@@ -261,6 +261,23 @@ export abstract class BaseFirebaseDAO<T extends { id: string }>
     }
   }
 
+  /**
+   * Um listener sem `onError` morrer em silêncio é caríssimo de diagnosticar:
+   * a UI só pára de actualizar. Sem handler, pelo menos regista.
+   */
+  protected onListenError(
+    op: string,
+    err: unknown,
+    onError?: (err: Error) => void
+  ): void {
+    const appError = toAppError(err, `[${this.path}.${op}]`)
+    if (onError) {
+      onError(appError)
+      return
+    }
+    console.error(appError.message, appError)
+  }
+
   listenById(
     id: string,
     onUpdate: (data: T | null) => void,
@@ -269,7 +286,7 @@ export abstract class BaseFirebaseDAO<T extends { id: string }>
     return onSnapshot(
       doc(this.ref, id),
       snap => onUpdate(snap.exists() ? snap.data() : null),
-      err => onError?.(toAppError(err, `[${this.path}.listenById]`))
+      err => this.onListenError('listenById', err, onError)
     )
   }
 
@@ -291,7 +308,7 @@ export abstract class BaseFirebaseDAO<T extends { id: string }>
       q,
       // Os documentos vêm no próprio snapshot — nunca re-fazer a query aqui.
       snap => onUpdate(snap.docs.map(d => d.data())),
-      err => onError?.(toAppError(err, `[${this.path}.listenAll]`))
+      err => this.onListenError('listenAll', err, onError)
     )
   }
 
