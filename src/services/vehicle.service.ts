@@ -10,8 +10,9 @@ export class VehicleService {
     searchTerm?: string,
     filters?: Partial<VehicleEntity>
   ): Promise<ListResponseType<VehicleEntity[]>> {
+    void offset // paginação por offset foi substituída por cursor
     try {
-      return await vehicleRepository.getAll(limit, offset, searchTerm, filters)
+      return await vehicleRepository.getAll({ limit, searchTerm, filters })
     } catch (error: any) {
       console.error('Erro ao buscar veículos:', error)
       throw new Error(error.message || 'Erro ao buscar veículos')
@@ -33,7 +34,10 @@ export class VehicleService {
     value: any
   ): Promise<VehicleEntity | null> {
     try {
-      return await vehicleRepository.getOneByField(field, value)
+      return await vehicleRepository.getOneByField(
+        field as keyof VehicleEntity,
+        value
+      )
     } catch (error: any) {
       console.error(`Erro ao buscar vehicle por ${field}-${value}:`, error)
       throw new Error(error.message || 'Erro ao buscar vehicle')
@@ -47,14 +51,13 @@ export class VehicleService {
     limit?: number,
     offset?: number
   ): Promise<ListResponseType<VehicleEntity[]>> {
+    void offset
     try {
       const { data, pagination } = await vehicleRepository.getAllByField(
-        field,
+        field as keyof VehicleEntity,
         value,
-        limit,
-        offset
+        { limit }
       )
-
       return { data, pagination }
     } catch (error: any) {
       console.error(
@@ -67,7 +70,7 @@ export class VehicleService {
 
   async create(vehicle: Omit<VehicleEntity, 'id'>): Promise<VehicleEntity> {
     try {
-      return await vehicleRepository.create(vehicle)
+      return await vehicleRepository.create(vehicle as never)
     } catch (error: any) {
       console.error('Erro ao criar veículo:', error)
       throw new Error(error.message || 'Erro ao criar veículo')
