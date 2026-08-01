@@ -225,7 +225,10 @@ export abstract class BaseFirebaseDAO<T extends { id: string }>
       // servidor resolvido), não uma reconstrução optimista que diverge.
       const created = await this.getById(newId)
       if (!created) {
-        this.fail('create', new Error('documento não encontrado após criação'))
+        this.fail(
+          'create',
+          new AppError('not-found', 'documento não encontrado após criação')
+        )
       }
       return created
     } catch (err) {
@@ -247,7 +250,10 @@ export abstract class BaseFirebaseDAO<T extends { id: string }>
 
       const updated = await this.getById(id)
       if (!updated) {
-        this.fail('update', new Error('documento não encontrado após update'))
+        this.fail(
+          'update',
+          new AppError('not-found', 'documento não encontrado após update')
+        )
       }
       return updated
     } catch (err) {
