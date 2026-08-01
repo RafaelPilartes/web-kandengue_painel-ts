@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, beforeEach, vi } from 'vitest'
-import { doc, setDoc, Timestamp } from 'firebase/firestore'
+import { doc, setDoc, Timestamp, writeBatch } from 'firebase/firestore'
 
 vi.mock('@/config/firebase.config', async () => {
   const { testDb } = await import('@/test/firebase.emulator')
@@ -101,5 +101,23 @@ describe('FirebaseVehicleDAO', () => {
     const res = await dao.getAll({ searchTerm: 'LD-11' })
 
     expect(res.data.map(v => v.id)).toEqual(['veh-a'])
+  })
+
+  it('getAll sem opções usa o default do motor (50), não os 500 do DAO antigo', async () => {
+    const batch = writeBatch(testDb)
+    for (let i = 0; i < 51; i++) {
+      const id = `veh-${String(i).padStart(3, '0')}`
+      batch.set(doc(testDb, `${COLLECTION}/${id}`), {
+        id,
+        plate: `plate-${i}`,
+        created_at: ts(`2026-01-${String((i % 28) + 1).padStart(2, '0')}`)
+      })
+    }
+    await batch.commit()
+
+    const res = await dao.getAll()
+
+    expect(res.data).toHaveLength(50)
+    expect(res.pagination?.hasMore).toBe(true)
   })
 })

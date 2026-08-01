@@ -3,6 +3,9 @@ import { vehicleRepository } from '@/modules/Api'
 import { VehicleEntity } from '@/core/entities/Vehicle'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 
+/** Default do DAO antigo. O motor usa 50; preservar o valor observável. */
+const LEGACY_PAGE_SIZE = 500
+
 export class VehicleService {
   async getAll(
     limit?: number,
@@ -12,7 +15,13 @@ export class VehicleService {
   ): Promise<ListResponseType<VehicleEntity[]>> {
     void offset // paginação por offset foi substituída por cursor
     try {
-      return await vehicleRepository.getAll({ limit, searchTerm, filters })
+      // O DAO antigo tinha `limitValue = 500`; o motor usa 50. Manter o 500
+      // explícito para o refactor não mudar o tamanho de página observável.
+      return await vehicleRepository.getAll({
+        limit: limit ?? LEGACY_PAGE_SIZE,
+        searchTerm,
+        filters
+      })
     } catch (error: any) {
       console.error('Erro ao buscar veículos:', error)
       throw new Error(error.message || 'Erro ao buscar veículos')
@@ -56,7 +65,7 @@ export class VehicleService {
       const { data, pagination } = await vehicleRepository.getAllByField(
         field as keyof VehicleEntity,
         value,
-        { limit }
+        { limit: limit ?? LEGACY_PAGE_SIZE }
       )
       return { data, pagination }
     } catch (error: any) {
@@ -70,6 +79,8 @@ export class VehicleService {
 
   async create(vehicle: Omit<VehicleEntity, 'id'>): Promise<VehicleEntity> {
     try {
+      // `as never` desliga a verificação de tipos de propósito — scaffolding
+      // temporário; o service desaparece na Task 12.
       return await vehicleRepository.create(vehicle as never)
     } catch (error: any) {
       console.error('Erro ao criar veículo:', error)
