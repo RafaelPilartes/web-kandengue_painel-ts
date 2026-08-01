@@ -1153,6 +1153,14 @@ class TestDAO extends BaseFirebaseDAO<InstanceType<typeof VehicleEntity>> {
   }
 }
 
+/** Igual ao TestDAO mas sem o 4º argumento — usado para provar que a
+ *  pesquisa falha alto em vez de devolver a colecção inteira. */
+class NoSearchDAO extends BaseFirebaseDAO<InstanceType<typeof VehicleEntity>> {
+  constructor() {
+    super(COLLECTION, vehicleConverter, 'veh')
+  }
+}
+
 async function seed(id: string, data: Record<string, unknown>) {
   await setDoc(doc(testDb, `${COLLECTION}/${id}`), { id, ...data })
 }
@@ -1161,6 +1169,7 @@ const ts = (iso: string) => Timestamp.fromDate(new Date(iso))
 
 describe('BaseFirebaseDAO — leitura', () => {
   let dao: TestDAO
+  let noSearchDao: NoSearchDAO
 
   beforeAll(async () => {
     await assertEmulatorRunning()
@@ -1169,6 +1178,7 @@ describe('BaseFirebaseDAO — leitura', () => {
   beforeEach(async () => {
     await clearCollection(COLLECTION)
     dao = new TestDAO()
+    noSearchDao = new NoSearchDAO()
   })
 
   it('getAll ordena por created_at desc por omissão', async () => {
@@ -1273,6 +1283,38 @@ describe('BaseFirebaseDAO — leitura', () => {
     expect(res.data.map(v => v.id)).toEqual(['veh-a'])
   })
 
+  it('getAll devolve hasMore false quando o total é exactamente o limite', async () => {
+    await seed('veh-a', { plate: 'aaa', created_at: ts('2026-01-01') })
+    await seed('veh-b', { plate: 'bbb', created_at: ts('2026-02-01') })
+
+    const res = await dao.getAll({ limit: 2 })
+
+    expect(res.data.map(v => v.id)).toEqual(['veh-b', 'veh-a'])
+    expect(res.pagination?.hasMore).toBe(false)
+  })
+
+  it('getAll falha quando o documento do cursor já não existe', async () => {
+    await seed('veh-a', { plate: 'aaa', created_at: ts('2026-01-01') })
+    await seed('veh-b', { plate: 'bbb', created_at: ts('2026-02-01') })
+
+    const page1 = await dao.getAll({ limit: 1 })
+    const cursor = page1.pagination?.cursor as string
+    await dao.delete(cursor)
+
+    // Não pode reiniciar na página 1 em silêncio.
+    await expect(dao.getAll({ limit: 1, after: cursor })).rejects.toMatchObject({
+      code: 'not-found'
+    })
+  })
+
+  it('getAll falha quando se pesquisa num DAO sem searchField', async () => {
+    await seed('veh-a', { plate: 'aaa', created_at: ts('2026-01-01') })
+
+    await expect(
+      noSearchDao.getAll({ searchTerm: 'aaa' })
+    ).rejects.toMatchObject({ code: 'failed-precondition' })
+  })
+
   it('getById devolve a entidade e null quando não existe', async () => {
     await seed('veh-a', { plate: 'AAA', created_at: ts('2026-01-01') })
 
@@ -1359,7 +1401,7 @@ import type {
   ListenOptions,
   QueryOptions
 } from '@/core/interfaces/IBaseRepository'
-import { toAppError } from '@/domain/errors/AppError'
+import { AppError, toAppError } from '@/domain/errors/AppError'
 
 /** Sentinela de fim de intervalo para pesquisa por prefixo no Firestore. */
 const PREFIX_END = '\uf8ff'
@@ -1415,7 +1457,16 @@ export abstract class BaseFirebaseDAO<T extends { id: string }> implements Pick<
         ? options.searchTerm?.trim().toLowerCase()
         : undefined
 
-    if (term && this.searchField) {
+    if (term) {
+      // Pesquisar num DAO que não declarou `searchField` devolveria a colecção
+      // inteira sem filtro — a caixa de pesquisa parece funcionar e mostra
+      // tudo. Falhar alto é a única forma de a má configuração aparecer.
+      if (!this.searchField) {
+        throw new AppError(
+          'failed-precondition',
+          `[${this.path}] não suporta pesquisa: o DAO não declarou searchField.`
+        )
+      }
       // Um range obriga o primeiro orderBy a ser no mesmo campo — por isso a
       // pesquisa ignora o orderBy pedido.
       constraints.push(orderBy(this.searchField))
@@ -1448,7 +1499,17 @@ export abstract class BaseFirebaseDAO<T extends { id: string }> implements Pick<
         ? await getDoc(doc(this.ref, options.after))
         : null
 
-      const paged = cursorSnap?.exists()
+      if (options.after && !cursorSnap?.exists()) {
+        // Sem isto, um cursor cujo documento foi entretanto apagado reinicia
+        // em silêncio na página 1 — indistinguível do fim da lista para quem
+        // chama. Melhor falhar e deixar a UI recomeçar a paginação.
+        throw new AppError(
+          'not-found',
+          `[${this.path}] cursor inválido: o documento "${options.after}" já não existe.`
+        )
+      }
+
+      const paged = cursorSnap
         ? query(base, startAfter(cursorSnap), fbLimit(limitValue + 1))
         : query(base, fbLimit(limitValue + 1))
 
@@ -1533,7 +1594,7 @@ export abstract class BaseFirebaseDAO<T extends { id: string }> implements Pick<
 npm run test -- src/modules/Api/firebase/__tests__/baseFirebaseDao.read.test.ts
 ```
 
-Expected: `13 passed`.
+Expected: `16 passed`.
 
 Se o teste de pesquisa por prefixo ou o de filtro+ordenação falhar com `failed-precondition`, o emulador precisa de um índice composto. O emulador normalmente cria-os automaticamente; se não criar, a mensagem de erro traz o URL — **reportar** em vez de remover o teste.
 
