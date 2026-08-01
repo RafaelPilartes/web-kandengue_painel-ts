@@ -74,15 +74,13 @@ export const appConfigRepository: IAppConfigRepository = new FirebaseAppConfigDA
 // exports acima, que criam as ~20 instâncias no momento do import.
 
 class ApiFactory {
-  private cache = new Map<string, unknown>()
-
-  private resolve<T>(key: string, make: () => T): T {
-    if (!this.cache.has(key)) this.cache.set(key, make())
-    return this.cache.get(key) as T
-  }
+  // Um campo por repositório, em vez de um Map<string, unknown> com cast:
+  // sem chaves a poderem colidir e sem `as T` a esconder o tipo errado.
+  // Cada getter novo acrescenta o seu campo.
+  private _vehicles?: IVehicleRepository
 
   get vehicles(): IVehicleRepository {
-    return this.resolve('vehicles', () => new FirebaseVehicleDAO())
+    return (this._vehicles ??= new FirebaseVehicleDAO())
   }
 }
 
