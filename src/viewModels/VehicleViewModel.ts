@@ -1,12 +1,24 @@
 // viewModels/VehicleViewModel.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { VehicleService } from '@/services/vehicle.service'
-import { VehicleEntity } from '@/core/entities/Vehicle'
+import { vehicleUseCase } from '@/domain/usecases/vehicleUseCase'
+import type { VehicleEntity } from '@/core/entities/Vehicle'
+import type { QueryOptions } from '@/core/interfaces/IBaseRepository'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
-import { firebaseCollections } from '@/constants/firebaseCollections'
 import { withAudit } from '@/services/audit.service'
 
-const vehicleService = new VehicleService()
+type NewVehicle = Omit<VehicleEntity, 'id' | 'created_at' | 'updated_at'>
+
+/** Default herdado do DAO antigo (o motor usa 50). Ver plano, Task 9. */
+const LEGACY_PAGE_SIZE = 500
+
+/** Query-key factory — invalidações precisas em vez de arrasar a raiz. */
+export const VEHICLE_KEYS = {
+  all: ['vehicles'] as const,
+  lists: () => [...VEHICLE_KEYS.all, 'list'] as const,
+  list: (options: unknown) => [...VEHICLE_KEYS.lists(), { options }] as const,
+  details: () => [...VEHICLE_KEYS.all, 'detail'] as const,
+  detail: (id: string) => [...VEHICLE_KEYS.details(), id] as const
+}
 
 export function useVehiclesViewModel(
   limit?: number,
@@ -16,45 +28,52 @@ export function useVehiclesViewModel(
 ) {
   const queryClient = useQueryClient()
 
-  const filtersKey = filters ? JSON.stringify(filters) : ''
+  // `offset` mantém-se na assinatura por compatibilidade com os chamadores,
+  // mas a paginação passou a ser por cursor (ver QueryOptions.after).
+  void offset
 
-  /** Buscar lista de veículos */
+  // O DAO antigo devolvia 500 por omissão e o motor devolve 50. Manter o
+  // valor observável enquanto o tamanho de página não for decidido de propósito.
+  const options: QueryOptions<VehicleEntity> = {
+    limit: limit ?? LEGACY_PAGE_SIZE,
+    searchTerm,
+    filters
+  }
+
   const {
     data: vehiclesResponse,
     isLoading: loading,
     error,
     refetch
   } = useQuery<ListResponseType<VehicleEntity[]>>({
-    queryKey: [
-      firebaseCollections.vehicles.root,
-      limit,
-      offset,
-      searchTerm,
-      filtersKey
-    ],
-    queryFn: () => vehicleService.getAll(limit, offset, searchTerm, filters),
-    staleTime: 1000 * 60 // cache 1min
+    queryKey: VEHICLE_KEYS.list(options),
+    queryFn: () => vehicleUseCase.executeGetAll(options),
+    staleTime: 1000 * 60
   })
 
-  /** Buscar lista de veículos por field */
+  const invalidate = () =>
+    queryClient.invalidateQueries({ queryKey: VEHICLE_KEYS.all })
+
   const fetchAllVehiclesByField = async (
     field: string,
     value: any,
-    limit?: number,
-    offset?: number
+    limitValue?: number
   ) => {
     try {
-      return await vehicleService.getAllByField(field, value, limit, offset)
+      return await vehicleUseCase.executeGetAllByField(
+        field as keyof VehicleEntity,
+        value,
+        { limit: limitValue ?? LEGACY_PAGE_SIZE }
+      )
     } catch (err) {
       console.error('Erro ao buscar veículos por campo:', err)
       return null
     }
   }
 
-  /** Criar veículo */
   const createVehicle = useMutation({
-    mutationFn: (vehicle: Omit<VehicleEntity, 'id'>) =>
-      withAudit(() => vehicleService.create(vehicle), {
+    mutationFn: (vehicle: NewVehicle) =>
+      withAudit(() => vehicleUseCase.executeCreate(vehicle), {
         action: 'create',
         module: 'vehicles',
         description: `Criou novo veículo: ${vehicle.plate}`,
@@ -62,14 +81,9 @@ export function useVehiclesViewModel(
         target_label: vehicle.plate,
         new_data: vehicle
       }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [firebaseCollections.vehicles.root]
-      })
-    }
+    onSuccess: invalidate
   })
 
-  /** Atualizar veículo */
   const updateVehicle = useMutation({
     mutationFn: async ({
       id,
@@ -78,8 +92,11 @@ export function useVehiclesViewModel(
       id: string
       vehicle: Partial<VehicleEntity>
     }) => {
-      const previous_data = await vehicleService.getById(id).catch(() => null)
-      return withAudit(() => vehicleService.update(id, vehicle), {
+      const previous_data = await vehicleUseCase
+        .executeGetById(id)
+        .catch(() => null)
+
+      return withAudit(() => vehicleUseCase.executeUpdate(id, vehicle), {
         action: 'update',
         module: 'vehicles',
         description: `Atualizou veículo - ID: ${id}`,
@@ -89,18 +106,16 @@ export function useVehiclesViewModel(
         new_data: vehicle
       })
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [firebaseCollections.vehicles.root]
-      })
-    }
+    onSuccess: invalidate
   })
 
-  /** Deletar veículo */
   const deleteVehicle = useMutation({
     mutationFn: async (id: string) => {
-      const previous_data = await vehicleService.getById(id).catch(() => null)
-      return withAudit(() => vehicleService.delete(id), {
+      const previous_data = await vehicleUseCase
+        .executeGetById(id)
+        .catch(() => null)
+
+      return withAudit(() => vehicleUseCase.executeDelete(id), {
         action: 'delete',
         module: 'vehicles',
         description: `Excluiu veículo - ID: ${id}`,
@@ -110,30 +125,24 @@ export function useVehiclesViewModel(
         severity: 'critical'
       })
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [firebaseCollections.vehicles.root]
-      })
-    }
+    onSuccess: invalidate
   })
 
-  /** Buscar veículo único (on-demand) */
   const fetchVehicleById = async (id: string) => {
     try {
-      return await vehicleService.getById(id)
+      return await vehicleUseCase.executeGetById(id)
     } catch (err) {
       console.error('Erro ao buscar veículo:', err)
       return null
     }
   }
 
-  /** Buscar vehicle por field */
   const fetchOneVehicleByField = async (
     field: keyof VehicleEntity,
     value: string
   ) => {
     try {
-      return await vehicleService.getOneByField(field, value)
+      return await vehicleUseCase.executeGetOneByField(field, value)
     } catch (err) {
       console.error('Erro ao buscar veículo por campo:', err)
       return null
