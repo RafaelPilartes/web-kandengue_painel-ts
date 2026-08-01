@@ -22,7 +22,7 @@ import type {
   ListenOptions,
   QueryOptions
 } from '@/core/interfaces/IBaseRepository'
-import { toAppError } from '@/domain/errors/AppError'
+import { AppError, toAppError } from '@/domain/errors/AppError'
 
 /** Sentinela de fim de intervalo para pesquisa por prefixo no Firestore. */
 const PREFIX_END = ''
@@ -78,7 +78,13 @@ export abstract class BaseFirebaseDAO<T extends { id: string }> implements Pick<
         ? options.searchTerm?.trim().toLowerCase()
         : undefined
 
-    if (term && this.searchField) {
+    if (term) {
+      if (!this.searchField) {
+        throw new AppError(
+          'failed-precondition',
+          `[${this.path}] pesquisa pedida mas o DAO não tem searchField configurado.`
+        )
+      }
       // Um range obriga o primeiro orderBy a ser no mesmo campo — por isso a
       // pesquisa ignora o orderBy pedido.
       constraints.push(orderBy(this.searchField))
@@ -110,6 +116,13 @@ export abstract class BaseFirebaseDAO<T extends { id: string }> implements Pick<
       const cursorSnap = options.after
         ? await getDoc(doc(this.ref, options.after))
         : null
+
+      if (options.after && !cursorSnap?.exists()) {
+        throw new AppError(
+          'not-found',
+          `[${this.path}.getAll] cursor "${options.after}" não existe — pesquisa não pode continuar.`
+        )
+      }
 
       const paged = cursorSnap?.exists()
         ? query(base, startAfter(cursorSnap), fbLimit(limitValue + 1))

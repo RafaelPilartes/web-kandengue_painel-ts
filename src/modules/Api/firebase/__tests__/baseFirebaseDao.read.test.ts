@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, beforeEach, vi } from 'vitest'
-import { doc, setDoc, Timestamp } from 'firebase/firestore'
+import { deleteDoc, doc, setDoc, Timestamp } from 'firebase/firestore'
 
 vi.mock('@/config/firebase.config', async () => {
   const { testDb } = await import('@/test/firebase.emulator')
@@ -18,6 +18,12 @@ const COLLECTION = 'test_vehicles'
 class TestDAO extends BaseFirebaseDAO<InstanceType<typeof VehicleEntity>> {
   constructor() {
     super(COLLECTION, vehicleConverter, 'veh', 'plate')
+  }
+}
+
+class NoSearchDAO extends BaseFirebaseDAO<InstanceType<typeof VehicleEntity>> {
+  constructor() {
+    super(COLLECTION, vehicleConverter, 'veh')
   }
 }
 
@@ -186,5 +192,36 @@ describe('BaseFirebaseDAO — leitura', () => {
 
     expect(await dao.count()).toBe(2)
     expect(await dao.count({ status: 'validated' })).toBe(1)
+  })
+
+  it('getAll devolve hasMore: false quando a colecção tem exactamente limit documentos', async () => {
+    await seed('veh-a', { plate: 'AAA', created_at: ts('2026-01-01') })
+    await seed('veh-b', { plate: 'BBB', created_at: ts('2026-02-01') })
+
+    const res = await dao.getAll({ limit: 2 })
+
+    expect(res.data).toHaveLength(2)
+    expect(res.pagination?.hasMore).toBe(false)
+  })
+
+  it('getAll rejeita com code "not-found" quando o documento do cursor foi apagado', async () => {
+    await seed('veh-a', { plate: 'AAA', created_at: ts('2026-01-01') })
+    await seed('veh-b', { plate: 'BBB', created_at: ts('2026-02-01') })
+
+    await deleteDoc(doc(testDb, `${COLLECTION}/veh-b`))
+
+    await expect(dao.getAll({ after: 'veh-b' })).rejects.toMatchObject({
+      code: 'not-found'
+    })
+  })
+
+  it('getAll rejeita com code "failed-precondition" ao pesquisar num DAO sem searchField', async () => {
+    await seed('veh-a', { plate: 'AAA', created_at: ts('2026-01-01') })
+
+    const noSearchDao = new NoSearchDAO()
+
+    await expect(
+      noSearchDao.getAll({ searchTerm: 'AAA' })
+    ).rejects.toMatchObject({ code: 'failed-precondition' })
   })
 })
