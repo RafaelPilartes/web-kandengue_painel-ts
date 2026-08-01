@@ -461,7 +461,7 @@ describe('FirebaseVehicleDAO (legado) — caracterização', () => {
 npm run test -- src/modules/Api/firebase/__tests__/vehicle.dao.legacy.test.ts
 ```
 
-Expected: `9 passed`.
+Expected: `8 passed`.
 
 Se algum dos dois testes marcados como `BUG:` **passar ao contrário** (ou seja, falhar), significa que o comportamento actual é diferente do que este plano assume. **Parar e reportar** em vez de ajustar o teste — a diferença é informação.
 
@@ -2524,7 +2524,7 @@ E substituir os corpos de `getOneByField` e `create`:
 npm run test -- src/modules/Api/firebase/__tests__/vehicle.dao.test.ts
 ```
 
-Expected: `9 passed`.
+Expected: `8 passed`.
 
 - [ ] **Step 7: Verificar tipos, toda a suite, e commitar**
 
