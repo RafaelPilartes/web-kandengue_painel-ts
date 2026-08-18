@@ -3136,3 +3136,205 @@ Ao fim da Task 12:
 - Os restantes 19 DAOs continuam a funcionar, intocados.
 
 O passo seguinte — replicar pelas outras 19 entidades — é outro plano, e é aí que `BaseFirebaseDAO` paga o investimento. Não o começar antes de o smoke manual da Task 12 passar.
+
+---
+
+## Task 13: Correcções da revisão final de branch
+
+Achados que só a visão da branch inteira revelou. Cada um é pequeno; juntos
+fecham os contratos implícitos antes de 19 DAOs assentarem neles.
+
+**Files:**
+- Create: `src/modules/Api/factory.ts`
+- Modify: `src/modules/Api/index.ts`, `src/modules/Api/firebase/BaseFirebaseDAO.ts`,
+  `src/core/interfaces/IBaseRepository.ts`, `src/interfaces/IApiResponse.ts`,
+  `src/helpers/generateId.ts`, `src/domain/usecases/vehicleUseCase.ts`,
+  `src/viewModels/VehicleViewModel.ts`, `vitest.config.ts`
+- Test: `src/modules/Api/__tests__/apiFactory.test.ts`,
+  `src/core/entities/__tests__/Vehicle.test.ts`,
+  `src/modules/Api/firebase/__tests__/baseFirebaseDao.read.test.ts`
+
+- [ ] **Step 1: Mover o `ApiFactory` para ficheiro próprio**
+
+O getter lazy não poupa nada enquanto viver em `index.ts`: importar esse módulo
+executa primeiro as ~20 instanciações eager. Num ficheiro próprio, cada migração
+futura remove mesmo uma instanciação.
+
+Create `src/modules/Api/factory.ts`:
+
+```ts
+import type { IVehicleRepository } from '@/core/interfaces/IVehicleRepository'
+import { FirebaseVehicleDAO } from './firebase/vehicle.dao'
+
+/**
+ * Getters lazy e memoizados. Vive fora de `index.ts` de propósito: aquele
+ * módulo instancia ~20 DAOs no import, e importá-lo anularia a preguiça.
+ * Cada DAO migrado acrescenta aqui o seu campo e desaparece de `index.ts`.
+ */
+class ApiFactory {
+  private _vehicles?: IVehicleRepository
+
+  get vehicles(): IVehicleRepository {
+    return (this._vehicles ??= new FirebaseVehicleDAO())
+  }
+}
+
+export const ApiRepository = new ApiFactory()
+```
+
+Remover a classe `ApiFactory` e o `export const ApiRepository` de
+`src/modules/Api/index.ts`. Actualizar os dois importadores para
+`@/modules/Api/factory`: `src/domain/usecases/vehicleUseCase.ts` e
+`src/modules/Api/__tests__/apiFactory.test.ts`.
+
+- [ ] **Step 2: Marcar o export morto**
+
+Em `src/modules/Api/index.ts`, sobre `vehicleRepository` (já não é usado por
+nada desde que `vehicle.service.ts` foi apagado):
+
+```ts
+/** @deprecated Usar `ApiRepository.vehicles` de `@/modules/Api/factory`. */
+```
+
+- [ ] **Step 3: Extrair `equalityConstraints`**
+
+`count()` e `constraints()` construíam o mesmo loop de filtros — e divergiam,
+porque só `constraints()` acrescenta `orderBy`. Em `BaseFirebaseDAO.ts`:
+
+```ts
+  protected equalityConstraints(filters?: Partial<T>): QueryConstraint[] {
+    if (!filters) return []
+    return Object.entries(filters)
+      .filter(([, value]) => value !== undefined && value !== '')
+      .map(([field, value]) => where(field, '==', value))
+  }
+```
+
+`constraints()` passa a fazer `constraints.push(...this.equalityConstraints(options.filters))`
+e `count()` passa a `query(this.ref, ...this.equalityConstraints(filters))`.
+
+- [ ] **Step 4: Documentar os contratos do motor**
+
+Doc comment na classe `BaseFirebaseDAO`:
+
+```ts
+/**
+ * Motor CRUD + realtime partilhado.
+ *
+ * Dois contratos que os subclasses TÊM de respeitar:
+ *
+ * 1. `toFirestore` do converter tem de ser identidade em forma (`{ ...entity }`).
+ *    `create` usa `setDoc`, que o corre, mas `update` usa `updateDoc`, que NÃO
+ *    o corre — um converter que renomeie ou achate campos escreveria formas
+ *    diferentes nos dois caminhos. `create` também lhe passa um objecto simples,
+ *    não uma instância: getters e métodos da entidade não estão disponíveis.
+ *
+ * 2. A chave do documento tem de ser igual ao campo `id` no corpo. A paginação
+ *    por cursor devolve `entity.id` e volta a resolvê-lo com `doc(ref, after)`.
+ *
+ * Nota sobre ordenação: `orderBy` do Firestore EXCLUI documentos sem o campo.
+ * Como a ordenação por omissão é `created_at`, qualquer documento sem esse
+ * campo é invisível em `getAll` — mas é contado por `count()`, que não ordena.
+ */
+```
+
+E sobre `count()`:
+
+```ts
+  /** Conta sem ordenar — inclui documentos que `getAll` esconde por lhes
+   *  faltar o campo de ordenação. Ver o doc comment da classe. */
+```
+
+- [ ] **Step 5: Testar a divergência `count()` vs `getAll({ withTotal })`**
+
+Em `baseFirebaseDao.read.test.ts`, fixar o comportamento em vez de o deixar
+por descobrir em produção:
+
+```ts
+  it('count() inclui documentos sem created_at que getAll esconde', async () => {
+    await seed('veh-a', { plate: 'aaa', created_at: ts('2026-01-01') })
+    await setDoc(doc(testDb, `${COLLECTION}/veh-sem-data`), {
+      id: 'veh-sem-data',
+      plate: 'bbb'
+    })
+
+    // orderBy('created_at') exclui o documento sem o campo...
+    const res = await dao.getAll({ withTotal: true })
+    expect(res.data.map(v => v.id)).toEqual(['veh-a'])
+    expect(res.pagination?.total).toBe(1)
+
+    // ...mas count() não ordena, por isso vê os dois.
+    expect(await dao.count()).toBe(2)
+  })
+```
+
+- [ ] **Step 6: Documentar `orderDirection` e `count` nos contratos**
+
+Em `IBaseRepository.ts`, sobre `orderDirection`:
+
+```ts
+  /** Ignorado quando `searchTerm` está presente: o range de prefixo obriga o
+   *  primeiro `orderBy` a ser no `searchField`, em ascendente. */
+```
+
+Em `IApiResponse.ts`, sobre `count`:
+
+```ts
+  /** Nº de itens NESTA página — não o total da colecção. Para o total, pedir
+   *  `withTotal: true` e ler `total`. */
+```
+
+- [ ] **Step 7: Endurecer o `generateId`**
+
+`${Date.now()}_${random(0,1000)}` colide a ~1/1000 dentro do mesmo milissegundo,
+e `create` usa `setDoc`, que sobrescreve em silêncio. Mantém-se a forma
+`prefixo-timestamp_sufixo` para os IDs existentes continuarem válidos:
+
+```ts
+// Helper para gerar ID único
+export const generateId = (t: string) => {
+  // O sufixo aleatório de 3 dígitos colidia a ~1/1000 no mesmo milissegundo,
+  // e `setDoc` sobrescreve sem falhar. Em colecções de escrita intensa
+  // (rides, transactions) isso perde registos.
+  return `${t ?? 'id'}-${Date.now()}_${crypto.randomUUID().slice(0, 8)}`
+}
+```
+
+- [ ] **Step 8: Completar a asserção de defaults**
+
+Em `Vehicle.test.ts`, o teste "aplica defaults a campos em falta" só verificava
+`status` e `created_at`. Acrescentar as strings, que são o que impede `undefined`
+de chegar à UI:
+
+```ts
+    expect(entity.user_id).toBe('')
+    expect(entity.brand).toBe('')
+    expect(entity.model).toBe('')
+    expect(entity.color).toBe('')
+```
+
+- [ ] **Step 9: Remover o `offset` morto do ViewModel**
+
+`useVehiclesViewModel(limit, offset, searchTerm, filters)` aceita `offset` e
+ignora-o (`void offset`). O único chamador não o passa. Remover o parâmetro e o
+`void offset`. Confirmar `DriverDetails.tsx` com `npx tsc -b`.
+
+- [ ] **Step 10: Explicar o `fileParallelism: false`**
+
+Em `vitest.config.ts`, sobre essa linha:
+
+```ts
+    // vehicle.dao.test.ts e vehicleUseCase.test.ts partilham a colecção
+    // `vehicles` do emulador e limpam-na no beforeEach. Em paralelo,
+    // interfeririam. Não activar sem os isolar primeiro.
+```
+
+- [ ] **Step 11: Verificar e commitar**
+
+```bash
+npm run test && npx tsc -b && npm run build
+git add -A src vitest.config.ts
+git commit -m "fix: fechar contratos do motor e achados da revisao de branch"
+```
+
+Expected: 69 testes (67 + 2 novos), `tsc -b` exit 0, build exit 0.
