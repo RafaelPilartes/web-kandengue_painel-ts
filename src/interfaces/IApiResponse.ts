@@ -16,6 +16,8 @@ export interface ApiResponse<T> {
 export type paginationType = {
   limit: number | null
   offset?: any | null
+  /** Nº de itens NESTA página — não o total da colecção. Para o total, pedir
+   *  `withTotal: true` e ler `total`. */
   count: number
   total?: number | undefined
   /** ID do último documento devolvido — passar em `after` para a página seguinte. */

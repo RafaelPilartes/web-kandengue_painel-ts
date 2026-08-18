@@ -51,6 +51,7 @@ export const rideTrackingRepository: IRideTrackingRepository =
   new FirebaseRideTrackingDAO()
 export const transactionRepository: ITransactionRepository =
   new FirebaseTransactionDAO()
+/** @deprecated Usar `ApiRepository.vehicles` de `@/modules/Api/factory`. */
 export const vehicleRepository: IVehicleRepository = new FirebaseVehicleDAO()
 export const walletRepository: IWalletRepository = new FirebaseWalletDAO()
 export const walletTopupRequestRepository: IWalletTopupRequestRepository =
@@ -68,20 +69,3 @@ export const pushNotificationRepository: IPushNotificationRepository = new PushN
 export const promotionRepository: IPromotionRepository = new FirebasePromotionDAO()
 export const withdrawalRepository: IWithdrawalRepository = new FirebaseWithdrawalDAO()
 export const appConfigRepository: IAppConfigRepository = new FirebaseAppConfigDAO()
-
-// ─────────────── ApiFactory (padrão novo — ver docs/superpowers/plans) ───────────────
-// Instancia à primeira utilização e memoiza. Substitui gradualmente os
-// exports acima, que criam as ~20 instâncias no momento do import.
-
-class ApiFactory {
-  // Um campo por repositório, em vez de um Map<string, unknown> com cast:
-  // sem chaves a poderem colidir e sem `as T` a esconder o tipo errado.
-  // Cada getter novo acrescenta o seu campo.
-  private _vehicles?: IVehicleRepository
-
-  get vehicles(): IVehicleRepository {
-    return (this._vehicles ??= new FirebaseVehicleDAO())
-  }
-}
-
-export const ApiRepository = new ApiFactory()

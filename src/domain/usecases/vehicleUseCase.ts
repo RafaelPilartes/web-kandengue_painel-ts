@@ -1,4 +1,4 @@
-import { ApiRepository } from '@/modules/Api'
+import { ApiRepository } from '@/modules/Api/factory'
 import { BaseUseCase } from './BaseUseCase'
 import { AppError } from '@/domain/errors/AppError'
 import type { VehicleEntity } from '@/core/entities/Vehicle'

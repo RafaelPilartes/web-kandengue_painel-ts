@@ -7,6 +7,8 @@ export interface QueryOptions<T> {
   after?: string | null
   /** Campo de ordenação. Omisso: `created_at`. */
   orderBy?: keyof T
+  /** Ignorado quando `searchTerm` está presente: o range de prefixo obriga o
+   *  primeiro `orderBy` a ser no `searchField`, em ascendente. */
   orderDirection?: 'asc' | 'desc'
   /** Filtros de igualdade. Valores `undefined` ou `''` são ignorados. */
   filters?: Partial<T>

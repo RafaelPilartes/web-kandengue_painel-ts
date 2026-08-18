@@ -5,7 +5,7 @@ vi.mock('@/config/firebase.config', async () => {
   return { db: testDb, auth: {}, storage: {} }
 })
 
-const { ApiRepository } = await import('@/modules/Api')
+const { ApiRepository } = await import('@/modules/Api/factory')
 const { FirebaseVehicleDAO } =
   await import('@/modules/Api/firebase/vehicle.dao')
 

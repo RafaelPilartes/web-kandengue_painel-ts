@@ -22,15 +22,10 @@ export const VEHICLE_KEYS = {
 
 export function useVehiclesViewModel(
   limit?: number,
-  offset?: number,
   searchTerm?: string,
   filters?: Partial<VehicleEntity>
 ) {
   const queryClient = useQueryClient()
-
-  // `offset` mantém-se na assinatura por compatibilidade com os chamadores,
-  // mas a paginação passou a ser por cursor (ver QueryOptions.after).
-  void offset
 
   // O DAO antigo devolvia 500 por omissão e o motor devolve 50. Manter o
   // valor observável enquanto o tamanho de página não for decidido de propósito.

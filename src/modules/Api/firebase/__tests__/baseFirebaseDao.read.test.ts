@@ -178,6 +178,22 @@ describe('BaseFirebaseDAO — leitura', () => {
     expect(await dao.getOneByField('plate', 'ZZZ')).toBeNull()
   })
 
+  it('count() inclui documentos sem created_at que getAll esconde', async () => {
+    await seed('veh-a', { plate: 'aaa', created_at: ts('2026-01-01') })
+    await setDoc(doc(testDb, `${COLLECTION}/veh-sem-data`), {
+      id: 'veh-sem-data',
+      plate: 'bbb'
+    })
+
+    // orderBy('created_at') exclui o documento sem o campo...
+    const res = await dao.getAll({ withTotal: true })
+    expect(res.data.map(v => v.id)).toEqual(['veh-a'])
+    expect(res.pagination?.total).toBe(1)
+
+    // ...mas count() não ordena, por isso vê os dois.
+    expect(await dao.count()).toBe(2)
+  })
+
   it('count devolve o total, com e sem filtros', async () => {
     await seed('veh-a', {
       plate: 'AAA',

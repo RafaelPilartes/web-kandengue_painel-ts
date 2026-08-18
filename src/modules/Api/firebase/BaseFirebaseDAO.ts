@@ -34,6 +34,24 @@ import { generateId } from '@/helpers/generateId'
 /** Sentinela de fim de intervalo para pesquisa por prefixo no Firestore. */
 const PREFIX_END = ''
 
+/**
+ * Motor CRUD + realtime partilhado.
+ *
+ * Dois contratos que os subclasses TÊM de respeitar:
+ *
+ * 1. `toFirestore` do converter tem de ser identidade em forma (`{ ...entity }`).
+ *    `create` usa `setDoc`, que o corre, mas `update` usa `updateDoc`, que NÃO
+ *    o corre — um converter que renomeie ou achate campos escreveria formas
+ *    diferentes nos dois caminhos. `create` também lhe passa um objecto simples,
+ *    não uma instância: getters e métodos da entidade não estão disponíveis.
+ *
+ * 2. A chave do documento tem de ser igual ao campo `id` no corpo. A paginação
+ *    por cursor devolve `entity.id` e volta a resolvê-lo com `doc(ref, after)`.
+ *
+ * Nota sobre ordenação: `orderBy` do Firestore EXCLUI documentos sem o campo.
+ * Como a ordenação por omissão é `created_at`, qualquer documento sem esse
+ * campo é invisível em `getAll` — mas é contado por `count()`, que não ordena.
+ */
 export abstract class BaseFirebaseDAO<T extends { id: string }>
   implements IBaseRepository<T>
 {
@@ -66,18 +84,19 @@ export abstract class BaseFirebaseDAO<T extends { id: string }>
     throw toAppError(err, `[${this.path}.${op}]`)
   }
 
+  protected equalityConstraints(filters?: Partial<T>): QueryConstraint[] {
+    if (!filters) return []
+    return Object.entries(filters)
+      .filter(([, value]) => value !== undefined && value !== '')
+      .map(([field, value]) => where(field, '==', value))
+  }
+
   protected constraints(
     options: QueryOptions<T> | ListenOptions<T>
   ): QueryConstraint[] {
     const constraints: QueryConstraint[] = []
 
-    if (options.filters) {
-      for (const [field, value] of Object.entries(options.filters)) {
-        if (value !== undefined && value !== '') {
-          constraints.push(where(field, '==', value))
-        }
-      }
-    }
+    constraints.push(...this.equalityConstraints(options.filters))
 
     const term =
       'searchTerm' in options
@@ -185,15 +204,15 @@ export abstract class BaseFirebaseDAO<T extends { id: string }>
     }
   }
 
+  /** Conta sem ordenar — inclui documentos que `getAll` esconde por lhes
+   *  faltar o campo de ordenação. Ver o doc comment da classe. */
   async count(filters?: Partial<T>): Promise<number> {
     try {
-      const constraints = filters
-        ? Object.entries(filters)
-            .filter(([, v]) => v !== undefined && v !== '')
-            .map(([f, v]) => where(f, '==', v))
-        : []
-      return (await getCountFromServer(query(this.ref, ...constraints))).data()
-        .count
+      return (
+        await getCountFromServer(
+          query(this.ref, ...this.equalityConstraints(filters))
+        )
+      ).data().count
     } catch (err) {
       this.fail('count', err)
     }

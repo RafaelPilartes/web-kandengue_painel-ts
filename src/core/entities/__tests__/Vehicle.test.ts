@@ -54,6 +54,10 @@ describe('vehicleConverter.fromFirestore', () => {
 
     expect(entity.status).toBe('under_analysis')
     expect(entity.created_at).toBeInstanceOf(Date)
+    expect(entity.user_id).toBe('')
+    expect(entity.brand).toBe('')
+    expect(entity.model).toBe('')
+    expect(entity.color).toBe('')
   })
 })
 
