@@ -1,11 +1,26 @@
 import axios, { type AxiosResponse } from 'axios'
 import { ApiServer } from './api.server'
+import { auth } from '@/config/firebase.config'
 
 class ApiDAO {
   private baseUrl: string
 
   constructor() {
     this.baseUrl = ApiServer
+  }
+
+  /**
+   * Obtém o ID token da sessão. Devolve `null` em vez de rebentar: um
+   * pedido a um endpoint público não deve falhar por não haver sessão —
+   * quem exige autenticação responde 401, que é a mensagem certa.
+   */
+  private async authHeader(): Promise<Record<string, string>> {
+    try {
+      const token = await auth.currentUser?.getIdToken()
+      return token ? { Authorization: `Bearer ${token}` } : {}
+    } catch {
+      return {}
+    }
   }
 
   private async request<T>(
@@ -15,11 +30,15 @@ class ApiDAO {
     headers?: Record<string, string>
   ): Promise<T> {
     try {
+      // Os headers do chamador vêm depois, para um Authorization explícito
+      // continuar a ganhar — `pushNotification.dao.ts` passa o seu.
+      const merged = { ...(await this.authHeader()), ...headers }
+
       const response: AxiosResponse<T> = await axios({
         method,
         url: `${this.baseUrl}${url}`,
         data,
-        headers
+        headers: merged
       })
       return response.data
     } catch (error: any) {
