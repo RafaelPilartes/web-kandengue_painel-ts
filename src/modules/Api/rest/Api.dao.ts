@@ -10,16 +10,22 @@ class ApiDAO {
   }
 
   /**
-   * Obtém o ID token da sessão. Devolve `null` em vez de rebentar: um
-   * pedido a um endpoint público não deve falhar por não haver sessão —
-   * quem exige autenticação responde 401, que é a mensagem certa.
+   * Obtém o ID token da sessão.
+   *
+   * Distingue dois casos que não são o mesmo: sem sessão, o pedido segue sem
+   * header e quem exigir autenticação responde 401 — que é a mensagem certa
+   * para um endpoint público. Com sessão mas token irrenovável (revogada,
+   * rede, relógio), mascarar isso como pedido anónimo dava ao admin um 401
+   * genérico a meio de uma aprovação de dinheiro.
    */
   private async authHeader(): Promise<Record<string, string>> {
+    const user = auth.currentUser
+    if (!user) return {}
+
     try {
-      const token = await auth.currentUser?.getIdToken()
-      return token ? { Authorization: `Bearer ${token}` } : {}
+      return { Authorization: `Bearer ${await user.getIdToken()}` }
     } catch {
-      return {}
+      throw new Error('Sessão expirada. Inicie sessão novamente.')
     }
   }
 
@@ -29,11 +35,14 @@ class ApiDAO {
     data?: any,
     headers?: Record<string, string>
   ): Promise<T> {
-    try {
-      // Os headers do chamador vêm depois, para um Authorization explícito
-      // continuar a ganhar — `pushNotification.dao.ts` passa o seu.
-      const merged = { ...(await this.authHeader()), ...headers }
+    // Fora do try/catch de baixo de propósito: um erro daqui (sessão
+    // expirada) não é um erro de rede/HTTP e não pode ser remapeado para
+    // "Error in request setup" — o admin precisa da mensagem real.
+    // Os headers do chamador vêm depois, para um Authorization explícito
+    // continuar a ganhar — `pushNotification.dao.ts` passa o seu.
+    const merged = { ...(await this.authHeader()), ...headers }
 
+    try {
       const response: AxiosResponse<T> = await axios({
         method,
         url: `${this.baseUrl}${url}`,

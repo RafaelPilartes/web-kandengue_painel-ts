@@ -2,10 +2,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const getIdToken = vi.fn()
 
+let currentUser: { getIdToken: typeof getIdToken } | null = { getIdToken }
+
 vi.mock('@/config/firebase.config', () => ({
   auth: {
     get currentUser() {
-      return { getIdToken }
+      return currentUser
     }
   }
 }))
@@ -26,6 +28,7 @@ describe('ApiDAO — injecção do ID token', () => {
     axiosRequest.mockResolvedValue({ data: { ok: true } })
     getIdToken.mockReset()
     getIdToken.mockResolvedValue('token-abc')
+    currentUser = { getIdToken }
   })
 
   it('anexa Authorization em POST sem headers explícitos', async () => {
@@ -61,10 +64,18 @@ describe('ApiDAO — injecção do ID token', () => {
   })
 
   it('não anexa nada quando não há sessão', async () => {
-    getIdToken.mockRejectedValue(new Error('sem sessão'))
+    currentUser = null
 
     await ApiDAO.get('/api/v1/x')
 
     expect(axiosRequest.mock.calls[0][0].headers.Authorization).toBeUndefined()
+  })
+
+  it('falha com mensagem clara se o token não renovar numa sessão activa', async () => {
+    getIdToken.mockRejectedValue(new Error('network'))
+
+    // Mascarar isto como pedido anónimo daria um 401 genérico ao admin.
+    await expect(ApiDAO.get('/api/v1/x')).rejects.toThrow(/Sessão expirada/)
+    expect(axiosRequest).not.toHaveBeenCalled()
   })
 })
