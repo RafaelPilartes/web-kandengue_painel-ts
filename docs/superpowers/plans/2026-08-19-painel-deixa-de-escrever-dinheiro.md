@@ -88,10 +88,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const getIdToken = vi.fn()
 
+let currentUser: { getIdToken: typeof getIdToken } | null = { getIdToken }
+
 vi.mock('@/config/firebase.config', () => ({
   auth: {
     get currentUser() {
-      return { getIdToken }
+      return currentUser
     }
   }
 }))
@@ -112,6 +114,7 @@ describe('ApiDAO — injecção do ID token', () => {
     axiosRequest.mockResolvedValue({ data: { ok: true } })
     getIdToken.mockReset()
     getIdToken.mockResolvedValue('token-abc')
+    currentUser = { getIdToken }
   })
 
   it('anexa Authorization em POST sem headers explícitos', async () => {
@@ -147,11 +150,19 @@ describe('ApiDAO — injecção do ID token', () => {
   })
 
   it('não anexa nada quando não há sessão', async () => {
-    getIdToken.mockRejectedValue(new Error('sem sessão'))
+    currentUser = null
 
     await ApiDAO.get('/api/v1/x')
 
     expect(axiosRequest.mock.calls[0][0].headers.Authorization).toBeUndefined()
+  })
+
+  it('falha com mensagem clara se o token não renovar numa sessão activa', async () => {
+    getIdToken.mockRejectedValue(new Error('network'))
+
+    // Mascarar isto como pedido anónimo daria um 401 genérico ao admin.
+    await expect(ApiDAO.get('/api/v1/x')).rejects.toThrow(/Sessão expirada/)
+    expect(axiosRequest).not.toHaveBeenCalled()
   })
 })
 ```
@@ -195,16 +206,22 @@ import { auth } from '@/config/firebase.config'
 
 ```ts
   /**
-   * Obtém o ID token da sessão. Devolve `null` em vez de rebentar: um
-   * pedido a um endpoint público não deve falhar por não haver sessão —
-   * quem exige autenticação responde 401, que é a mensagem certa.
+   * Obtém o ID token da sessão.
+   *
+   * Distingue dois casos que não são o mesmo: sem sessão, o pedido segue sem
+   * header e quem exigir autenticação responde 401 — que é a mensagem certa
+   * para um endpoint público. Com sessão mas token irrenovável (revogada,
+   * rede, relógio), mascarar isso como pedido anónimo dava ao admin um 401
+   * genérico a meio de uma aprovação de dinheiro.
    */
   private async authHeader(): Promise<Record<string, string>> {
+    const user = auth.currentUser
+    if (!user) return {}
+
     try {
-      const token = await auth.currentUser?.getIdToken()
-      return token ? { Authorization: `Bearer ${token}` } : {}
+      return { Authorization: `Bearer ${await user.getIdToken()}` }
     } catch {
-      return {}
+      throw new Error('Sessão expirada. Inicie sessão novamente.')
     }
   }
 
@@ -248,7 +265,7 @@ import { auth } from '@/config/firebase.config'
 npm run test -- src/modules/Api/rest/__tests__/Api.dao.test.ts
 ```
 
-Expected: `5 passed`.
+Expected: `6 passed`.
 
 - [ ] **Step 6: Verificar tipos, suite e commitar**
 
