@@ -231,11 +231,14 @@ import { auth } from '@/config/firebase.config'
     data?: any,
     headers?: Record<string, string>
   ): Promise<T> {
-    try {
-      // Os headers do chamador vêm depois, para um Authorization explícito
-      // continuar a ganhar — `pushNotification.dao.ts` passa o seu.
-      const merged = { ...(await this.authHeader()), ...headers }
+    // Fora do try/catch de baixo de propósito: um erro daqui (sessão
+    // expirada) não é um erro de rede/HTTP e não pode ser remapeado para
+    // "Error in request setup" — o admin precisa da mensagem real.
+    // Os headers do chamador vêm depois, para um Authorization explícito
+    // continuar a ganhar — `pushNotification.dao.ts` passa o seu.
+    const merged = { ...(await this.authHeader()), ...headers }
 
+    try {
       const response: AxiosResponse<T> = await axios({
         method,
         url: `${this.baseUrl}${url}`,
