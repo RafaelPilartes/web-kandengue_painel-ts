@@ -69,3 +69,8 @@ export const pushNotificationRepository: IPushNotificationRepository = new PushN
 export const promotionRepository: IPromotionRepository = new FirebasePromotionDAO()
 export const withdrawalRepository: IWithdrawalRepository = new FirebaseWithdrawalDAO()
 export const appConfigRepository: IAppConfigRepository = new FirebaseAppConfigDAO()
+
+import type { IAdminMoneyRepository } from '@/core/interfaces/IAdminMoneyRepository'
+import { AdminMoneyDAO } from './rest/adminMoney.dao'
+
+export const adminMoneyRepository: IAdminMoneyRepository = new AdminMoneyDAO()
