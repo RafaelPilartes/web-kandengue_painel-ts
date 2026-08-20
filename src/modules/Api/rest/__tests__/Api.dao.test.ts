@@ -63,6 +63,19 @@ describe('ApiDAO — injecção do ID token', () => {
     )
   })
 
+  it('um Authorization explícito passa mesmo com token de sessão irrenovável', async () => {
+    getIdToken.mockRejectedValue(new Error('network'))
+
+    // O pushNotification.dao.ts passa o seu próprio token (FCM), alheio à
+    // sessão do admin — não pode ser bloqueado por authHeader() rebentar.
+    await ApiDAO.post('/api/v1/x', {}, { Authorization: 'Bearer manual' })
+
+    expect(axiosRequest).toHaveBeenCalledTimes(1)
+    expect(axiosRequest.mock.calls[0][0].headers.Authorization).toBe(
+      'Bearer manual'
+    )
+  })
+
   it('não anexa nada quando não há sessão', async () => {
     currentUser = null
 

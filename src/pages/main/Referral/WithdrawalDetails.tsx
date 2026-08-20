@@ -52,8 +52,15 @@ export function WithdrawalDetailsPage() {
   const handleApprove = async () => {
     setSubmitting(true)
     try {
-      await approve.mutateAsync(withdrawal.id)
-      showToast('success', 'Saque aprovado')
+      const result = await approve.mutateAsync(withdrawal.id)
+
+      if (result.changed) {
+        showToast('success', 'Saque aprovado')
+      } else {
+        // A API é idempotente: repetir não muda nada — outro admin já
+        // aprovou este saque entretanto.
+        showToast('info', 'Este saque já tinha sido aprovado')
+      }
     } catch (err: any) {
       showToast('error', err.message)
     } finally {
@@ -68,11 +75,21 @@ export function WithdrawalDetailsPage() {
     }
     setSubmitting(true)
     try {
-      await reject.mutateAsync({
+      const result = await reject.mutateAsync({
         id: withdrawal.id,
         reason: rejectReason.trim()
       })
-      showToast('success', 'Saque rejeitado e earnings revertidos')
+
+      if (result.changed) {
+        showToast(
+          'success',
+          `Saque rejeitado e ${result.revertedEarnings} earnings revertidos`
+        )
+      } else {
+        // A API é idempotente: repetir não muda nada — outro admin já
+        // rejeitou este saque entretanto.
+        showToast('info', 'Este saque já tinha sido rejeitado')
+      }
       setRejectModalOpen(false)
       setRejectReason('')
     } catch (err: any) {
@@ -87,8 +104,18 @@ export function WithdrawalDetailsPage() {
       return
     setSubmitting(true)
     try {
-      await markAsPaid.mutateAsync(withdrawal.id)
-      showToast('success', 'Saque marcado como pago')
+      const result = await markAsPaid.mutateAsync(withdrawal.id)
+
+      if (result.changed) {
+        showToast(
+          'success',
+          `Saque marcado como pago (${result.paidEarnings} earnings)`
+        )
+      } else {
+        // A API é idempotente: repetir não muda nada — outro admin já
+        // marcou este saque como pago entretanto.
+        showToast('info', 'Este saque já tinha sido marcado como pago')
+      }
     } catch (err: any) {
       showToast('error', err.message)
     } finally {

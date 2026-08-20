@@ -40,7 +40,15 @@ class ApiDAO {
     // "Error in request setup" — o admin precisa da mensagem real.
     // Os headers do chamador vêm depois, para um Authorization explícito
     // continuar a ganhar — `pushNotification.dao.ts` passa o seu.
-    const merged = { ...(await this.authHeader()), ...headers }
+    //
+    // Quando o chamador já traz o seu próprio Authorization (ex.: o token
+    // FCM do pushNotification.dao.ts, que não tem nada a ver com a sessão
+    // do admin), nem chamamos authHeader() — caso contrário uma sessão
+    // com token irrenovável fazia authHeader() rebentar por uma
+    // autenticação de que este pedido nunca precisou.
+    const merged = headers?.Authorization
+      ? headers
+      : { ...(await this.authHeader()), ...headers }
 
     try {
       const response: AxiosResponse<T> = await axios({
