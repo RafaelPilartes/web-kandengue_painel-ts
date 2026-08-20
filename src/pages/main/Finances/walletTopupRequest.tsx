@@ -16,7 +16,6 @@ import TableRow from '../../../components/table/TableRowWalletTopupRequest'
 // ViewModel (simulação, depois ligamos com API)
 import { useWalletTopupRequestsViewModel } from '@/viewModels/WalletTopupRequestViewModel'
 import type { WalletTopupStatus } from '@/types/enum'
-import { useTransactionsViewModel } from '@/viewModels/TransactionViewModel'
 import type { WalletTopupRequestInterface } from '@/interfaces/IWalletTopupRequest'
 import { useAdminStore } from '@/stores/userStore'
 import { SelectCustom } from '@/components/selects/SelectCustom'
@@ -46,6 +45,7 @@ export function WalletTopupRequestsPage() {
     pagination,
     isLoadingWalletTopupRequests,
     updateWalletTopupRequest,
+    approveTopup,
     dataToExport
   } = useWalletTopupRequestsViewModel(
     docsPerPage,
@@ -53,8 +53,6 @@ export function WalletTopupRequestsPage() {
     termForSearch,
     filters
   )
-
-  const { updateBalanceAndAddTransaction } = useTransactionsViewModel()
 
   // Consts
   const namePageUppercase = 'Solicitação de Recarga'
@@ -67,11 +65,7 @@ export function WalletTopupRequestsPage() {
   ]
 
   // Excluir (se for preciso remover carteira ou transação)
-  function handleAction(
-    docId: string,
-    status: WalletTopupStatus,
-    item?: WalletTopupRequestInterface
-  ) {
+  function handleAction(docId: string, status: WalletTopupStatus) {
     if (status === 'approved') {
       swal({
         title: 'Tem certeza?',
@@ -82,30 +76,17 @@ export function WalletTopupRequestsPage() {
       }).then(async willApprove => {
         if (willApprove) {
           try {
-            await updateWalletTopupRequest.mutateAsync({
-              id: docId,
-              walletTopupRequest: {
-                status: 'approved',
-                reviewed_by: currentAdminData?.id ?? null
-              }
-            })
+            const result = await approveTopup.mutateAsync(docId)
 
-            if (item) {
-              await updateBalanceAndAddTransaction.mutateAsync({
-                walletId: item?.wallet_id,
-                amount: item?.amount,
-                type: 'credit',
-                category: 'wallet_topup',
-                description: 'Carregamento manual aprovado'
-              })
+            if (result.credited) {
+              swal('Aprovado com sucesso', { icon: 'success' })
+            } else {
+              // A API é idempotente: repetir não credita outra vez.
+              swal('Este carregamento já tinha sido aprovado', { icon: 'info' })
             }
-
-            swal('Aprovado com sucesso', {
-              icon: 'success'
-            })
-          } catch (error) {
+          } catch (error: any) {
             swal('Erro ao aprovar', {
-              text: 'Houve algum erro durante a aprovação...',
+              text: error.message ?? 'Houve algum erro durante a aprovação...',
               icon: 'error'
             })
           }

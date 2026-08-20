@@ -4,12 +4,9 @@ import { TransactionService } from '@/services/transaction.service'
 import { TransactionEntity } from '@/core/entities/Transaction'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
-import { WalletService } from '@/services/wallet.service'
-import type { TransactionType, TransactionCategoryType } from '@/types/enum'
 import { withAudit } from '@/services/audit.service'
 
 const transactionService = new TransactionService()
-const walletService = new WalletService()
 
 export function useTransactionsViewModel(
   limit?: number,
@@ -134,65 +131,6 @@ export function useTransactionsViewModel(
     }
   }
 
-  /** Função composta: atualizar saldo + registrar transação */
-  const updateBalanceAndAddTransaction = useMutation({
-    mutationFn: async ({
-      walletId,
-      amount,
-      type,
-      category,
-      description
-    }: {
-      walletId: string
-      amount: number
-      type: TransactionType
-      category: TransactionCategoryType
-      description?: string
-    }) => {
-      return withAudit(
-        async () => {
-          // 1. Buscar carteira atual
-          const wallet = await walletService.getById(walletId)
-          if (!wallet) throw new Error('Transação não encontrada')
-
-          // 2. Calcular novo saldo
-          const newBalance =
-            type === 'credit'
-              ? wallet.balance + amount
-              : wallet.balance - amount
-
-          // 3. Atualiza saldo da carteira
-          const updatedWallet = await walletService.update(walletId, {
-            balance: newBalance
-          })
-
-          // 4. Cria a transação correspondente
-          const transaction: Omit<TransactionEntity, 'id'> = {
-            wallet_id: walletId,
-            user_id: (wallet as any).user?.id ?? walletId,
-            amount,
-            type,
-            category,
-            status: 'success',
-            description: description ?? ''
-          }
-
-          const createdTransaction =
-            await transactionService.create(transaction)
-
-          return { updatedWallet, createdTransaction }
-        },
-        {
-          action: 'create',
-          module: 'transactions',
-          description: `Criou transação ${type} de ${amount} para a carteira ${walletId}`,
-          target_id: walletId,
-          target_type: 'wallet'
-        }
-      )
-    }
-  })
-
   /** Buscar transaction por field */
   const fetchOneTransactionByField = async (
     field: keyof TransactionEntity,
@@ -219,8 +157,6 @@ export function useTransactionsViewModel(
     createTransaction,
     updateTransaction,
     deleteTransaction,
-    fetchTransactionById,
-
-    updateBalanceAndAddTransaction
+    fetchTransactionById
   }
 }

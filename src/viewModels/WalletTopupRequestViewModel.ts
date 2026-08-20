@@ -6,6 +6,7 @@ import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
 import { useMemo } from 'react'
 import { withAudit } from '@/services/audit.service'
+import { adminMoneyRepository } from '@/modules/Api'
 
 const walletTopupRequestService = new WalletTopupRequestService()
 
@@ -143,6 +144,20 @@ export function useWalletTopupRequestsViewModel(
     }
   })
 
+  /**
+   * Aprova e credita numa só chamada ao servidor. Sem `withAudit`: a API
+   * escreve em `walletAuditLogs` dentro da própria transacção, e esse registo
+   * não pode existir sem o movimento de dinheiro.
+   */
+  const approveTopup = useMutation({
+    mutationFn: (id: string) => adminMoneyRepository.approveTopup(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [firebaseCollections.requests.root]
+      })
+    }
+  })
+
   /** Buscar carteira único (on-demand) */
   const fetchWalletTopupRequestById = async (id: string) => {
     try {
@@ -180,6 +195,7 @@ export function useWalletTopupRequestsViewModel(
     updateWalletTopupRequest,
     deleteWalletTopupRequest,
     fetchWalletTopupRequestById,
+    approveTopup,
 
     dataToExport
   }
