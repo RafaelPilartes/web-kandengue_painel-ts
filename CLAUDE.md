@@ -85,16 +85,18 @@ As entidades replicadas (`PromotionEntity`, `PromotionUsageEntity`,
 qualquer alteração tem de ser propagada manualmente entre os 4 repos
 (API, app passageiro, app motorista, painel).
 
-> ⚠️ A criação de promoções inicia atomicamente os shards
-> `counters/shard_0..9` no `FirebasePromotionDAO.create()`. Sem isto a
-> CAMADA 1 do `apply` (lê `used_count_approx`/`reserved_count_approx`)
-> arrancaria com `0` e o `syncPromoCounters` só corrige após o primeiro
-> tick (60s). Mantém este invariante.
+> A criação de promoções pré-cria os shards `counters/shard_0..9` no
+> `FirebasePromotionDAO.create()`. É conveniência idempotente, não um
+> invariante: todas as escritas em shards usam `set(..., { merge: true })`,
+> que cria o documento se faltar, e `used_count_approx` já nasce a `0` no
+> próprio documento da promoção. O risco real dos contadores está na janela
+> de reconciliação de 60s do `syncPromoCounters`, não na criação.
 
-> ⚠️ A rejeição de saque (`FirebaseWithdrawalDAO.reject`) é uma
-> **transação atómica client-side** que reverte cada earning ligado para
-> `pending`. Não usar `Promise.all` ou batches separados — perdem a
-> propriedade de all-or-nothing.
+> ⚠️ As operações de dinheiro do admin — aprovar carregamento, e aprovar /
+> rejeitar / marcar-pago um saque — vivem na API (`/api/v1/admin/...`), não
+> no painel. Correm numa transação única e idempotente, e registam em
+> `walletAuditLogs` dentro dessa transação. Não reintroduzir escritas de
+> saldo, transação ou estado de saque no cliente.
 
 ---
 
