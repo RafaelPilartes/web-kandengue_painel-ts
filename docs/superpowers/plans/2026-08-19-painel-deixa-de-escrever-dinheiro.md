@@ -806,7 +806,60 @@ Pré-requisitos: emuladores Firestore+Auth a correr; `npm run dev` no repo `node
 6. **Marcar como pago** um saque `approved`. Saque e earnings ficam `paid`.
 7. Confirmar em `walletAuditLogs` que cada acção deixou uma entrada com o `admin_id` certo — e que **não** há entrada duplicada em `auditLogs` para estas quatro operações.
 
-- [ ] **Step 5: Commitar o relatório**
+- [ ] **Step 5: Corrigir o `CLAUDE.md`, que passou a mentir**
+
+O `CLAUDE.md` deste repo entra no contexto de todas as sessões. Duas notas
+suas ficaram falsas — uma porque esta fase apagou o código, outra porque a
+justificação nunca se sustentou:
+
+Substituir o bloco da rejeição de saque:
+
+```markdown
+> ⚠️ A rejeição de saque (`FirebaseWithdrawalDAO.reject`) é uma
+> **transação atómica client-side** que reverte cada earning ligado para
+> `pending`. Não usar `Promise.all` ou batches separados — perdem a
+> propriedade de all-or-nothing.
+```
+
+por:
+
+```markdown
+> ⚠️ As operações de dinheiro do admin — aprovar carregamento, e aprovar /
+> rejeitar / marcar-pago um saque — vivem na API (`/api/v1/admin/...`), não
+> no painel. Correm numa transação única e idempotente, e registam em
+> `walletAuditLogs` dentro dessa transação. Não reintroduzir escritas de
+> saldo, transação ou estado de saque no cliente.
+```
+
+E substituir o bloco dos shards de promoção:
+
+```markdown
+> ⚠️ A criação de promoções inicia atomicamente os shards
+> `counters/shard_0..9` no `FirebasePromotionDAO.create()`. Sem isto a
+> CAMADA 1 do `apply` (lê `used_count_approx`/`reserved_count_approx`)
+> arrancaria com `0` e o `syncPromoCounters` só corrige após o primeiro
+> tick (60s). Mantém este invariante.
+```
+
+por:
+
+```markdown
+> A criação de promoções pré-cria os shards `counters/shard_0..9` no
+> `FirebasePromotionDAO.create()`. É conveniência idempotente, não um
+> invariante: todas as escritas em shards usam `set(..., { merge: true })`,
+> que cria o documento se faltar, e `used_count_approx` já nasce a `0` no
+> próprio documento da promoção. O risco real dos contadores está na janela
+> de reconciliação de 60s do `syncPromoCounters`, não na criação.
+```
+
+- [ ] **Step 6: Commitar**
+
+```bash
+git add CLAUDE.md
+git commit -m "docs: CLAUDE.md deixa de descrever codigo apagado como invariante"
+```
+
+- [ ] **Step 7: Commitar o relatório**
 
 Não há código a commitar nesta task. Se algum passo do Step 1 revelar código a limpar, tratá-lo como achado e reportar em vez de o corrigir aqui.
 
