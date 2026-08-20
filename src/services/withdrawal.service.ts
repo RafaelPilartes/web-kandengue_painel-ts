@@ -5,7 +5,7 @@ import {
 } from '@/core/entities/Promotion'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import type { WithdrawalStatus } from '@rafaelpilartes/kandengue-shared/withdrawal'
-import { withdrawalRepository } from '@/modules/Api'
+import { withdrawalRepository, adminMoneyRepository } from '@/modules/Api'
 
 export class WithdrawalService {
   async getAll(
@@ -43,33 +43,21 @@ export class WithdrawalService {
     return withdrawalRepository.getEarningsByIds(ids)
   }
 
-  async approve(id: string, adminId: string): Promise<void> {
-    try {
-      return await withdrawalRepository.approve(id, adminId)
-    } catch (error: any) {
-      console.error('Erro ao aprovar saque:', error)
-      throw new Error(error.message || 'Erro ao aprovar saque')
-    }
+  /** Aprova no servidor. `changed: false` significa que já estava aprovado. */
+  async approve(id: string): Promise<{ changed: boolean }> {
+    return adminMoneyRepository.approveWithdrawal(id)
   }
 
-  async reject(id: string, adminId: string, reason: string): Promise<void> {
-    if (!reason.trim()) {
-      throw new Error('Motivo da rejeição é obrigatório')
-    }
-    try {
-      return await withdrawalRepository.reject(id, adminId, reason.trim())
-    } catch (error: any) {
-      console.error('Erro ao rejeitar saque:', error)
-      throw new Error(error.message || 'Erro ao rejeitar saque')
-    }
+  async reject(
+    id: string,
+    reason: string
+  ): Promise<{ changed: boolean; revertedEarnings: number }> {
+    return adminMoneyRepository.rejectWithdrawal(id, reason)
   }
 
-  async markAsPaid(id: string, adminId: string): Promise<void> {
-    try {
-      return await withdrawalRepository.markAsPaid(id, adminId)
-    } catch (error: any) {
-      console.error('Erro ao marcar saque como pago:', error)
-      throw new Error(error.message || 'Erro ao marcar saque como pago')
-    }
+  async markAsPaid(
+    id: string
+  ): Promise<{ changed: boolean; paidEarnings: number }> {
+    return adminMoneyRepository.markWithdrawalPaid(id)
   }
 }

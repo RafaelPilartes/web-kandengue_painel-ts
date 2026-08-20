@@ -8,9 +8,7 @@ import {
   limit as fbLimit,
   orderBy,
   query,
-  runTransaction,
   startAfter,
-  Timestamp,
   where
 } from 'firebase/firestore'
 import { db } from '@/config/firebase.config'
@@ -131,103 +129,4 @@ export class FirebaseWithdrawalDAO implements IWithdrawalRepository {
     return results
   }
 
-  async approve(id: string, adminId: string): Promise<void> {
-    await runTransaction(db, async tx => {
-      const ref = doc(this.withdrawalsRef, id)
-      const snap = await tx.get(ref)
-      if (!snap.exists()) throw new Error('Withdrawal not found')
-      const data = snap.data() as { status?: WithdrawalStatus }
-      if (data.status !== 'pending') {
-        throw new Error('Apenas saques pendentes podem ser aprovados')
-      }
-      tx.update(ref, {
-        status: 'approved' as WithdrawalStatus,
-        reviewed_by: adminId,
-        reviewed_at: Timestamp.now()
-      })
-    })
-  }
-
-  async reject(
-    id: string,
-    adminId: string,
-    reason: string
-  ): Promise<void> {
-    await runTransaction(db, async tx => {
-      const ref = doc(this.withdrawalsRef, id)
-      const snap = await tx.get(ref)
-      if (!snap.exists()) throw new Error('Withdrawal not found')
-      const data = snap.data() as {
-        status?: WithdrawalStatus
-        earning_ids?: string[]
-      }
-
-      if (!['pending', 'approved'].includes(data.status ?? '')) {
-        throw new Error('Saque não pode ser rejeitado neste estado')
-      }
-
-      const earningIds = data.earning_ids ?? []
-      // Lê todos os earnings antes de qualquer write (regra Firestore).
-      const earningRefs = earningIds.map(eid =>
-        doc(this.earningsRef, eid)
-      )
-      const earningSnaps = await Promise.all(
-        earningRefs.map(r => tx.get(r))
-      )
-
-      // Reverte cada earning para 'pending' — evita buraco negro financeiro.
-      for (let i = 0; i < earningSnaps.length; i++) {
-        const s = earningSnaps[i]
-        if (!s.exists()) continue
-        tx.update(earningRefs[i], {
-          status: 'pending',
-          requested_at: null
-        })
-      }
-
-      tx.update(ref, {
-        status: 'rejected' as WithdrawalStatus,
-        admin_notes: reason,
-        reviewed_by: adminId,
-        reviewed_at: Timestamp.now()
-      })
-    })
-  }
-
-  async markAsPaid(id: string, adminId: string): Promise<void> {
-    await runTransaction(db, async tx => {
-      const ref = doc(this.withdrawalsRef, id)
-      const snap = await tx.get(ref)
-      if (!snap.exists()) throw new Error('Withdrawal not found')
-      const data = snap.data() as {
-        status?: WithdrawalStatus
-        earning_ids?: string[]
-      }
-
-      if (!['approved', 'pending'].includes(data.status ?? '')) {
-        throw new Error('Saque não pode ser marcado como pago neste estado')
-      }
-
-      const earningIds = data.earning_ids ?? []
-      const earningRefs = earningIds.map(eid =>
-        doc(this.earningsRef, eid)
-      )
-      const earningSnaps = await Promise.all(
-        earningRefs.map(r => tx.get(r))
-      )
-
-      const now = Timestamp.now()
-      for (let i = 0; i < earningSnaps.length; i++) {
-        if (!earningSnaps[i].exists()) continue
-        tx.update(earningRefs[i], { status: 'paid', paid_at: now })
-      }
-
-      tx.update(ref, {
-        status: 'paid' as WithdrawalStatus,
-        paid_at: now,
-        reviewed_by: adminId,
-        reviewed_at: now
-      })
-    })
-  }
 }

@@ -4,8 +4,6 @@ import { firebaseCollections } from '@/constants/firebaseCollections'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import type { WithdrawalStatus } from '@rafaelpilartes/kandengue-shared/withdrawal'
 import { WithdrawalService } from '@/services/withdrawal.service'
-import { useAdminStore } from '@/stores/userStore'
-import { withAudit } from '@/services/audit.service'
 import {
   ReferralEarningEntity,
   WithdrawalRequestEntity
@@ -19,8 +17,6 @@ export function useWithdrawalsViewModel(filters?: {
   status?: WithdrawalStatus
 }) {
   const queryClient = useQueryClient()
-  const { currentAdminData } = useAdminStore()
-  const adminId = currentAdminData?.id ?? 'unknown'
 
   const list = useQuery<ListResponseType<WithdrawalRequestEntity[]>>({
     queryKey: [KEY, 'list', filters?.status ?? 'all'],
@@ -35,50 +31,18 @@ export function useWithdrawalsViewModel(filters?: {
   })
 
   const approve = useMutation({
-    mutationFn: async (id: string) => {
-      const previous_data = await withdrawalService.getById(id).catch(() => null)
-      return withAudit(() => withdrawalService.approve(id, adminId), {
-        action: 'update',
-        module: 'withdrawals',
-        description: `Aprovou pedido de saque - ID: ${id}`,
-        target_id: id,
-        target_type: 'withdrawal_request',
-        previous_data: previous_data || undefined,
-        new_data: { status: 'approved' }
-      })
-    },
+    mutationFn: (id: string) => withdrawalService.approve(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: [KEY] })
   })
 
   const reject = useMutation({
-    mutationFn: async ({ id, reason }: { id: string; reason: string }) => {
-      const previous_data = await withdrawalService.getById(id).catch(() => null)
-      return withAudit(() => withdrawalService.reject(id, adminId, reason), {
-        action: 'update',
-        module: 'withdrawals',
-        description: `Rejeitou pedido de saque - ID: ${id}`,
-        target_id: id,
-        target_type: 'withdrawal_request',
-        previous_data: previous_data || undefined,
-        new_data: { status: 'rejected', reason }
-      })
-    },
+    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
+      withdrawalService.reject(id, reason),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: [KEY] })
   })
 
   const markAsPaid = useMutation({
-    mutationFn: async (id: string) => {
-      const previous_data = await withdrawalService.getById(id).catch(() => null)
-      return withAudit(() => withdrawalService.markAsPaid(id, adminId), {
-        action: 'update',
-        module: 'withdrawals',
-        description: `Marcou pedido de saque como pago - ID: ${id}`,
-        target_id: id,
-        target_type: 'withdrawal_request',
-        previous_data: previous_data || undefined,
-        new_data: { status: 'paid' }
-      })
-    },
+    mutationFn: (id: string) => withdrawalService.markAsPaid(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: [KEY] })
   })
 

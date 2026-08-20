@@ -20,17 +20,4 @@ export interface IWithdrawalRepository {
    * Resolve os earnings ligados a um saque (para o detalhe).
    */
   getEarningsByIds(ids: string[]): Promise<ReferralEarningEntity[]>
-
-  /** Aprovar — apenas muda status para 'approved'. */
-  approve(id: string, adminId: string): Promise<void>
-
-  /**
-   * Rejeitar — transação atómica que:
-   *  1. atualiza withdrawal.status → 'rejected' com admin_notes
-   *  2. reverte cada earning ligado: status 'requested' → 'pending'
-   */
-  reject(id: string, adminId: string, reason: string): Promise<void>
-
-  /** Marcar como pago — preenche `paid_at` + earnings → 'paid'. */
-  markAsPaid(id: string, adminId: string): Promise<void>
 }
