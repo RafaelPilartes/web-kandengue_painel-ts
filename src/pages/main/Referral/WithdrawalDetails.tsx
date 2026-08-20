@@ -98,7 +98,9 @@ export function WithdrawalDetailsPage() {
 
   const canApprove = withdrawal.status === 'pending'
   const canReject = ['pending', 'approved'].includes(withdrawal.status)
-  const canPay = ['approved', 'pending'].includes(withdrawal.status)
+  // A API só paga um saque `approved` — pagar directo de `pending` saltaria
+  // o passo de aprovação e a segregação de funções que ele dá.
+  const canPay = withdrawal.status === 'approved'
 
   return (
     <div className="w-full flex flex-col gap-6">
@@ -188,6 +190,11 @@ export function WithdrawalDetailsPage() {
           <h3 className="text-sm uppercase font-semibold text-gray-500 mb-4">
             Ações
           </h3>
+          {withdrawal.status === 'pending' && (
+            <p className="text-sm text-gray-500 mb-4">
+              Aprova o saque antes de o marcar como pago.
+            </p>
+          )}
           <div className="flex flex-col gap-2">
             <button
               disabled={!canApprove || submitting}
