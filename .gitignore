@@ -28,3 +28,5 @@ CLAUDE.md
 
 # Claude Code worktrees
 .claude/
+
+.env
