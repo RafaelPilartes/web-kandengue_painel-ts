@@ -2,8 +2,7 @@ import { ActionsMenu } from '@/components/ActionsMenu'
 import type { WalletInterface } from '@/interfaces/IWallet'
 import { getStatusLabel } from '@/utils/gettersLabels'
 import { formatMoney } from '@/utils/number'
-import { Eye, Wallet } from 'lucide-react'
-import { AiFillDelete } from 'react-icons/ai'
+import { Eye, Lock, Unlock, Wallet } from 'lucide-react'
 
 interface TableRowWalletProps {
   rowItem: WalletInterface
@@ -69,7 +68,14 @@ export default function TableRowWallet({
                 onClick: () => openPageViewWalletRow?.(rowItem)
               },
               {
-                icon: <AiFillDelete size={16} />,
+                // Nada é apagado: o vermelho e o cadeado fechado só valem para
+                // desactivar. Reactivar é uma acção neutra.
+                icon:
+                  rowItem.status === 'active' ? (
+                    <Lock size={16} />
+                  ) : (
+                    <Unlock size={16} />
+                  ),
                 label: rowItem.status === 'active' ? 'Desactivar' : 'Reactivar',
                 onClick: () =>
                   handleToggleStatus(
@@ -77,7 +83,9 @@ export default function TableRowWallet({
                     rowItem.status === 'active' ? 'inactive' : 'active'
                   ),
                 className:
-                  'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900'
+                  rowItem.status === 'active'
+                    ? 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900'
+                    : undefined
               }
             ]}
           />
