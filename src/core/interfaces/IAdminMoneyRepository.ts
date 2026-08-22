@@ -19,4 +19,21 @@ export interface IAdminMoneyRepository {
   markWithdrawalPaid(
     withdrawalId: string
   ): Promise<{ changed: boolean; paidEarnings: number }>
+
+  /** `paid: false` quando a missão já estava paga — não é erro. `balance` é `null` quando `type_paid` é `'cash'`, porque nenhuma carteira foi afectada. */
+  payMissionBonus(input: {
+    driver_id: string
+    mission_id: string
+    type_paid: 'cash' | 'wallet'
+  }): Promise<{ paid: boolean; balance: number | null }>
+
+  /** Retorna `walletId`, não `id`. */
+  createWallet(input: {
+    user_id: string
+    user: { id: string; firebase_uid: string; [key: string]: unknown }
+    initial_balance: number
+    currency: string
+    status: string
+    reason?: string
+  }): Promise<{ walletId: string; balance: number }>
 }

@@ -31,4 +31,23 @@ export class AdminMoneyDAO implements IAdminMoneyRepository {
       {}
     )
   }
+
+  async payMissionBonus(input: {
+    driver_id: string
+    mission_id: string
+    type_paid: 'cash' | 'wallet'
+  }): Promise<{ paid: boolean; balance: number | null }> {
+    return ApiDAO.post('/api/v1/admin/missions/pay', input)
+  }
+
+  async createWallet(input: {
+    user_id: string
+    user: { id: string; firebase_uid: string; [key: string]: unknown }
+    initial_balance: number
+    currency: string
+    status: string
+    reason?: string
+  }): Promise<{ walletId: string; balance: number }> {
+    return ApiDAO.post('/api/v1/admin/wallets', input)
+  }
 }
