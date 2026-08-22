@@ -5,7 +5,6 @@ import { WalletEntity } from '@/core/entities/Wallet'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
 import { useMemo } from 'react'
-import { withAudit } from '@/services/audit.service'
 
 const walletService = new WalletService()
 
@@ -82,47 +81,17 @@ export function useWalletsViewModel(
     }
   })
 
-  /** Atualizar carteira */
-  const updateWallet = useMutation({
-    mutationFn: async ({
-      id,
-      wallet
+  /** Activar/desactivar carteira — auditado dentro da transacção da API */
+  const setWalletStatus = useMutation({
+    mutationFn: ({
+      walletId,
+      status,
+      reason
     }: {
-      id: string
-      wallet: Partial<WalletEntity>
-    }) => {
-      const previous_data = await walletService.getById(id).catch(() => null)
-      return withAudit(() => walletService.update(id, wallet), {
-        action: 'update',
-        module: 'wallet',
-        description: `Atualizou carteira - ID: ${id}`,
-        target_id: id,
-        target_type: 'wallet',
-        previous_data: previous_data || undefined,
-        new_data: wallet
-      })
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [firebaseCollections.wallets.root]
-      })
-    }
-  })
-
-  /** Deletar carteira */
-  const deleteWallet = useMutation({
-    mutationFn: async (id: string) => {
-      const previous_data = await walletService.getById(id).catch(() => null)
-      return withAudit(() => walletService.delete(id), {
-        action: 'delete',
-        module: 'wallet',
-        description: `Excluiu carteira - ID: ${id}`,
-        target_id: id,
-        target_type: 'wallet',
-        previous_data: previous_data || undefined,
-        severity: 'critical'
-      })
-    },
+      walletId: string
+      status: 'active' | 'inactive'
+      reason?: string
+    }) => walletService.setStatus(walletId, status, reason),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [firebaseCollections.wallets.root]
@@ -164,8 +133,7 @@ export function useWalletsViewModel(
     fetchOneWalletByField,
 
     createWallet,
-    updateWallet,
-    deleteWallet,
+    setWalletStatus,
     fetchWalletById,
 
     dataToExport

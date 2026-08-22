@@ -78,24 +78,16 @@ export class WalletService {
     return adminMoneyRepository.createWallet(input)
   }
 
-  async update(
-    id: string,
-    wallet: Partial<WalletEntity>
-  ): Promise<WalletEntity> {
-    try {
-      return await walletRepository.update(id, wallet)
-    } catch (error: any) {
-      console.error(`Erro ao atualizar carteira ${id}:`, error)
-      throw new Error(error.message || 'Erro ao atualizar carteira')
-    }
-  }
-
-  async delete(id: string): Promise<void> {
-    try {
-      return await walletRepository.delete(id)
-    } catch (error: any) {
-      console.error(`Erro ao deletar carteira ${id}:`, error)
-      throw new Error(error.message || 'Erro ao deletar carteira')
-    }
+  /**
+   * Activa ou desactiva a carteira no servidor, com auditoria dentro da
+   * transacção. Substitui o apagar: apagar destruía o registo do dinheiro
+   * devido ao motorista e deixava órfãs as transacções da carteira.
+   */
+  async setStatus(
+    walletId: string,
+    status: 'active' | 'inactive',
+    reason?: string
+  ): Promise<{ changed: boolean; status: 'active' | 'inactive' }> {
+    return adminMoneyRepository.setWalletStatus(walletId, status, reason)
   }
 }
