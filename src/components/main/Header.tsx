@@ -17,15 +17,28 @@ import { routsNameMain } from '../../constants/routsName'
 import { DropdownInfo } from '../DropdownInfo'
 import { Chat } from 'phosphor-react'
 import { auditService } from '@/services/audit.service'
+import { useAuthViewModel } from '@/viewModels/AuthViewModel'
+import { showToast } from '@/utils/toasts'
 
 export const Header = () => {
-  const { currentAdminData, removeAdmin } = useAdminStore()
+  const { currentAdminData } = useAdminStore()
 
   const { menuIsVisible, setMenuIsVisible } = useContext(AppContext)
 
+  const { logout } = useAuthViewModel()
+
   const logOut = async () => {
     await auditService.logLogout()
-    removeAdmin()
+
+    try {
+      // O signOut dispara onAuthChanged(null), e o useAuthSessionSync limpa o
+      // store e a cache. Não limpar aqui à mão: se o signOut falhar, a sessão
+      // do Firebase continua viva, e limpar localmente recriava exactamente a
+      // dessincronização que este plano corrige.
+      await logout()
+    } catch {
+      showToast('error', 'Não foi possível terminar a sessão. Tenta de novo.')
+    }
   }
 
   const options = [
