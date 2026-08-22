@@ -123,6 +123,11 @@ export function useMissionViewModel() {
   })
 
   // Pay Mission Progress
+  /**
+   * Paga o bónus numa única chamada ao servidor. Sem `withAudit`: a API
+   * escreve em `walletAuditLogs` dentro da própria transacção, e esse registo
+   * não pode existir sem o movimento de dinheiro.
+   */
   const payMissionProgress = useMutation({
     mutationFn: ({
       driver_id,
@@ -132,18 +137,7 @@ export function useMissionViewModel() {
       driver_id: string
       mission_id: string
       type_paid: 'cash' | 'wallet'
-    }) =>
-      withAudit(
-        () =>
-          missionService.payMissionProgress(driver_id, mission_id, type_paid),
-        {
-          action: 'update',
-          module: 'missions',
-          description: `Pagou progresso da missão (${type_paid}) para motorista - ID: ${driver_id}`,
-          target_id: driver_id,
-          target_type: 'driver'
-        }
-      ),
+    }) => missionService.payMissionProgress(driver_id, mission_id, type_paid),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: [

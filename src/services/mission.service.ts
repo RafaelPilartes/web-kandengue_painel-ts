@@ -1,13 +1,10 @@
 import {
   missionRepository,
   rideRepository,
-  walletRepository,
-  transactionRepository
+  adminMoneyRepository
 } from '@/modules/Api'
 import { MissionEntity } from '@/core/entities/Mission'
 import { MissionProgressEntity } from '@/core/entities/MissionProgress'
-import { TransactionEntity } from '@/core/entities/Transaction'
-import { generateId } from '@/helpers/generateId'
 import { startOfDay, startOfWeek, startOfMonth, isAfter } from 'date-fns'
 
 export class MissionService {
@@ -190,90 +187,20 @@ export class MissionService {
     }
   }
 
+  /**
+   * Paga o bónus no servidor, numa transacção única e idempotente.
+   * `paid: false` significa que a missão já estava paga — não é erro.
+   * `balance` vem `null` quando o pagamento é em dinheiro.
+   */
   async payMissionProgress(
     driver_id: string,
     mission_id: string,
     type_paid: 'cash' | 'wallet'
-  ) {
-    console.log(
-      `[payMissionProgress] Paying driver ${driver_id} for mission ${mission_id} via ${type_paid}`
-    )
-
-    const progress = await missionRepository.getProgress(driver_id, mission_id)
-
-    if (!progress) throw new Error('Progresso não encontrado')
-    if (!progress.is_completed) throw new Error('Missão ainda não concluída')
-    if (progress.is_paid) throw new Error('Missão já paga')
-
-    const mission = await missionRepository.getById(mission_id)
-    if (!mission) throw new Error('Missão não encontrada')
-
-    if (type_paid === 'wallet') {
-      await this.payMissionBonus(driver_id, mission)
-    }
-
-    progress.is_paid = true
-    progress.type_paid = type_paid
-    await missionRepository.updateProgress(progress)
-
-    return progress
-  }
-
-  private async payMissionBonus(driver_id: string, mission: MissionEntity) {
-    console.log(
-      `[payMissionBonus] Starting payment for driver ${driver_id}, amount: ${mission.reward}`
-    )
-
-    // Attempt to find wallet by driver_id OR user.id
-    let wallet = await walletRepository.getOneByField('driver_id', driver_id)
-    if (!wallet) {
-      console.log(
-        `[payMissionBonus] Wallet not found by driver_id, trying user.id...`
-      )
-      wallet = await walletRepository.getOneByField('user.id', driver_id)
-    }
-
-    if (!wallet) {
-      const errorMsg = `Wallet not found for driver ${driver_id}`
-      console.error(errorMsg)
-      throw new Error(errorMsg)
-    }
-
-    console.log(
-      `[payMissionBonus] Found wallet ${wallet.id}. Creating transaction...`
-    )
-    const transactionId = generateId('tra')
-    const transaction = new TransactionEntity({
-      id: transactionId,
-      user_id: driver_id,
-      wallet_id: wallet.id!,
-      type: 'credit',
-      category: 'mission_bonus' as any,
-      amount: mission.reward,
-      status: 'success',
-      description: `Bônus de Missão: ${mission.type} (${mission.target} entregas)`,
-      reference_id: mission.id,
-      created_at: new Date()
+  ): Promise<{ paid: boolean; balance: number | null }> {
+    return adminMoneyRepository.payMissionBonus({
+      driver_id,
+      mission_id,
+      type_paid
     })
-
-    try {
-      await transactionRepository.create(transaction)
-      console.log(`[payMissionBonus] Transaction ${transactionId} created.`)
-    } catch (e) {
-      console.error(`[payMissionBonus] Failed to create transaction:`, e)
-      throw e
-    }
-
-    const newBalance = (wallet.balance || 0) + mission.reward
-    console.log(
-      `[payMissionBonus] Updating wallet ${wallet.id} balance to ${newBalance}`
-    )
-    try {
-      await walletRepository.update(wallet.id!, { balance: newBalance })
-      console.log(`[payMissionBonus] Wallet updated successfully.`)
-    } catch (e) {
-      console.error(`[payMissionBonus] Failed to update wallet balance:`, e)
-      throw e
-    }
   }
 }

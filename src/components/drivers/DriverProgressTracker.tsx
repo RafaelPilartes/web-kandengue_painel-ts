@@ -49,12 +49,16 @@ export const DriverProgressTracker: React.FC<DriverProgressTrackerProps> = ({
     type_paid: 'cash' | 'wallet'
   ) => {
     try {
-      await payMissionProgress.mutateAsync({
+      const result = await payMissionProgress.mutateAsync({
         driver_id,
         mission_id,
         type_paid
       })
-      showToast('success', 'Pagamento registrado com sucesso!')
+      if (result.paid) {
+        showToast('success', 'Pagamento registrado com sucesso!')
+      } else {
+        showToast('info', 'Esta missão já tinha sido paga.')
+      }
     } catch (error: any) {
       showToast('error', `Erro ao processar pagamento: ${error.message}`)
     }
