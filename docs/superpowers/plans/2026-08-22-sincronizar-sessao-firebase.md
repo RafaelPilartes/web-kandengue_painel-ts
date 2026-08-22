@@ -369,3 +369,110 @@ Não há código a commitar. Se o Step 1 revelar outro consumidor, tratá-lo com
 Depois disto, o painel tem uma só noção de estar autenticado. O `PrivateRoute` continua a decidir pelo store, mas o store passa a seguir o Firebase.
 
 Fica um follow-up conhecido, fora de âmbito: o caminho inverso — Firebase com sessão e store vazio — continua sem tratamento. Acontece se o localStorage for limpo com a sessão viva, e resolve-se entrando de novo. Não é o cenário que motivou esta fase.
+
+---
+
+## Task 4: O logout manual passa a terminar a sessão do Firebase
+
+Achado da revisão final de branch. É o espelho do bug que este plano corrige:
+fechámos o caso involuntário (sessão morre → painel reage), mas no voluntário a
+sessão do Firebase **sobrevive a cada logout manual**.
+
+**Files:**
+- Modify: `src/components/main/Header.tsx`
+
+**Interfaces:**
+- Consumes: `useAuthViewModel` de `@/viewModels/AuthViewModel`, que já expõe
+  `logout: logoutMutation.mutateAsync` (chama `authService.logout()` → `signOut(auth)`).
+  Consome também `useAuthSessionSync`, indirectamente: o `signOut` dispara
+  `onAuthChanged(null)`, e o hook montado na Task 2 faz a limpeza.
+- Produces: nada consumido por outras tasks.
+
+**O estado actual** (`Header.tsx:26-29`):
+
+```tsx
+  const logOut = async () => {
+    await auditService.logLogout()
+    removeAdmin()
+  }
+```
+
+Limpa o store mas nunca chama `signOut`. O `AuthService.logout()` existe e tem
+zero chamadores em todo o `src`.
+
+- [ ] **Step 1: Fazer o logout passar pelo Firebase**
+
+Em `src/components/main/Header.tsx`, acrescentar o import:
+
+```tsx
+import { useAuthViewModel } from '@/viewModels/AuthViewModel'
+import { showToast } from '@/utils/toasts'
+```
+
+(Se `showToast` já estiver importado nesse ficheiro, não duplicar.)
+
+Junto aos outros hooks do componente:
+
+```tsx
+  const { logout } = useAuthViewModel()
+```
+
+E substituir `logOut` por:
+
+```tsx
+  const logOut = async () => {
+    await auditService.logLogout()
+
+    try {
+      // O signOut dispara onAuthChanged(null), e o useAuthSessionSync limpa o
+      // store e a cache. Não limpar aqui à mão: se o signOut falhar, a sessão
+      // do Firebase continua viva, e limpar localmente recriava exactamente a
+      // dessincronização que este plano corrige.
+      await logout()
+    } catch {
+      showToast('error', 'Não foi possível terminar a sessão. Tenta de novo.')
+    }
+  }
+```
+
+- [ ] **Step 2: Limpar o que ficou sem uso**
+
+`removeAdmin` deixa de ser usado no `Header`. Retirá-lo da desestruturação de
+`useAdminStore()` — mas **confirmar primeiro** se `currentAdminData` ainda é
+usado no ficheiro (é, para o nome e a foto), portanto a desestruturação fica mas
+perde um campo.
+
+```bash
+npx tsc -b
+echo "exit=$?"
+```
+
+`noUnusedLocals` acusa se sobrar algo. Expected: `exit=0`.
+
+- [ ] **Step 3: Verificar**
+
+```bash
+npm run test
+npm run build
+echo "build exit=$?"
+```
+
+Expected: 86 testes a passar (esta task não acrescenta testes — o `Header` não
+tem cobertura e montá-la exigiria bastante scaffolding de router e contexto para
+uma mudança de cinco linhas), `build exit=0`.
+
+- [ ] **Step 4: Commitar**
+
+```bash
+git add src/components/main/Header.tsx
+git commit -m "fix: logout manual termina a sessao do Firebase"
+```
+
+- [ ] **Step 5: Acrescentar ao smoke do dono**
+
+Registar no relatório que o smoke manual ganhou mais uma verificação:
+
+> Carregar em **Sair**. Confirmar nas devtools que `auth.currentUser` fica `null`
+> (ou no emulador Auth que a sessão terminou), e que se cai no ecrã de login.
+> Antes desta correcção o store era limpo mas a sessão do Firebase continuava
+> viva — num painel partilhado, "sair" não fechava nada.
