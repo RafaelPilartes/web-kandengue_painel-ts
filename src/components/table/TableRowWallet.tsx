@@ -9,14 +9,14 @@ interface TableRowWalletProps {
   rowItem: WalletInterface
   openPageViewTransactionsRow?: (item: WalletInterface) => void
   openPageViewWalletRow?: (item: WalletInterface) => void
-  handleDeleteRow: (id: string) => void
+  handleToggleStatus: (id: string, nextStatus: 'active' | 'inactive') => void
 }
 
 export default function TableRowWallet({
   rowItem,
   openPageViewTransactionsRow,
   openPageViewWalletRow,
-  handleDeleteRow
+  handleToggleStatus
 }: TableRowWalletProps) {
   return (
     <tr className="border-b dark:border-gray-700">
@@ -70,8 +70,12 @@ export default function TableRowWallet({
               },
               {
                 icon: <AiFillDelete size={16} />,
-                label: 'Excluir',
-                onClick: () => handleDeleteRow(rowItem.id as string),
+                label: rowItem.status === 'active' ? 'Desactivar' : 'Reactivar',
+                onClick: () =>
+                  handleToggleStatus(
+                    rowItem.id as string,
+                    rowItem.status === 'active' ? 'inactive' : 'active'
+                  ),
                 className:
                   'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900'
               }

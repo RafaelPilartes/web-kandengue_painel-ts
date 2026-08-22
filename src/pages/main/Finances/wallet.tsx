@@ -22,7 +22,6 @@ import { SelectCustom } from '@/components/selects/SelectCustom'
 import { rowPerPageOptions } from '@/data/selectOption'
 import { ModalCreateWallet } from './components/ModalCreate'
 import { ModalViewWallet } from './components/ModalView'
-import { mapFirebaseError } from '@/helpers/mapFirebaseError'
 
 export function WalletsPage() {
   // Filtros
@@ -38,8 +37,13 @@ export function WalletsPage() {
   const [modalViewWalletIsOpen, setModalViewWalletIsOpen] =
     useState<boolean>(false)
 
-  const { wallets, pagination, isLoadingWallets, deleteWallet, dataToExport } =
-    useWalletsViewModel(
+  const {
+    wallets,
+    pagination,
+    isLoadingWallets,
+    setWalletStatus,
+    dataToExport
+  } = useWalletsViewModel(
       docsPerPage,
       currentPage * docsPerPage,
       termForSearch,
@@ -71,39 +75,55 @@ export function WalletsPage() {
           rowItem={item}
           openPageViewTransactionsRow={openModalViewTransactionsRow}
           openPageViewWalletRow={openModalViewWalletRow}
-          handleDeleteRow={handleDeleteRow}
+          handleToggleStatus={handleToggleStatus}
         />
       )),
     [wallets]
   )
 
-  // Excluir
-  function handleDeleteRow(id: string) {
+  // Activar / desactivar
+  function handleToggleStatus(id: string, nextStatus: 'active' | 'inactive') {
+    const desactivar = nextStatus === 'inactive'
+
     swal({
       title: 'Tem certeza?',
-      text: 'Uma vez excluído, não poderá recuperar!',
+      text: desactivar
+        ? 'A carteira deixa de poder ser usada. O saldo e o histórico são preservados, e pode reactivá-la depois.'
+        : 'A carteira volta a ficar activa e utilizável.',
       buttons: ['Cancelar', 'Confirmar'],
       icon: 'warning',
-      dangerMode: true
-    }).then(async willDelete => {
-      if (willDelete) {
-        try {
-          await deleteWallet.mutateAsync(id)
+      dangerMode: desactivar
+    }).then(async willChange => {
+      if (!willChange) return
 
-          swal('Aprovado com sucesso', {
-            title: 'Carteira Removida com sucesso',
-            icon: 'success'
-          })
-        } catch (error) {
-          const message = mapFirebaseError(error)
+      try {
+        const result = await setWalletStatus.mutateAsync({
+          walletId: id,
+          status: nextStatus
+        })
 
-          swal('Erro ao aprovar', {
-            text: `Houve algum erro durante o processo, ${String(message)}`,
-            icon: 'error'
+        if (!result.changed) {
+          swal('Sem alterações', {
+            text: 'A carteira já estava nesse estado.',
+            icon: 'info'
           })
+          return
         }
-      } else {
-        swal('O registro está seguro!', { icon: 'error' })
+
+        swal('Feito', {
+          title: desactivar ? 'Carteira desactivada' : 'Carteira reactivada',
+          icon: 'success'
+        })
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'Ocorreu um erro inesperado. Tente novamente.'
+
+        swal('Erro', {
+          text: `Não foi possível alterar o estado: ${message}`,
+          icon: 'error'
+        })
       }
     })
   }
