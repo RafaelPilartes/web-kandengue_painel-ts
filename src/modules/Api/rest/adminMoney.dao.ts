@@ -50,4 +50,15 @@ export class AdminMoneyDAO implements IAdminMoneyRepository {
   }): Promise<{ walletId: string; balance: number }> {
     return ApiDAO.post('/api/v1/admin/wallets', input)
   }
+
+  async setWalletStatus(
+    walletId: string,
+    status: 'active' | 'inactive',
+    reason?: string
+  ): Promise<{ changed: boolean; status: 'active' | 'inactive' }> {
+    return ApiDAO.patch(`/api/v1/admin/wallets/${walletId}/status`, {
+      status,
+      reason
+    })
+  }
 }

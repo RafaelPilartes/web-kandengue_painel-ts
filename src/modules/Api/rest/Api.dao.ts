@@ -102,6 +102,14 @@ class ApiDAO {
   ): Promise<T> {
     return this.request<T>('DELETE', url, undefined, headers)
   }
+
+  public async patch<T>(
+    url: string,
+    data: any,
+    headers?: Record<string, string>
+  ): Promise<T> {
+    return this.request<T>('PATCH', url, data, headers)
+  }
 }
 
 export default new ApiDAO()

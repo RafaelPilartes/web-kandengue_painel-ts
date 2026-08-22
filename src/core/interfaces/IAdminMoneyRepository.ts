@@ -36,4 +36,14 @@ export interface IAdminMoneyRepository {
     status: string
     reason?: string
   }): Promise<{ walletId: string; balance: number }>
+
+  /**
+   * Activa ou desactiva uma carteira. Não move dinheiro.
+   * `changed: false` quando a carteira já estava nesse estado — não é erro.
+   */
+  setWalletStatus(
+    walletId: string,
+    status: 'active' | 'inactive',
+    reason?: string
+  ): Promise<{ changed: boolean; status: 'active' | 'inactive' }>
 }
