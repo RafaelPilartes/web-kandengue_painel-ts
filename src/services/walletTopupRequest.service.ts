@@ -1,5 +1,5 @@
 // services/walletTopupRequests.service.ts
-import { walletTopupRequestRepository } from '@/modules/Api'
+import { walletTopupRequestRepository, adminMoneyRepository } from '@/modules/Api'
 import { WalletTopupRequestEntity } from '@/core/entities/WalletTopupRequest'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 
@@ -104,5 +104,15 @@ export class WalletTopupRequestService {
       console.error(`Erro ao deletar carteira ${id}:`, error)
       throw new Error(error.message || 'Erro ao deletar carteira')
     }
+  }
+
+  /**
+   * Aprova e credita no servidor, numa transacção idempotente.
+   * `credited: false` significa que já estava aprovado — não é erro.
+   */
+  async approveTopup(
+    id: string
+  ): Promise<{ credited: boolean; balance: number }> {
+    return adminMoneyRepository.approveTopup(id)
   }
 }

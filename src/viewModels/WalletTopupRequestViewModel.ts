@@ -6,7 +6,6 @@ import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
 import { useMemo } from 'react'
 import { withAudit } from '@/services/audit.service'
-import { adminMoneyRepository } from '@/modules/Api'
 
 const walletTopupRequestService = new WalletTopupRequestService()
 
@@ -150,7 +149,7 @@ export function useWalletTopupRequestsViewModel(
    * não pode existir sem o movimento de dinheiro.
    */
   const approveTopup = useMutation({
-    mutationFn: (id: string) => adminMoneyRepository.approveTopup(id),
+    mutationFn: (id: string) => walletTopupRequestService.approveTopup(id),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [firebaseCollections.requests.root]
