@@ -65,16 +65,16 @@ export function useWalletsViewModel(
     }
   }
 
-  /** Criar carteira */
+  /** Criar carteira — no servidor, com auditoria dentro da transacção */
   const createWallet = useMutation({
-    mutationFn: async (wallet: Omit<WalletEntity, 'id'>) =>
-      withAudit(() => walletService.create(wallet), {
-        action: 'create',
-        module: 'wallet',
-        description: `Criou carteira para o usuário: ${wallet.user?.name}`,
-        target_type: 'wallet',
-        new_data: wallet
-      }),
+    mutationFn: (input: {
+      user_id: string
+      user: { id: string; firebase_uid: string; [key: string]: unknown }
+      initial_balance: number
+      currency: string
+      status: string
+      reason?: string
+    }) => walletService.createViaApi(input),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [firebaseCollections.wallets.root]

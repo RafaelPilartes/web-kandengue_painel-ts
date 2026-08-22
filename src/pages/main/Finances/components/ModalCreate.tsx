@@ -130,14 +130,25 @@ export function ModalCreateWallet({
         return
       }
 
+      if (!dataForm.user?.firebase_uid || !dataForm.user?.id) {
+        showToast(
+          'error',
+          `O motorista ${dataForm.user?.name ?? 'seleccionado'} não tem conta Firebase associada. ` +
+            'Sem isso a carteira ficaria inacessível na app. Corrija o registo do motorista primeiro.'
+        )
+        setIsSending(false)
+        return
+      }
+
       const resultSubmit = await createWallet.mutateAsync({
-        user: dataForm.user,
-        balance: dataForm.balance,
-        status: dataForm.status,
-        currency: dataForm.currency
+        user_id: dataForm.user.id,
+        user: { ...dataForm.user, id: dataForm.user.id, firebase_uid: dataForm.user.firebase_uid },
+        initial_balance: dataForm.balance,
+        currency: dataForm.currency,
+        status: dataForm.status
       })
 
-      if (!resultSubmit?.id) {
+      if (!resultSubmit?.walletId) {
         showToast('error', 'Houve algum erro durante a criação da carteira')
         setIsSending(false)
       } else {

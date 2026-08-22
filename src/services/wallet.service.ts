@@ -1,5 +1,5 @@
 // services/wallets.service.ts
-import { walletRepository } from '@/modules/Api'
+import { walletRepository, adminMoneyRepository } from '@/modules/Api'
 import { WalletEntity } from '@/core/entities/Wallet'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 
@@ -62,13 +62,20 @@ export class WalletService {
     }
   }
 
-  async create(wallet: Omit<WalletEntity, 'id'>): Promise<WalletEntity> {
-    try {
-      return await walletRepository.create(wallet)
-    } catch (error: any) {
-      console.error('Erro ao criar carteira:', error)
-      throw new Error(error.message || 'Erro ao criar carteira')
-    }
+  /**
+   * Cria a carteira no servidor, numa transacção auditada.
+   * É a única porta de criação — a escrita directa produzia carteiras sem
+   * `user_id`, que a app do motorista nunca encontrava.
+   */
+  async createViaApi(input: {
+    user_id: string
+    user: { id: string; firebase_uid: string; [key: string]: unknown }
+    initial_balance: number
+    currency: string
+    status: string
+    reason?: string
+  }): Promise<{ walletId: string; balance: number }> {
+    return adminMoneyRepository.createWallet(input)
   }
 
   async update(
