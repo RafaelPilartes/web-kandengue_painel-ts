@@ -133,8 +133,9 @@ export function ModalCreateWallet({
       if (!dataForm.user?.firebase_uid || !dataForm.user?.id) {
         showToast(
           'error',
-          `O motorista ${dataForm.user?.name ?? 'seleccionado'} não tem conta Firebase associada. ` +
-            'Sem isso a carteira ficaria inacessível na app. Corrija o registo do motorista primeiro.'
+          `O registo do motorista ${dataForm.user?.name ?? 'seleccionado'} está incompleto ` +
+            '(falta o ID ou a conta Firebase associada). Sem isso a carteira ficaria ' +
+            'inacessível na app. Corrija o registo do motorista primeiro.'
         )
         setIsSending(false)
         return
