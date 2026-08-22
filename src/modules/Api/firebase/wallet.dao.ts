@@ -6,11 +6,8 @@ import {
   getDocs,
   doc,
   getDoc,
-  updateDoc,
-  deleteDoc,
   query,
   where,
-  setDoc,
   orderBy,
   limit as fbLimit,
   startAfter,
@@ -19,17 +16,9 @@ import {
 import { db } from '@/config/firebase.config'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
-import { generateId } from '@/helpers/generateId'
 
 export class FirebaseWalletDAO implements IWalletRepository {
   private walletsRef = collection(db, firebaseCollections.wallets.root)
-
-  // Remove campos undefined antes de salvar
-  private sanitize<T extends Record<string, any>>(data: T): T {
-    return Object.fromEntries(
-      Object.entries(data).filter(([_, v]) => v !== undefined)
-    ) as T
-  }
 
   // helper: aplica filtros (where) sobre um ref/q
   private applyFilters(baseRef: any, filters?: Partial<WalletEntity>) {
@@ -157,37 +146,7 @@ export class FirebaseWalletDAO implements IWalletRepository {
     return adminData
   }
 
-  async create(wallet: Omit<WalletEntity, 'id'>): Promise<WalletEntity> {
-    const walletId = generateId('wt')
-    const sanitized = {
-      ...this.sanitize(wallet),
-      id: walletId,
-      created_at: new Date()
-    }
-
-    await setDoc(doc(this.walletsRef, walletId), sanitized)
-
-    const walletData = new WalletEntity({ id: walletId, ...wallet })
-    return walletData
-  }
-
-  async update(
-    id: string,
-    wallet: Partial<WalletEntity>
-  ): Promise<WalletEntity> {
-    const sanitized = {
-      ...this.sanitize(wallet),
-      updated_at: new Date()
-    }
-    await updateDoc(doc(this.walletsRef, id), sanitized)
-
-    const updated = await this.getById(id)
-    if (!updated) throw new Error('Wallet not found after update')
-
-    return updated
-  }
-
-  async delete(id: string): Promise<void> {
-    await deleteDoc(doc(this.walletsRef, id))
-  }
+  // Criar, actualizar e apagar carteiras vivem na API, em transacções
+  // auditadas. Aqui só se lê: apagar destruía o registo do dinheiro devido ao
+  // motorista, e escrever `balance` criava dinheiro sem linha de extracto.
 }

@@ -17,7 +17,6 @@ export interface IWalletRepository {
     offset?: number
   ): Promise<ListResponseType<WalletEntity[]>>
   getOneByField(field: string, value: any): Promise<WalletEntity | null>
-  create(Wallet: Omit<WalletEntity, 'id'>): Promise<WalletEntity>
-  update(id: string, Wallet: Partial<WalletEntity>): Promise<WalletEntity>
-  delete(id: string): Promise<void>
+  // Sem `create`, `update` nem `delete`: essas operações vivem na API, em
+  // transacções auditadas. Ver `IAdminMoneyRepository`.
 }
