@@ -1,12 +1,11 @@
 // viewModels/WalletViewModel.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { WalletService } from '@/services/wallet.service'
+import { walletUseCase } from '@/domain/usecases/walletUseCase'
 import { WalletEntity } from '@/core/entities/Wallet'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
+import type { FieldPath } from '@/core/interfaces/IBaseRepository'
 import { firebaseCollections } from '@/constants/firebaseCollections'
 import { useMemo } from 'react'
-
-const walletService = new WalletService()
 
 export function useWalletsViewModel(
   limit?: number,
@@ -32,7 +31,7 @@ export function useWalletsViewModel(
       searchTerm,
       filtersKey
     ],
-    queryFn: () => walletService.getAll(limit, offset, searchTerm, filters),
+    queryFn: () => walletUseCase.executeGetAll(limit, offset, searchTerm, filters),
     staleTime: 1000 * 60 // cache 1min
   })
 
@@ -51,13 +50,13 @@ export function useWalletsViewModel(
 
   /** Buscar lista de Carteiras por field */
   const fetchAllWalletsByField = async (
-    field: string,
+    field: FieldPath<WalletEntity>,
     value: any,
     limit?: number,
     offset?: number
   ) => {
     try {
-      return await walletService.getAllByField(field, value, limit, offset)
+      return await walletUseCase.executeGetAllByField(field, value, limit, offset)
     } catch (err) {
       console.error('Erro ao buscar carteiras por campo:', err)
       return null
@@ -73,7 +72,7 @@ export function useWalletsViewModel(
       currency: string
       status: string
       reason?: string
-    }) => walletService.createViaApi(input),
+    }) => walletUseCase.executeCreateViaApi(input),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [firebaseCollections.wallets.root]
@@ -91,7 +90,7 @@ export function useWalletsViewModel(
       walletId: string
       status: 'active' | 'inactive'
       reason?: string
-    }) => walletService.setStatus(walletId, status, reason),
+    }) => walletUseCase.executeSetStatus(walletId, status, reason),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [firebaseCollections.wallets.root]
@@ -102,7 +101,7 @@ export function useWalletsViewModel(
   /** Buscar carteira único (on-demand) */
   const fetchWalletById = async (id: string) => {
     try {
-      return await walletService.getById(id)
+      return await walletUseCase.executeGetById(id)
     } catch (err) {
       console.error('Erro ao buscar carteira:', err)
       return null
@@ -115,7 +114,7 @@ export function useWalletsViewModel(
     value: string
   ) => {
     try {
-      return await walletService.getOneByField(field, value)
+      return await walletUseCase.executeGetOneByField(field, value)
     } catch (err) {
       console.error('Erro ao buscar carteira por campo:', err)
       return null
