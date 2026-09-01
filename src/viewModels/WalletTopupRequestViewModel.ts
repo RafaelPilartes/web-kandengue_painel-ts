@@ -1,13 +1,12 @@
 // viewModels/WalletTopupRequestViewModel.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { WalletTopupRequestService } from '@/services/walletTopupRequest.service'
+import { walletTopupRequestUseCase } from '@/domain/usecases/walletTopupRequestUseCase'
 import { WalletTopupRequestEntity } from '@/core/entities/WalletTopupRequest'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
+import type { FieldPath } from '@/core/interfaces/IBaseRepository'
 import { firebaseCollections } from '@/constants/firebaseCollections'
 import { useMemo } from 'react'
 import { withAudit } from '@/services/audit.service'
-
-const walletTopupRequestService = new WalletTopupRequestService()
 
 export function useWalletTopupRequestsViewModel(
   limit?: number,
@@ -34,7 +33,7 @@ export function useWalletTopupRequestsViewModel(
       filtersKey
     ],
     queryFn: () =>
-      walletTopupRequestService.getAll(limit, offset, searchTerm, filters),
+      walletTopupRequestUseCase.executeGetAll(limit, offset, searchTerm, filters),
     staleTime: 1000 * 60 // cache 1min
   })
 
@@ -53,13 +52,13 @@ export function useWalletTopupRequestsViewModel(
 
   /** Buscar lista de Carteiras por field */
   const fetchAllWalletTopupRequestsByField = async (
-    field: string,
+    field: FieldPath<WalletTopupRequestEntity>,
     value: any,
     limit?: number,
     offset?: number
   ) => {
     try {
-      return await walletTopupRequestService.getAllByField(
+      return await walletTopupRequestUseCase.executeGetAllByField(
         field,
         value,
         limit,
@@ -74,7 +73,7 @@ export function useWalletTopupRequestsViewModel(
   /** Criar carteira */
   const createWalletTopupRequest = useMutation({
     mutationFn: (walletTopupRequest: Omit<WalletTopupRequestEntity, 'id'>) =>
-      withAudit(() => walletTopupRequestService.create(walletTopupRequest), {
+      withAudit(() => walletTopupRequestUseCase.executeCreate(walletTopupRequest), {
         action: 'create',
         module: 'topup_requests',
         description: `Criou solicitação de recarga no valor de ${walletTopupRequest.amount}`,
@@ -97,11 +96,11 @@ export function useWalletTopupRequestsViewModel(
       id: string
       walletTopupRequest: Partial<WalletTopupRequestEntity>
     }) => {
-      const previous_data = await walletTopupRequestService
-        .getById(id)
+      const previous_data = await walletTopupRequestUseCase
+        .executeGetById(id)
         .catch(() => null)
       return await withAudit(
-        () => walletTopupRequestService.update(id, walletTopupRequest),
+        () => walletTopupRequestUseCase.executeUpdate(id, walletTopupRequest),
         {
           action: 'update',
           module: 'topup_requests',
@@ -123,10 +122,10 @@ export function useWalletTopupRequestsViewModel(
   /** Deletar carteira */
   const deleteWalletTopupRequest = useMutation({
     mutationFn: async (id: string) => {
-      const previous_data = await walletTopupRequestService
-        .getById(id)
+      const previous_data = await walletTopupRequestUseCase
+        .executeGetById(id)
         .catch(() => null)
-      return withAudit(() => walletTopupRequestService.delete(id), {
+      return withAudit(() => walletTopupRequestUseCase.executeDelete(id), {
         action: 'delete',
         module: 'topup_requests',
         description: `Excluiu solicitação de recarga - ID: ${id}`,
@@ -149,7 +148,7 @@ export function useWalletTopupRequestsViewModel(
    * não pode existir sem o movimento de dinheiro.
    */
   const approveTopup = useMutation({
-    mutationFn: (id: string) => walletTopupRequestService.approveTopup(id),
+    mutationFn: (id: string) => walletTopupRequestUseCase.executeApproveTopup(id),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [firebaseCollections.requests.root]
@@ -160,7 +159,7 @@ export function useWalletTopupRequestsViewModel(
   /** Buscar carteira único (on-demand) */
   const fetchWalletTopupRequestById = async (id: string) => {
     try {
-      return await walletTopupRequestService.getById(id)
+      return await walletTopupRequestUseCase.executeGetById(id)
     } catch (err) {
       console.error('Erro ao buscar solicitação:', err)
       return null
@@ -169,11 +168,11 @@ export function useWalletTopupRequestsViewModel(
 
   /** Buscar walletTopupRequest por field */
   const fetchOneWalletTopupByField = async (
-    field: keyof WalletTopupRequestEntity,
+    field: FieldPath<WalletTopupRequestEntity>,
     value: string
   ) => {
     try {
-      return await walletTopupRequestService.getOneByField(field, value)
+      return await walletTopupRequestUseCase.executeGetOneByField(field, value)
     } catch (err) {
       console.error('Erro ao buscar solicitação por campo:', err)
       return null
