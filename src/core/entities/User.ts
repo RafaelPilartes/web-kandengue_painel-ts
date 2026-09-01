@@ -1,9 +1,18 @@
 // core/entities/User.ts
+import type { FirestoreDataConverter, Timestamp } from 'firebase/firestore'
 import type { UserInterface } from '@/interfaces/IUser'
 import type { UserStatus } from '@/types/enum'
+import { toDate } from '@/helpers/firestore'
+
+/**
+ * `id` é opcional em `UserInterface` (formulários que ainda não gravaram),
+ * mas todo `UserEntity` que sai de um DAO tem sempre `id`. As subclasses
+ * (`DriverEntity`, `AdminEntity`) reutilizam este tipo para o `super(params)`.
+ */
+export type UserEntityParams = Omit<UserInterface, 'id'> & { id: string }
 
 export class UserEntity implements UserInterface {
-  id?: string
+  id: string
   entity_code?: string
   photo?: string
   name: string
@@ -18,22 +27,7 @@ export class UserEntity implements UserInterface {
   last_login?: Date
   firebase_uid?: string
 
-  constructor(params: {
-    id?: string
-    name: string
-    email: string
-    phone: string
-    password?: string
-    entity_code?: string
-    photo?: string
-    status: UserStatus
-    email_verified?: boolean
-    phone_verified?: boolean
-    created_at?: Date
-    updated_at?: Date
-    last_login?: Date
-    firebase_uid?: string
-  }) {
+  constructor(params: UserEntityParams) {
     this.id = params.id
     this.name = params.name
     this.email = params.email
@@ -69,5 +63,44 @@ export class UserEntity implements UserInterface {
   private validateEmail(email: string): boolean {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     return emailRegex.test(email)
+  }
+}
+
+/**
+ * Forma CRUA do documento em `users`, tal como o Firestore o devolve.
+ * Difere de `UserInterface` nas datas: aqui são `Timestamp`.
+ * Só o converter deve tocar neste tipo.
+ */
+export interface UserDoc {
+  id?: string
+  entity_code?: string
+  photo?: string
+  name?: string
+  email?: string
+  phone?: string
+  password?: string
+  status?: UserStatus
+  email_verified?: boolean
+  phone_verified?: boolean
+  created_at?: Timestamp | null
+  updated_at?: Timestamp | null
+  last_login?: Timestamp | null
+  firebase_uid?: string
+}
+
+/** Fronteira única entre o documento Firestore e a aplicação. */
+export const userConverter: FirestoreDataConverter<UserEntity> = {
+  toFirestore(user) {
+    return { ...user }
+  },
+  fromFirestore(snapshot, options) {
+    const d = snapshot.data(options) as UserDoc
+    return new UserEntity({
+      ...d,
+      id: snapshot.id,
+      created_at: toDate(d.created_at) ?? undefined,
+      updated_at: toDate(d.updated_at) ?? undefined,
+      last_login: toDate(d.last_login) ?? undefined
+    } as UserEntityParams)
   }
 }
