@@ -30,3 +30,6 @@ CLAUDE.md
 .claude/
 
 .env
+
+# Relatorios de lote — rascunhos
+LOTE*-RELATORIO.md
