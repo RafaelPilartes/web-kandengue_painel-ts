@@ -1,6 +1,6 @@
 // src/viewModels/FileUploadViewModel.ts
 import { useCallback, useRef, useState } from 'react'
-import { FileService, type UploadResult } from '@/services/files.service'
+import { fileUseCase, type UploadResult } from '@/domain/usecases/fileUseCase'
 import {
   getDownloadURL,
   ref,
@@ -10,8 +10,6 @@ import {
   type UploadTaskSnapshot
 } from 'firebase/storage'
 import { storage } from '@/config/firebase.config'
-
-const fileService = new FileService()
 
 export function useFileUploadViewModel() {
   const [isUploading, setIsUploading] = useState(false)
@@ -137,7 +135,7 @@ export function useFileUploadViewModel() {
   const deleteFile = useCallback(
     async (path: string) => {
       try {
-        await fileService.deleteFile(path)
+        await fileUseCase.executeDeleteFile(path)
         // limpa estados se for o ficheiro actual
         if (uploadedPath === path) {
           setFileURL(null)
@@ -155,7 +153,7 @@ export function useFileUploadViewModel() {
   // Pegar URL de um path (se já tiveres path)
   const getFileURL = useCallback(async (path: string) => {
     try {
-      const url = await fileService.getDownloadUrl(path)
+      const url = await fileUseCase.executeGetDownloadUrl(path)
       return url
     } catch (err: any) {
       setError(err?.message ?? 'Erro ao obter URL')
@@ -172,7 +170,7 @@ export function useFileUploadViewModel() {
     setError(null)
 
     try {
-      const res = await fileService.uploadFile(file, folder, fileName)
+      const res = await fileUseCase.executeUploadFile(file, folder, fileName)
       setFileURL(res.url)
       return res
     } catch (err: any) {

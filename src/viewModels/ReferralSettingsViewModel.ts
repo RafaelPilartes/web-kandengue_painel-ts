@@ -1,10 +1,9 @@
 // viewModels/ReferralSettingsViewModel.ts
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { IReferralSettings } from '@/interfaces/IPromotion'
-import { AppConfigService } from '@/services/appConfig.service'
+import { appConfigUseCase } from '@/domain/usecases/appConfigUseCase'
 import { useAdminStore } from '@/stores/userStore'
 
-const service = new AppConfigService()
 const KEY = ['app_config', 'referral_settings']
 
 export function useReferralSettingsViewModel() {
@@ -14,13 +13,13 @@ export function useReferralSettingsViewModel() {
 
   const settingsQuery = useQuery<IReferralSettings | null>({
     queryKey: KEY,
-    queryFn: () => service.getReferralSettings(),
+    queryFn: () => appConfigUseCase.executeGetReferralSettings(),
     staleTime: 60 * 1000
   })
 
   const updateSettings = useMutation({
     mutationFn: (minimum: number) =>
-      service.updateReferralSettings(minimum, adminId),
+      appConfigUseCase.executeUpdateReferralSettings(minimum, adminId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: KEY })
     }
