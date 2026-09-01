@@ -1,12 +1,10 @@
 // viewModels/DocumentViewModel.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { DocumentService } from '@/services/document.service'
+import { documentUseCase } from '@/domain/usecases/documentUseCase'
 import { DocumentEntity } from '@/core/entities/Document'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
 import { withAudit } from '@/services/audit.service'
-
-const documentService = new DocumentService()
 
 export function useDocumentsViewModel(
   limit?: number,
@@ -32,7 +30,7 @@ export function useDocumentsViewModel(
       searchTerm,
       filtersKey
     ],
-    queryFn: () => documentService.getAll(limit, offset, searchTerm, filters),
+    queryFn: () => documentUseCase.executeGetAll(limit, offset, searchTerm, filters),
     staleTime: 1000 * 60 // cache 1min
   })
 
@@ -44,7 +42,7 @@ export function useDocumentsViewModel(
     offset?: number
   ) => {
     try {
-      return await documentService.getAllByField(field, value, limit, offset)
+      return await documentUseCase.executeGetAllByField(field, value, limit, offset)
     } catch (err) {
       console.error('Erro ao buscar documentos por campo:', err)
       return null
@@ -54,7 +52,7 @@ export function useDocumentsViewModel(
   /** Criar documento */
   const createDocument = useMutation({
     mutationFn: (document: Omit<DocumentEntity, 'id'>) =>
-      withAudit(() => documentService.create(document), {
+      withAudit(() => documentUseCase.executeCreate(document), {
         action: 'create',
         module: 'documents',
         description: `Criou documento: ${document.type}`,
@@ -78,8 +76,8 @@ export function useDocumentsViewModel(
       id: string
       document: Partial<DocumentEntity>
     }) => {
-      const previous_data = await documentService.getById(id).catch(() => null)
-      return withAudit(() => documentService.update(id, document), {
+      const previous_data = await documentUseCase.executeGetById(id).catch(() => null)
+      return withAudit(() => documentUseCase.executeUpdate(id, document), {
         action: 'update',
         module: 'documents',
         description: `Atualizou documento - ID: ${id}`,
@@ -99,8 +97,8 @@ export function useDocumentsViewModel(
   /** Deletar documento */
   const deleteDocument = useMutation({
     mutationFn: async (id: string) => {
-      const previous_data = await documentService.getById(id).catch(() => null)
-      return withAudit(() => documentService.delete(id), {
+      const previous_data = await documentUseCase.executeGetById(id).catch(() => null)
+      return withAudit(() => documentUseCase.executeDelete(id), {
         action: 'delete',
         module: 'documents',
         description: `Excluiu documento - ID: ${id}`,
@@ -120,7 +118,7 @@ export function useDocumentsViewModel(
   /** Buscar documento único (on-demand) */
   const fetchDocumentById = async (id: string) => {
     try {
-      return await documentService.getById(id)
+      return await documentUseCase.executeGetById(id)
     } catch (err) {
       console.error('Erro ao buscar documento:', err)
       return null
@@ -133,7 +131,7 @@ export function useDocumentsViewModel(
     value: string
   ) => {
     try {
-      return await documentService.getOneByField(field, value)
+      return await documentUseCase.executeGetOneByField(field, value)
     } catch (err) {
       console.error('Erro ao buscar documento por campo:', err)
       return null
