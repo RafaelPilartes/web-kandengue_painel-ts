@@ -1,12 +1,10 @@
 // viewModels/RideRateViewModel.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { RideRateService } from '@/services/rideRate.service'
+import { rideRateUseCase } from '@/domain/usecases/rideRateUseCase'
 import { RideRateEntity } from '@/core/entities/RideRate'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
 import { withAudit } from '@/services/audit.service'
-
-const rideRateService = new RideRateService()
 
 export function useRideRatesViewModel(
   limit?: number,
@@ -32,7 +30,7 @@ export function useRideRatesViewModel(
       searchTerm,
       filtersKey
     ],
-    queryFn: () => rideRateService.getAll(limit, offset, searchTerm, filters),
+    queryFn: () => rideRateUseCase.executeGetAll(limit, offset, searchTerm, filters),
     staleTime: 1000 * 60 // cache 1min
   })
 
@@ -44,7 +42,7 @@ export function useRideRatesViewModel(
     offset?: number
   ) => {
     try {
-      return await rideRateService.getAllByField(field, value, limit, offset)
+      return await rideRateUseCase.executeGetAllByField(field, value, limit, offset)
     } catch (err) {
       console.error('Erro ao buscar taxa de viagem por campo:', err)
       return null
@@ -54,7 +52,7 @@ export function useRideRatesViewModel(
   /** Criar ride */
   const createRideRate = useMutation({
     mutationFn: (rideRate: Omit<RideRateEntity, 'id'>) =>
-      withAudit(() => rideRateService.create(rideRate), {
+      withAudit(() => rideRateUseCase.executeCreate(rideRate), {
         action: 'create',
         module: 'system',
         description: `Criou nova taxa de viagem`,
@@ -77,8 +75,8 @@ export function useRideRatesViewModel(
       id: string
       rideRate: Partial<RideRateEntity>
     }) => {
-      const previous_data = await rideRateService.getById(id).catch(() => null)
-      return withAudit(() => rideRateService.update(id, rideRate), {
+      const previous_data = await rideRateUseCase.executeGetById(id).catch(() => null)
+      return withAudit(() => rideRateUseCase.executeUpdate(id, rideRate), {
         action: 'update',
         module: 'system',
         description: `Atualizou taxa de viagem - ID: ${id}`,
@@ -98,8 +96,8 @@ export function useRideRatesViewModel(
   /** Deletar ride */
   const deleteRideRate = useMutation({
     mutationFn: async (id: string) => {
-      const previous_data = await rideRateService.getById(id).catch(() => null)
-      return withAudit(() => rideRateService.delete(id), {
+      const previous_data = await rideRateUseCase.executeGetById(id).catch(() => null)
+      return withAudit(() => rideRateUseCase.executeDelete(id), {
         action: 'delete',
         module: 'system',
         description: `Excluiu taxa de viagem - ID: ${id}`,
@@ -119,7 +117,7 @@ export function useRideRatesViewModel(
   /** Buscar ride único (on-demand) */
   const fetchRideRateById = async (id: string) => {
     try {
-      return await rideRateService.getById(id)
+      return await rideRateUseCase.executeGetById(id)
     } catch (err) {
       console.error('Erro ao buscar corrida:', err)
       return null
@@ -132,7 +130,7 @@ export function useRideRatesViewModel(
     value: string
   ) => {
     try {
-      return await rideRateService.getOneByField(field, value)
+      return await rideRateUseCase.executeGetOneByField(field, value)
     } catch (err) {
       console.error('Erro ao buscar corrida por campo:', err)
       return null
