@@ -2,15 +2,75 @@ import type { IVehicleRepository } from '@/core/interfaces/IVehicleRepository'
 import { FirebaseVehicleDAO } from './firebase/vehicle.dao'
 import type { IMissionProgressRepository } from '@/core/interfaces/IMissionProgressRepository'
 import { FirebaseMissionProgressDAO } from './firebase/missionProgress.dao'
+import type { IAdminRepository } from '@/core/interfaces/IAdminRepository'
+import { FirebaseAdminDAO } from './firebase/admins.dao'
+import type { IAppConfigRepository } from '@/core/interfaces/IAppConfigRepository'
+import { FirebaseAppConfigDAO } from './firebase/appConfig.dao'
+import type { IApplicationRepository } from '@/core/interfaces/IApplicationRepository'
+import { FirebaseApplicationDAO } from './firebase/application.dao'
+import type { IDocumentRepository } from '@/core/interfaces/IDocumentRepository'
+import { FirebaseDocumentDAO } from './firebase/document.dao'
+import type { IDriverRepository } from '@/core/interfaces/IDriverRepository'
+import { FirebaseDriverDAO } from './firebase/driver.dao'
+import type { IFileRepository } from '@/core/interfaces/IFileRepository'
+import { FirebaseFileDAO } from './firebase/file.dao'
+import type { IMissionRepository } from '@/core/interfaces/IMissionRepository'
+import { FirebaseMissionDAO } from './firebase/mission.dao'
+import type { INotificationRepository } from '@/core/interfaces/INotificationRepository'
+import { FirebaseNotificationDAO } from './firebase/notification.dao'
+import type { IPromotionRepository } from '@/core/interfaces/IPromotionRepository'
+import { FirebasePromotionDAO } from './firebase/promotion.dao'
+import type { IRideRepository } from '@/core/interfaces/IRideRepository'
+import { FirebaseRideDAO } from './firebase/ride.dao'
+import type { IRideRateRepository } from '@/core/interfaces/IRideRateRepository'
+import { FirebaseRideRateDAO } from './firebase/rideRate.dao'
+import type { IRideTrackingRepository } from '@/core/interfaces/IRideTrackingRepository'
+import { FirebaseRideTrackingDAO } from './firebase/rideTracking.dao'
+import type { ITransactionRepository } from '@/core/interfaces/ITransactionRepository'
+import { FirebaseTransactionDAO } from './firebase/transaction.dao'
+import type { IUserRepository } from '@/core/interfaces/IUserRepository'
+import { FirebaseUserDAO } from './firebase/users.dao'
+import type { IWalletRepository } from '@/core/interfaces/IWalletRepository'
+import { FirebaseWalletDAO } from './firebase/wallet.dao'
+import type { IWalletTopupRequestRepository } from '@/core/interfaces/IWalletTopupRequestRepository'
+import { FirebaseWalletTopupRequestDAO } from './firebase/walletTopupRequest.dao'
+import type { IWithdrawalRepository } from '@/core/interfaces/IWithdrawalRepository'
+import { FirebaseWithdrawalDAO } from './firebase/withdrawal.dao'
+import type { IPushNotificationRepository } from '@/core/interfaces/IPushNotificationRepository'
+import { PushNotificationDAO } from './rest/pushNotification.dao'
+import type { IAdminMoneyRepository } from '@/core/interfaces/IAdminMoneyRepository'
+import { AdminMoneyDAO } from './rest/adminMoney.dao'
 
 /**
  * Getters lazy e memoizados. Vive fora de `index.ts` de propósito: aquele
  * módulo instancia ~20 DAOs no import, e importá-lo anularia a preguiça.
  * Cada DAO migrado acrescenta aqui o seu campo e desaparece de `index.ts`.
+ *
+ * O `auditLog.dao.ts` fica fora: é consumido apenas por `audit.service.ts`,
+ * que é transversal e não entra nesta migração.
  */
 class ApiFactory {
   private _vehicles?: IVehicleRepository
   private _missionProgress?: IMissionProgressRepository
+  private _admins?: IAdminRepository
+  private _appConfig?: IAppConfigRepository
+  private _applications?: IApplicationRepository
+  private _documents?: IDocumentRepository
+  private _drivers?: IDriverRepository
+  private _files?: IFileRepository
+  private _missions?: IMissionRepository
+  private _notifications?: INotificationRepository
+  private _promotions?: IPromotionRepository
+  private _rides?: IRideRepository
+  private _rideRates?: IRideRateRepository
+  private _rideTrackings?: IRideTrackingRepository
+  private _transactions?: ITransactionRepository
+  private _users?: IUserRepository
+  private _wallets?: IWalletRepository
+  private _walletTopupRequests?: IWalletTopupRequestRepository
+  private _withdrawals?: IWithdrawalRepository
+  private _pushNotifications?: IPushNotificationRepository
+  private _adminMoney?: IAdminMoneyRepository
 
   get vehicles(): IVehicleRepository {
     return (this._vehicles ??= new FirebaseVehicleDAO())
@@ -18,6 +78,82 @@ class ApiFactory {
 
   get missionProgress(): IMissionProgressRepository {
     return (this._missionProgress ??= new FirebaseMissionProgressDAO())
+  }
+
+  get admins(): IAdminRepository {
+    return (this._admins ??= new FirebaseAdminDAO())
+  }
+
+  get appConfig(): IAppConfigRepository {
+    return (this._appConfig ??= new FirebaseAppConfigDAO())
+  }
+
+  get applications(): IApplicationRepository {
+    return (this._applications ??= new FirebaseApplicationDAO())
+  }
+
+  get documents(): IDocumentRepository {
+    return (this._documents ??= new FirebaseDocumentDAO())
+  }
+
+  get drivers(): IDriverRepository {
+    return (this._drivers ??= new FirebaseDriverDAO())
+  }
+
+  get files(): IFileRepository {
+    return (this._files ??= new FirebaseFileDAO())
+  }
+
+  get missions(): IMissionRepository {
+    return (this._missions ??= new FirebaseMissionDAO())
+  }
+
+  get notifications(): INotificationRepository {
+    return (this._notifications ??= new FirebaseNotificationDAO())
+  }
+
+  get promotions(): IPromotionRepository {
+    return (this._promotions ??= new FirebasePromotionDAO())
+  }
+
+  get rides(): IRideRepository {
+    return (this._rides ??= new FirebaseRideDAO())
+  }
+
+  get rideRates(): IRideRateRepository {
+    return (this._rideRates ??= new FirebaseRideRateDAO())
+  }
+
+  get rideTrackings(): IRideTrackingRepository {
+    return (this._rideTrackings ??= new FirebaseRideTrackingDAO())
+  }
+
+  get transactions(): ITransactionRepository {
+    return (this._transactions ??= new FirebaseTransactionDAO())
+  }
+
+  get users(): IUserRepository {
+    return (this._users ??= new FirebaseUserDAO())
+  }
+
+  get wallets(): IWalletRepository {
+    return (this._wallets ??= new FirebaseWalletDAO())
+  }
+
+  get walletTopupRequests(): IWalletTopupRequestRepository {
+    return (this._walletTopupRequests ??= new FirebaseWalletTopupRequestDAO())
+  }
+
+  get withdrawals(): IWithdrawalRepository {
+    return (this._withdrawals ??= new FirebaseWithdrawalDAO())
+  }
+
+  get pushNotifications(): IPushNotificationRepository {
+    return (this._pushNotifications ??= new PushNotificationDAO())
+  }
+
+  get adminMoney(): IAdminMoneyRepository {
+    return (this._adminMoney ??= new AdminMoneyDAO())
   }
 }
 
