@@ -2,6 +2,25 @@
 import { driverRepository } from '@/modules/Api'
 import { DriverEntity } from '@/core/entities/Driver'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
+import type { QueryOptions } from '@/core/interfaces/IBaseRepository'
+
+// Defaults do DAO antigo — preservados aqui para o motor novo (que usa 50).
+const LEGACY_PAGE_SIZE = 500
+const LEGACY_FIELD_PAGE_SIZE = 10
+
+/**
+ * Traduz `offset` (paginação por número de registos saltados, como o DAO
+ * antigo fazia) para o cursor por `id` que o `BaseFirebaseDAO` espera.
+ * Mesmo custo do código antigo: uma query extra de `offset` documentos.
+ */
+async function offsetToCursor(
+  base: Omit<QueryOptions<DriverEntity>, 'limit' | 'after'>,
+  offset: number
+): Promise<string | undefined> {
+  if (!offset) return undefined
+  const skipped = await driverRepository.getAll({ ...base, limit: offset })
+  return skipped.data[skipped.data.length - 1]?.id
+}
 
 export class DriverService {
   async getAll(
@@ -11,7 +30,13 @@ export class DriverService {
     filters?: Partial<DriverEntity>
   ): Promise<ListResponseType<DriverEntity[]>> {
     try {
-      return await driverRepository.getAll(limit, offset, searchTerm, filters)
+      const base = { searchTerm, filters }
+      const after = await offsetToCursor(base, offset ?? 0)
+      return await driverRepository.getAll({
+        ...base,
+        limit: limit ?? LEGACY_PAGE_SIZE,
+        after
+      })
     } catch (error: any) {
       console.error('Erro ao buscar motoristas:', error)
       throw new Error(error.message || 'Erro ao buscar motoristas')
@@ -30,7 +55,10 @@ export class DriverService {
   // get one by custom field
   async getOneByField(field: string, value: any): Promise<DriverEntity | null> {
     try {
-      return await driverRepository.getOneByField(field, value)
+      return await driverRepository.getOneByField(
+        field as keyof DriverEntity,
+        value
+      )
     } catch (error: any) {
       console.error(`Erro ao buscar driver por ${field}-${value}:`, error)
       throw new Error(error.message || 'Erro ao buscar driver')
@@ -45,12 +73,15 @@ export class DriverService {
     offset?: number
   ): Promise<ListResponseType<DriverEntity[]>> {
     try {
-      const { data, pagination } = await driverRepository.getAllByField(
-        field,
-        value,
-        limit,
-        offset
-      )
+      const filters = { [field]: value } as Partial<DriverEntity>
+      const base = { filters }
+      const after = await offsetToCursor(base, offset ?? 0)
+
+      const { data, pagination } = await driverRepository.getAll({
+        ...base,
+        limit: limit ?? LEGACY_FIELD_PAGE_SIZE,
+        after
+      })
 
       return { data, pagination }
     } catch (error: any) {

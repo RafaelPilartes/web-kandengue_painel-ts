@@ -1,27 +1,16 @@
 // core/interfaces/IDriverRepository.ts
-import type { ListResponseType } from '@/interfaces/IApiResponse'
-import { DriverEntity } from '../entities/Driver'
+import type { IBaseRepository } from './IBaseRepository'
+import type { DriverEntity } from '../entities/Driver'
 
-export interface IDriverRepository {
-  getAll(
-    limit?: number,
-    offset?: number,
-    searchTerm?: string,
-    filters?: Partial<DriverEntity>
-  ): Promise<ListResponseType<DriverEntity[]>>
-  getById(id: string): Promise<DriverEntity | null>
+export interface IDriverRepository extends IBaseRepository<DriverEntity> {
+  /** Atalho de leitura — o motor já sabe procurar por campo. */
   getByEmail(email: string): Promise<DriverEntity | null>
-  getAllByField(
-    field: string,
-    value: any,
-    limit?: number,
-    offset?: number
-  ): Promise<ListResponseType<DriverEntity[]>>
-  getOneByField(field: string, value: any): Promise<DriverEntity | null>
-  create(Driver: Omit<DriverEntity, 'id'>): Promise<DriverEntity>
-  update(id: string, Driver: Partial<DriverEntity>): Promise<DriverEntity>
-  delete(id: string): Promise<void>
+  /**
+   * Marca `status: 'deleted'` sem apagar o documento. Se `firebaseUid` for o
+   * do utilizador com sessão iniciada, apaga também a conta no Firebase Auth.
+   */
   softDelete(id: string, firebaseUid?: string): Promise<void>
+  /** Escuta em tempo real os motoristas online. */
   listenOnlineDrivers(
     onUpdate: (drivers: DriverEntity[]) => void,
     onError?: (err: Error) => void
