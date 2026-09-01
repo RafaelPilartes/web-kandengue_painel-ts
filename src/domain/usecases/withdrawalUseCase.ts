@@ -44,8 +44,18 @@ export class WithdrawalUseCase extends BaseUseCase {
   }
 
   /** Delega no `count` do motor. */
-  executeCountByStatus(status: WithdrawalStatus): Promise<number> {
-    return this.run('countByStatus', () => this.repository.countByStatus(status))
+  /**
+   * Devolve 0 se a contagem falhar, em vez de propagar — comportamento que o
+   * service tinha de propósito. É um número decorativo no cabeçalho; deixá-lo
+   * rebentar tiraria a página inteira por causa de um contador.
+   */
+  async executeCountByStatus(status: WithdrawalStatus): Promise<number> {
+    try {
+      return await this.repository.countByStatus(status)
+    } catch (err) {
+      console.warn('Falha ao contar saques:', err)
+      return 0
+    }
   }
 
   /**

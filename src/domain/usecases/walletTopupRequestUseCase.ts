@@ -99,9 +99,11 @@ export class WalletTopupRequestUseCase extends BaseUseCase {
   executeApproveTopup(
     id: string
   ): Promise<{ credited: boolean; balance: number }> {
-    return this.run('approveTopup', () =>
-      this.adminMoneyRepository.approveTopup(id)
-    )
+    // NÃO passa pelo `run()`: o `toAppError` substituiria a mensagem da API
+    // por uma genérica ("Ocorreu um erro inesperado"), e o admin deixaria de
+    // saber porque é que a aprovação falhou. O `ApiDAO` já extrai a mensagem
+    // do servidor, e a página mostra-a.
+    return this.adminMoneyRepository.approveTopup(id)
   }
 }
 
