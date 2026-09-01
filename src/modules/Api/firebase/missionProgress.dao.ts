@@ -32,7 +32,13 @@ export class FirebaseMissionProgressDAO
     super(
       firebaseCollections.missionProgress.root,
       missionProgressConverter,
-      'mprog'
+      'mprog',
+      // Sem campo de pesquisa: a entidade não tem nenhum de texto útil.
+      undefined,
+      // Esta colecção NÃO tem `created_at` — as suas datas são `completed_at`
+      // e `last_updated`. Sem declarar isto, a ordenação por omissão do motor
+      // excluiria todos os documentos e o `getAll` devolveria vazio.
+      'last_updated'
     )
   }
 

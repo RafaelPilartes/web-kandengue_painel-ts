@@ -60,8 +60,10 @@ export type SearchField<T> = (keyof T & string) | `${string}.${string}`
  *    por cursor devolve `entity.id` e volta a resolvê-lo com `doc(ref, after)`.
  *
  * Nota sobre ordenação: `orderBy` do Firestore EXCLUI documentos sem o campo.
- * Como a ordenação por omissão é `created_at`, qualquer documento sem esse
- * campo é invisível em `getAll` — mas é contado por `count()`, que não ordena.
+ * A ordenação por omissão é `created_at`; uma colecção cujos documentos não o
+ * tenham fica invisível em `getAll` — mas continua a ser contada por `count()`,
+ * que não ordena. Colecções nessas condições declaram o seu campo no 5º
+ * argumento do construtor (ver `missionProgress.dao.ts`).
  */
 export abstract class BaseFirebaseDAO<T extends { id: string }>
   implements IBaseRepository<T>
@@ -70,6 +72,12 @@ export abstract class BaseFirebaseDAO<T extends { id: string }>
   protected readonly path: string
   protected readonly idPrefix: string
   protected readonly searchField?: SearchField<T>
+  /**
+   * Campo da ordenação por omissão. `orderBy` do Firestore EXCLUI documentos
+   * sem o campo, portanto uma colecção sem `created_at` fica invisível em
+   * `getAll` se não declarar o seu.
+   */
+  protected readonly defaultOrderField: string
 
   /**
    * @param path        path da colecção — sempre vindo de `firebaseCollections`
@@ -79,16 +87,21 @@ export abstract class BaseFirebaseDAO<T extends { id: string }>
    *                    minúsculas no documento e ter índice. Um caminho com
    *                    ponto (`driver.email`) é aninhado e NÃO é verificado
    *                    contra a entidade — é uma promessa de quem chama.
+   * @param defaultOrderField campo da ordenação por omissão. Só é preciso em
+   *                    colecções sem `created_at` — sem ele, `getAll` devolve
+   *                    vazio nessas colecções.
    */
   constructor(
     path: string,
     converter: FirestoreDataConverter<T>,
     idPrefix: string,
-    searchField?: SearchField<T>
+    searchField?: SearchField<T>,
+    defaultOrderField?: keyof T & string
   ) {
     this.path = path
     this.idPrefix = idPrefix
     this.searchField = searchField
+    this.defaultOrderField = defaultOrderField ?? 'created_at'
     this.ref = collection(db, path).withConverter(converter)
   }
 
@@ -131,7 +144,7 @@ export abstract class BaseFirebaseDAO<T extends { id: string }>
     } else {
       constraints.push(
         orderBy(
-          (options.orderBy as string) ?? 'created_at',
+          (options.orderBy as string) ?? this.defaultOrderField,
           options.orderDirection ?? 'desc'
         )
       )
