@@ -2,6 +2,28 @@
 import { walletTopupRequestRepository, adminMoneyRepository } from '@/modules/Api'
 import { WalletTopupRequestEntity } from '@/core/entities/WalletTopupRequest'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
+import type { QueryOptions } from '@/core/interfaces/IBaseRepository'
+
+// Defaults do DAO antigo — preservados aqui para o motor novo (que usa 50).
+const LEGACY_PAGE_SIZE = 500
+const LEGACY_FIELD_PAGE_SIZE = 10
+
+/**
+ * Traduz `offset` (paginação por número de registos saltados, como o DAO
+ * antigo fazia) para o cursor por `id` que o `BaseFirebaseDAO` espera.
+ * Mesmo custo do código antigo: uma query extra de `offset` documentos.
+ */
+async function offsetToCursor(
+  base: Omit<QueryOptions<WalletTopupRequestEntity>, 'limit' | 'after'>,
+  offset: number
+): Promise<string | undefined> {
+  if (!offset) return undefined
+  const skipped = await walletTopupRequestRepository.getAll({
+    ...base,
+    limit: offset
+  })
+  return skipped.data[skipped.data.length - 1]?.id
+}
 
 export class WalletTopupRequestService {
   async getAll(
@@ -11,12 +33,13 @@ export class WalletTopupRequestService {
     filters?: Partial<WalletTopupRequestEntity>
   ): Promise<ListResponseType<WalletTopupRequestEntity[]>> {
     try {
-      return await walletTopupRequestRepository.getAll(
-        limit,
-        offset,
-        searchTerm,
-        filters
-      )
+      const base = { searchTerm, filters }
+      const after = await offsetToCursor(base, offset ?? 0)
+      return await walletTopupRequestRepository.getAll({
+        ...base,
+        limit: limit ?? LEGACY_PAGE_SIZE,
+        after
+      })
     } catch (error: any) {
       console.error('Erro ao buscar carteiras:', error)
       throw new Error(error.message || 'Erro ao buscar carteiras')
@@ -38,7 +61,10 @@ export class WalletTopupRequestService {
     value: any
   ): Promise<WalletTopupRequestEntity | null> {
     try {
-      return await walletTopupRequestRepository.getOneByField(field, value)
+      return await walletTopupRequestRepository.getOneByField(
+        field as keyof WalletTopupRequestEntity,
+        value
+      )
     } catch (error: any) {
       console.error(
         `Erro ao buscar walletTopupRequest por ${field}-${value}:`,
@@ -56,13 +82,15 @@ export class WalletTopupRequestService {
     offset?: number
   ): Promise<ListResponseType<WalletTopupRequestEntity[]>> {
     try {
-      const { data, pagination } =
-        await walletTopupRequestRepository.getAllByField(
-          field,
-          value,
-          limit,
-          offset
-        )
+      const filters = { [field]: value } as Partial<WalletTopupRequestEntity>
+      const base = { filters }
+      const after = await offsetToCursor(base, offset ?? 0)
+
+      const { data, pagination } = await walletTopupRequestRepository.getAll({
+        ...base,
+        limit: limit ?? LEGACY_FIELD_PAGE_SIZE,
+        after
+      })
 
       return { data, pagination }
     } catch (error: any) {

@@ -22,7 +22,7 @@ export class FinanceService {
     let rides = ridesRes.data
 
     // 2. Buscar Carregamentos de Carteira (Topups) via DAO
-    const topupsRes = await topupDao.getAll(5000, 0)
+    const topupsRes = await topupDao.getAll({ limit: 5000 })
     let topups = topupsRes.data
 
     // Pures JS Dates for safe comparisons
