@@ -1,152 +1,19 @@
-// modules/Api/firebase/wallets.dao.ts
+// modules/Api/firebase/wallet.dao.ts
 import type { IWalletRepository } from '@/core/interfaces/IWalletRepository'
-import { WalletEntity } from '@/core/entities/Wallet'
-import {
-  collection,
-  getDocs,
-  doc,
-  getDoc,
-  query,
-  where,
-  orderBy,
-  limit as fbLimit,
-  startAfter,
-  getCountFromServer
-} from 'firebase/firestore'
-import { db } from '@/config/firebase.config'
-import type { ListResponseType } from '@/interfaces/IApiResponse'
+import { WalletEntity, walletConverter } from '@/core/entities/Wallet'
 import { firebaseCollections } from '@/constants/firebaseCollections'
+import { ReadOnlyDAO } from './ReadOnlyDAO'
 
-export class FirebaseWalletDAO implements IWalletRepository {
-  private walletsRef = collection(db, firebaseCollections.wallets.root)
-
-  // helper: aplica filtros (where) sobre um ref/q
-  private applyFilters(baseRef: any, filters?: Partial<WalletEntity>) {
-    let q: any = baseRef
-    if (!filters) return q
-
-    Object.entries(filters).forEach(([field, value]) => {
-      if (value !== undefined && value !== '') {
-        q = query(q, where(field as string, '==', value))
-      }
-    })
-    return q
+export class FirebaseWalletDAO
+  extends ReadOnlyDAO<WalletEntity>
+  implements IWalletRepository
+{
+  constructor() {
+    // `user.email` é aninhado (ver `SearchField<T>` em `BaseFirebaseDAO`):
+    // `WalletEntity.user` é um `DriverInterface`, que estende `UserInterface`
+    // e por isso tem `email`. É por aqui que o admin procura uma carteira —
+    // pelo email do motorista. O prefixo de ID nunca é usado: `create` está
+    // fechado pelo `ReadOnlyDAO`.
+    super(firebaseCollections.wallets.root, walletConverter, 'wal', 'user.email')
   }
-
-  /** Listar wallets com paginação + pesquisa opcional */
-  async getAll(
-    limitValue: number = 500,
-    offset = 0,
-    searchTerm?: string,
-    filters?: Partial<WalletEntity>
-  ): Promise<ListResponseType<WalletEntity[]>> {
-    // 1) constrói query base aplicando filtros
-    let baseQuery: any = this.applyFilters(this.walletsRef, filters)
-
-    // 2) se tiver searchTerm
-    const search = searchTerm?.toString().trim()
-    if (search) {
-      const lower = search.toLowerCase()
-      baseQuery = query(
-        baseQuery,
-        orderBy('user.email'),
-        where('user.email', '>=', lower),
-        where('user.email', '<=', lower + '\uf8ff')
-      )
-    } else {
-      // padrão: ordena por createdAt (use o campo consistente no seu DB)
-      baseQuery = query(baseQuery, orderBy('created_at', 'desc'))
-    }
-
-    // 3) conta total com mesma baseQuery (opcionalmente, se quiser performance, você pode evitar)
-    let total = 0
-    try {
-      const countSnap = await getCountFromServer(baseQuery)
-      total = countSnap.data().count
-    } catch (err) {
-      // se count falhar, não interrompe; continua sem count
-      console.warn('Erro ao obter count:', err)
-    }
-
-    // 4) se offset > 0 -> precisamos do lastVisible correspondente ao offset
-    let finalQuery = query(baseQuery, fbLimit(limitValue)) // default
-    if (offset > 0) {
-      // NOTE: esse "skip" é caro para offsets grandes — ver nota abaixo
-      const skipQuery = query(baseQuery, fbLimit(offset))
-      const skipSnap = await getDocs(skipQuery)
-      const lastVisible = skipSnap.docs[skipSnap.docs.length - 1]
-      if (!lastVisible) {
-        // offset maior do que registros existentes
-        return {
-          data: [],
-          pagination: { limit: limitValue, offset, count: total }
-        }
-      }
-      finalQuery = query(
-        baseQuery,
-        startAfter(lastVisible),
-        fbLimit(limitValue)
-      )
-    }
-
-    const snapshot = await getDocs(finalQuery)
-
-    if (snapshot.empty) {
-      return {
-        data: [],
-        pagination: { limit: limitValue, offset, count: total }
-      }
-    }
-
-    const wallets = snapshot.docs.map(
-      docSnap =>
-        new WalletEntity({
-          ...(docSnap.data() as WalletEntity)
-        })
-    )
-
-    return {
-      data: wallets,
-      pagination: {
-        limit: limitValue,
-        offset,
-        count: total
-      }
-    }
-  }
-
-  async getById(id: string): Promise<WalletEntity | null> {
-    const docSnap = await getDoc(doc(this.walletsRef, id))
-    if (!docSnap.exists()) return null
-    const walletData = new WalletEntity({
-      ...(docSnap.data() as WalletEntity)
-    })
-    return walletData
-  }
-
-  async getAllByField(
-    field: keyof WalletEntity,
-    value: any,
-    limit = 10,
-    offset = 0
-  ): Promise<ListResponseType<WalletEntity[]>> {
-    const filters: Partial<WalletEntity> = { [field]: value } as any
-    return this.getAll(limit, offset, undefined, filters)
-  }
-
-  async getOneByField(field: string, value: any): Promise<WalletEntity | null> {
-    const querySnapshot = await getDocs(
-      query(this.walletsRef, where(field, '==', value))
-    )
-    if (querySnapshot.empty) return null
-
-    const adminData = new WalletEntity({
-      ...(querySnapshot.docs[0].data() as WalletEntity)
-    })
-    return adminData
-  }
-
-  // Criar, actualizar e apagar carteiras vivem na API, em transacções
-  // auditadas. Aqui só se lê: apagar destruía o registo do dinheiro devido ao
-  // motorista, e escrever `balance` criava dinheiro sem linha de extracto.
 }

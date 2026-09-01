@@ -2,6 +2,25 @@
 import { walletRepository, adminMoneyRepository } from '@/modules/Api'
 import { WalletEntity } from '@/core/entities/Wallet'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
+import type { QueryOptions } from '@/core/interfaces/IBaseRepository'
+
+// Default do DAO antigo — preservado aqui para o motor novo (que usa 50).
+const LEGACY_PAGE_SIZE = 500
+const LEGACY_FIELD_PAGE_SIZE = 10
+
+/**
+ * Traduz `offset` (paginação por número de registos saltados, como o DAO
+ * antigo fazia) para o cursor por `id` que o `ReadOnlyDAO` espera.
+ * Mesmo custo do código antigo: uma query extra de `offset` documentos.
+ */
+async function offsetToCursor(
+  base: Omit<QueryOptions<WalletEntity>, 'limit' | 'after'>,
+  offset: number
+): Promise<string | undefined> {
+  if (!offset) return undefined
+  const skipped = await walletRepository.getAll({ ...base, limit: offset })
+  return skipped.data[skipped.data.length - 1]?.id
+}
 
 export class WalletService {
   async getAll(
@@ -11,7 +30,13 @@ export class WalletService {
     filters?: Partial<WalletEntity>
   ): Promise<ListResponseType<WalletEntity[]>> {
     try {
-      return await walletRepository.getAll(limit, offset, searchTerm, filters)
+      const base = { searchTerm, filters }
+      const after = await offsetToCursor(base, offset ?? 0)
+      return await walletRepository.getAll({
+        ...base,
+        limit: limit ?? LEGACY_PAGE_SIZE,
+        after
+      })
     } catch (error: any) {
       console.error('Erro ao buscar carteiras:', error)
       throw new Error(error.message || 'Erro ao buscar carteiras')
@@ -30,7 +55,10 @@ export class WalletService {
   // get one by custom field
   async getOneByField(field: string, value: any): Promise<WalletEntity | null> {
     try {
-      return await walletRepository.getOneByField(field, value)
+      return await walletRepository.getOneByField(
+        field as keyof WalletEntity,
+        value
+      )
     } catch (error: any) {
       console.error(`Erro ao buscar wallet por ${field}-${value}:`, error)
       throw new Error(error.message || 'Erro ao buscar wallet')
@@ -45,12 +73,15 @@ export class WalletService {
     offset?: number
   ): Promise<ListResponseType<WalletEntity[]>> {
     try {
-      const { data, pagination } = await walletRepository.getAllByField(
-        field,
-        value,
-        limit,
-        offset
-      )
+      const filters = { [field]: value } as Partial<WalletEntity>
+      const base = { filters }
+      const after = await offsetToCursor(base, offset ?? 0)
+
+      const { data, pagination } = await walletRepository.getAll({
+        ...base,
+        limit: limit ?? LEGACY_FIELD_PAGE_SIZE,
+        after
+      })
 
       return { data, pagination }
     } catch (error: any) {
