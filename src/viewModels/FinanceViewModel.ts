@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import ExcelJS from 'exceljs'
 import { saveAs } from 'file-saver'
-import { financeService } from '@/services/finance.service'
+import { financeUseCase } from '@/domain/usecases/financeUseCase'
 import type {
   FinanceFilters,
   FinancialLedgerEntry,
@@ -19,7 +19,7 @@ interface ExportParams {
 export function useFinanceViewModel(filters: FinanceFilters) {
   const { data, isLoading, isRefetching, error, refetch } = useQuery({
     queryKey: ['finance_ledger', filters],
-    queryFn: () => financeService.getLedger(filters),
+    queryFn: () => financeUseCase.executeGetLedger(filters),
     staleTime: 60000, // 1 minute
     refetchOnWindowFocus: false,
     enabled: !!filters.startDate && !!filters.endDate // Somente buscar se as datas estiverem configuradas
