@@ -1,14 +1,13 @@
 // viewModels/AdminViewModel.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { AdminService } from '@/services/admins.service'
+import { adminUseCase } from '@/domain/usecases/adminUseCase'
 import { AdminEntity } from '@/core/entities/Admin'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
+import type { FieldPath } from '@/core/interfaces/IBaseRepository'
 import { firebaseCollections } from '@/constants/firebaseCollections'
 import { useMemo } from 'react'
 import { getAdminRoleLabel, getUserStatusLabel } from '@/utils/gettersLabels'
 import { withAudit } from '@/services/audit.service'
-
-const adminService = new AdminService()
 
 export function useAdminsViewModel(
   limit?: number,
@@ -34,7 +33,7 @@ export function useAdminsViewModel(
       searchTerm,
       filtersKey
     ],
-    queryFn: () => adminService.getAll(limit, offset, searchTerm, filters),
+    queryFn: () => adminUseCase.executeGetAll(limit, offset, searchTerm, filters),
     staleTime: 1000 * 60 // cache 1min
   })
 
@@ -55,11 +54,11 @@ export function useAdminsViewModel(
 
   /** Buscar admin por field */
   const fetchOneAdminByField = async (
-    field: keyof AdminEntity,
+    field: FieldPath<AdminEntity>,
     value: string
   ) => {
     try {
-      return await adminService.getOneByField(field, value)
+      return await adminUseCase.executeGetOneByField(field, value)
     } catch (err) {
       console.error('Erro ao buscar admin por campo:', err)
       return null
@@ -68,34 +67,23 @@ export function useAdminsViewModel(
 
   /** Buscar lista de administradores por field */
   const fetchAllAdminsByField = async (
-    field: string,
+    field: FieldPath<AdminEntity>,
     value: any,
     limit?: number,
     offset?: number
   ) => {
     try {
-      return await adminService.getAllByField(field, value, limit, offset)
+      return await adminUseCase.executeGetAllByField(field, value, limit, offset)
     } catch (err) {
       console.error('Erro ao buscar administradores por campo:', err)
       return null
     }
   }
 
-  // const {
-  //   data: adminsByFieldResponse,
-  //   isLoading: loadingByField,
-  //   error: errorByField
-  // } = useQuery<ListResponseType<AdminEntity[]>>({
-  //   queryKey: ['adminsByField', field, value, limit, offset],
-  //   queryFn: () => adminService.getAllByField(field as string, value),
-  //   enabled: !!field,
-  //   staleTime: 1000 * 60 // cache 1min
-  // })
-
   /** Criar administrador */
   const createAdmin = useMutation({
     mutationFn: (admin: Omit<AdminEntity, 'id'>) =>
-      withAudit(() => adminService.create(admin), {
+      withAudit(() => adminUseCase.executeCreate(admin), {
         action: 'create',
         module: 'admins',
         description: `Criou administrador: ${admin.name} (${admin.email})`,
@@ -119,8 +107,8 @@ export function useAdminsViewModel(
       id: string
       admin: Partial<AdminEntity>
     }) => {
-      const previous_data = await adminService.getById(id).catch(() => null)
-      return withAudit(() => adminService.update(id, admin), {
+      const previous_data = await adminUseCase.executeGetById(id).catch(() => null)
+      return withAudit(() => adminUseCase.executeUpdate(id, admin), {
         action: 'update',
         module: 'admins',
         description: `Atualizou os dados do administrador - ID: ${id}`,
@@ -140,8 +128,8 @@ export function useAdminsViewModel(
   /** Deletar administrador */
   const deleteAdmin = useMutation({
     mutationFn: async (id: string) => {
-      const previous_data = await adminService.getById(id).catch(() => null)
-      return withAudit(() => adminService.delete(id), {
+      const previous_data = await adminUseCase.executeGetById(id).catch(() => null)
+      return withAudit(() => adminUseCase.executeDelete(id), {
         action: 'delete',
         module: 'admins',
         description: `Excluiu o administrador - ID: ${id}`,
@@ -161,7 +149,7 @@ export function useAdminsViewModel(
   /** Buscar administrador único (on-demand) */
   const fetchAdminById = async (id: string) => {
     try {
-      return await adminService.getById(id)
+      return await adminUseCase.executeGetById(id)
     } catch (err) {
       console.error('Erro ao buscar administrador:', err)
       return null
@@ -171,7 +159,7 @@ export function useAdminsViewModel(
   /** Buscar administrador único (on-demand) */
   const fetchAdminByEmail = async (email: string) => {
     try {
-      return await adminService.getByEmail(email)
+      return await adminUseCase.executeGetByEmail(email)
     } catch (err) {
       console.error('Erro ao buscar administrador:', err)
       return null

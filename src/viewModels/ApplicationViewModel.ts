@@ -1,14 +1,13 @@
 // viewModels/ApplicationViewModel.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ApplicationService } from '@/services/applications.service'
+import { applicationUseCase } from '@/domain/usecases/applicationUseCase'
 import { ApplicationEntity } from '@/core/entities/Application'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
+import type { FieldPath } from '@/core/interfaces/IBaseRepository'
 import { firebaseCollections } from '@/constants/firebaseCollections'
 import { useMemo } from 'react'
 import { getApplicationStatusLabel } from '@/utils/gettersLabels'
 import { withAudit } from '@/services/audit.service'
-
-const applicationService = new ApplicationService()
 
 export function useApplicationsViewModel(
   limit?: number,
@@ -35,7 +34,7 @@ export function useApplicationsViewModel(
       filtersKey
     ],
     queryFn: () =>
-      applicationService.getAll(limit, offset, searchTerm, filters),
+      applicationUseCase.executeGetAll(limit, offset, searchTerm, filters),
     staleTime: 1000 * 60 // cache 1min
   })
 
@@ -56,13 +55,13 @@ export function useApplicationsViewModel(
 
   /** Buscar lista de usuários por field */
   const fetchAllApplicationsByField = async (
-    field: string,
+    field: FieldPath<ApplicationEntity>,
     value: any,
     limit?: number,
     offset?: number
   ) => {
     try {
-      return await applicationService.getAllByField(field, value, limit, offset)
+      return await applicationUseCase.executeGetAllByField(field, value, limit, offset)
     } catch (err) {
       console.error('Erro ao buscar usuários por campo:', err)
       return null
@@ -72,7 +71,7 @@ export function useApplicationsViewModel(
   /** Criar usuário */
   const createApplication = useMutation({
     mutationFn: (application: Omit<ApplicationEntity, 'id'>) =>
-      withAudit(() => applicationService.create(application), {
+      withAudit(() => applicationUseCase.executeCreate(application), {
         action: 'create',
         module: 'applications',
         description: `Criou candidatura: ${application.first_name || ''} ${application.last_name || ''}`,
@@ -96,10 +95,10 @@ export function useApplicationsViewModel(
       id: string
       application: Partial<ApplicationEntity>
     }) => {
-      const previous_data = await applicationService
-        .getById(id)
+      const previous_data = await applicationUseCase
+        .executeGetById(id)
         .catch(() => null)
-      return withAudit(() => applicationService.update(id, application), {
+      return withAudit(() => applicationUseCase.executeUpdate(id, application), {
         action: 'update',
         module: 'applications',
         description: `Atualizou candidatura - ID: ${id}`,
@@ -119,10 +118,10 @@ export function useApplicationsViewModel(
   /** Deletar usuário */
   const deleteApplication = useMutation({
     mutationFn: async (id: string) => {
-      const previous_data = await applicationService
-        .getById(id)
+      const previous_data = await applicationUseCase
+        .executeGetById(id)
         .catch(() => null)
-      return withAudit(() => applicationService.delete(id), {
+      return withAudit(() => applicationUseCase.executeDelete(id), {
         action: 'delete',
         module: 'applications',
         description: `Excluiu candidatura - ID: ${id}`,
@@ -142,7 +141,7 @@ export function useApplicationsViewModel(
   /** Buscar usuário único (on-demand) */
   const fetchApplicationById = async (id: string) => {
     try {
-      return await applicationService.getById(id)
+      return await applicationUseCase.executeGetById(id)
     } catch (err) {
       console.error('Erro ao buscar usuário:', err)
       return null
@@ -152,7 +151,7 @@ export function useApplicationsViewModel(
   /** Buscar usuário único (on-demand) */
   const fetchApplicationByEmail = async (email: string) => {
     try {
-      return await applicationService.getByEmail(email)
+      return await applicationUseCase.executeGetByEmail(email)
     } catch (err) {
       console.error('Erro ao buscar usuário:', err)
       return null
@@ -161,11 +160,11 @@ export function useApplicationsViewModel(
 
   /** Buscar application por field */
   const fetchOneApplicationByField = async (
-    field: keyof ApplicationEntity,
+    field: FieldPath<ApplicationEntity>,
     value: string
   ) => {
     try {
-      return await applicationService.getOneByField(field, value)
+      return await applicationUseCase.executeGetOneByField(field, value)
     } catch (err) {
       console.error('Erro ao buscar usuario por campo:', err)
       return null
