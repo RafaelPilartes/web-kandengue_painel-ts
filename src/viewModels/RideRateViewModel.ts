@@ -5,6 +5,7 @@ import { RideRateEntity } from '@/core/entities/RideRate'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
 import { withAudit } from '@/services/audit.service'
+import type { FieldPath } from '@/core/interfaces/IBaseRepository'
 
 export function useRideRatesViewModel(
   limit?: number,
@@ -36,7 +37,7 @@ export function useRideRatesViewModel(
 
   /** Buscar lista de taxa de viagem por field */
   const fetchAllRideRatesByField = async (
-    field: string,
+    field: FieldPath<RideRateEntity>,
     value: any,
     limit?: number,
     offset?: number
@@ -126,7 +127,7 @@ export function useRideRatesViewModel(
 
   /** Buscar rideRate por field */
   const fetchOneRideRateByField = async (
-    field: keyof RideRateEntity,
+    field: FieldPath<RideRateEntity>,
     value: string
   ) => {
     try {

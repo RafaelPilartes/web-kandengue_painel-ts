@@ -1,5 +1,15 @@
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 
+/**
+ * Campo aceite numa query por igualdade: um campo real da entidade, ou um
+ * caminho aninhado com ponto (`user.id`, `driver.email`).
+ *
+ * O Firestore aceita ambos em `where`, mas `keyof T` só descreve o primeiro —
+ * e o painel usa mesmo caminhos aninhados (ver `DriverDetails.tsx`). O caminho
+ * com ponto não é verificado contra a entidade; um nome de topo continua a ser.
+ */
+export type FieldPath<T> = (keyof T & string) | `${string}.${string}`
+
 export interface QueryOptions<T> {
   /** Máximo de documentos a devolver. Omisso: 50. */
   limit?: number
@@ -36,11 +46,11 @@ export interface IBaseRepository<T extends { id: string }> {
   getAll(options?: QueryOptions<T>): Promise<ListResponseType<T[]>>
   getById(id: string): Promise<T | null>
   getAllByField(
-    field: keyof T,
+    field: FieldPath<T>,
     value: unknown,
     options?: Omit<QueryOptions<T>, 'filters'>
   ): Promise<ListResponseType<T[]>>
-  getOneByField(field: keyof T, value: unknown): Promise<T | null>
+  getOneByField(field: FieldPath<T>, value: unknown): Promise<T | null>
   count(filters?: Partial<T>): Promise<number>
 
   // ---- Escrita ----
@@ -65,7 +75,7 @@ export interface IBaseRepository<T extends { id: string }> {
   ): () => void
 
   listenAllByField(
-    field: keyof T,
+    field: FieldPath<T>,
     value: unknown,
     onUpdate: (data: T[]) => void,
     onError?: (err: Error) => void,

@@ -5,6 +5,7 @@ import { DocumentEntity } from '@/core/entities/Document'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
 import { withAudit } from '@/services/audit.service'
+import type { FieldPath } from '@/core/interfaces/IBaseRepository'
 
 export function useDocumentsViewModel(
   limit?: number,
@@ -36,7 +37,7 @@ export function useDocumentsViewModel(
 
   /** Buscar lista de documentos por field */
   const fetchAllDocumentsByField = async (
-    field: string,
+    field: FieldPath<DocumentEntity>,
     value: any,
     limit?: number,
     offset?: number
@@ -127,7 +128,7 @@ export function useDocumentsViewModel(
 
   /** Buscar document por field */
   const fetchOneDocumentsByField = async (
-    field: keyof DocumentEntity,
+    field: FieldPath<DocumentEntity>,
     value: string
   ) => {
     try {

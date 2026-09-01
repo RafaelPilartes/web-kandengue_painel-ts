@@ -2,6 +2,7 @@ import { ApiRepository } from '@/modules/Api/factory'
 import { BaseUseCase } from './BaseUseCase'
 import type { DocumentEntity } from '@/core/entities/Document'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
+import type { FieldPath } from '@/core/interfaces/IBaseRepository'
 
 // Defaults do DAO antigo — preservados aqui para o motor novo (que usa 50).
 const LEGACY_PAGE_SIZE = 500
@@ -36,16 +37,16 @@ export class DocumentUseCase extends BaseUseCase {
   }
 
   executeGetOneByField(
-    field: string,
+    field: FieldPath<DocumentEntity>,
     value: unknown
   ): Promise<DocumentEntity | null> {
     return this.run('getOneByField', () =>
-      this.repository.getOneByField(field as keyof DocumentEntity, value)
+      this.repository.getOneByField(field, value)
     )
   }
 
   executeGetAllByField(
-    field: string,
+    field: FieldPath<DocumentEntity>,
     value: unknown,
     limit?: number,
     offset?: number

@@ -4,6 +4,7 @@ import { notificationUseCase } from '@/domain/usecases/notificationUseCase'
 import { NotificationEntity } from '@/core/entities/Notification'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { withAudit } from '@/services/audit.service'
+import type { FieldPath } from '@/core/interfaces/IBaseRepository'
 
 export function useNotificationsViewModel(
   limit?: number,
@@ -30,7 +31,7 @@ export function useNotificationsViewModel(
 
   /** Buscar lista de notificações por field */
   const fetchAllNotificationsByField = async (
-    field: string,
+    field: FieldPath<NotificationEntity>,
     value: any,
     limit?: number,
     offset?: number
@@ -131,7 +132,7 @@ export function useNotificationsViewModel(
 
   /** Buscar notification por field */
   const fetchOneNotificationByField = async (
-    field: keyof NotificationEntity,
+    field: FieldPath<NotificationEntity>,
     value: string
   ) => {
     try {

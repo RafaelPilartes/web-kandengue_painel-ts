@@ -24,6 +24,7 @@ import type {
 import { db } from '@/config/firebase.config'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import type {
+  FieldPath,
   IBaseRepository,
   ListenOptions,
   QueryOptions
@@ -209,7 +210,7 @@ export abstract class BaseFirebaseDAO<T extends { id: string }>
   }
 
   async getAllByField(
-    field: keyof T,
+    field: FieldPath<T>,
     value: unknown,
     options: Omit<QueryOptions<T>, 'filters'> = {}
   ): Promise<ListResponseType<T[]>> {
@@ -219,7 +220,7 @@ export abstract class BaseFirebaseDAO<T extends { id: string }>
     })
   }
 
-  async getOneByField(field: keyof T, value: unknown): Promise<T | null> {
+  async getOneByField(field: FieldPath<T>, value: unknown): Promise<T | null> {
     try {
       const snap = await getDocs(
         query(this.ref, where(field as string, '==', value), fbLimit(1))
@@ -358,7 +359,7 @@ export abstract class BaseFirebaseDAO<T extends { id: string }>
   }
 
   listenAllByField(
-    field: keyof T,
+    field: FieldPath<T>,
     value: unknown,
     onUpdate: (data: T[]) => void,
     onError?: (err: Error) => void,
