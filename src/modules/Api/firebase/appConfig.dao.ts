@@ -1,3 +1,6 @@
+// Não usa o BaseFirebaseDAO de propósito: lê e escreve um documento único
+// e conhecido, não uma colecção. Paginação, pesquisa por prefixo e IDs
+// gerados — tudo o que o motor traz — não se aplicam aqui.
 import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore'
 import { db } from '@/config/firebase.config'
 import type { IAppConfigRepository } from '@/core/interfaces/IAppConfigRepository'

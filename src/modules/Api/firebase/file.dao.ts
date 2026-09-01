@@ -1,4 +1,7 @@
 // src/infra/firebase/file.dao.ts
+// Não usa o BaseFirebaseDAO de propósito: isto é Cloud Storage, não
+// Firestore. Não há colecção, documento nem converter — só upload,
+// download e remoção de binários. O motor não se aplica.
 import {
   getDownloadURL,
   ref,
