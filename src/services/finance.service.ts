@@ -18,7 +18,7 @@ export class FinanceService {
     overview: FinancialOverview
   }> {
     // 1. Buscar Corridas (Rides) via DAO
-    const ridesRes = await rideDao.getAll(5000, 0)
+    const ridesRes = await rideDao.getAll({ limit: 5000 })
     let rides = ridesRes.data
 
     // 2. Buscar Carregamentos de Carteira (Topups) via DAO

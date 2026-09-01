@@ -134,10 +134,13 @@ export class MissionService {
     } else {
       let rides: { data: any[] } = { data: [] }
       try {
-        rides = await rideRepository.getAll(1000, 0, undefined, {
-          'driver.id': driver_id,
-          status: 'completed'
-        } as any)
+        rides = await rideRepository.getAll({
+          limit: 1000,
+          filters: {
+            'driver.id': driver_id,
+            status: 'completed'
+          } as any
+        })
       } catch (error) {
         console.error(`[processMissionProgress] Error fetching rides:`, error)
         return
