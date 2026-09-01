@@ -16,7 +16,7 @@ import { Link } from 'react-router-dom'
 import { routsNameMain } from '../../constants/routsName'
 import { DropdownInfo } from '../DropdownInfo'
 import { Chat } from 'phosphor-react'
-import { auditService } from '@/services/audit.service'
+import { auditService } from '@/observability/audit'
 import { useAuthViewModel } from '@/viewModels/AuthViewModel'
 import { showToast } from '@/utils/toasts'
 

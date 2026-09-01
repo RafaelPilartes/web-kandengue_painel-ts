@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { missionUseCase } from '@/domain/usecases/missionUseCase'
 import { MissionEntity } from '@/core/entities/Mission'
 import { firebaseCollections } from '@/constants/firebaseCollections'
-import { withAudit } from '@/services/audit.service'
+import { withAudit } from '@/observability/audit'
 
 export function useMissionViewModel() {
   const queryClient = useQueryClient()

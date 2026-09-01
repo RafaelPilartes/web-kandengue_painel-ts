@@ -9,7 +9,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import { getRideStatusLabel, getRideTypeLabel } from '@/utils/gettersLabels'
 import type { BreakdownType, RideFareInterface } from '@/interfaces/IRideFare'
 import type { PayoutsType } from '@/types/ride'
-import { withAudit } from '@/services/audit.service'
+import { withAudit } from '@/observability/audit'
 
 export function useRidesViewModel(
   limit?: number,

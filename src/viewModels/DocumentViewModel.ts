@@ -4,7 +4,7 @@ import { documentUseCase } from '@/domain/usecases/documentUseCase'
 import { DocumentEntity } from '@/core/entities/Document'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
-import { withAudit } from '@/services/audit.service'
+import { withAudit } from '@/observability/audit'
 import type { FieldPath } from '@/core/interfaces/IBaseRepository'
 
 export function useDocumentsViewModel(

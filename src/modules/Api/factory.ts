@@ -46,8 +46,9 @@ import { AdminMoneyDAO } from './rest/adminMoney.dao'
  * módulo instancia ~20 DAOs no import, e importá-lo anularia a preguiça.
  * Cada DAO migrado acrescenta aqui o seu campo e desaparece de `index.ts`.
  *
- * O `auditLog.dao.ts` fica fora: é consumido apenas por `audit.service.ts`,
- * que é transversal e não entra nesta migração.
+ * O `auditLog.dao.ts` fica fora: é consumido apenas por
+ * `src/observability/audit.ts`, que é transversal e não entra nesta
+ * migração.
  */
 class ApiFactory {
   private _vehicles?: IVehicleRepository

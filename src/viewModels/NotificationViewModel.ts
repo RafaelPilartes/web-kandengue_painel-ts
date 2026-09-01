@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { notificationUseCase } from '@/domain/usecases/notificationUseCase'
 import { NotificationEntity } from '@/core/entities/Notification'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
-import { withAudit } from '@/services/audit.service'
+import { withAudit } from '@/observability/audit'
 import type { FieldPath } from '@/core/interfaces/IBaseRepository'
 
 export function useNotificationsViewModel(

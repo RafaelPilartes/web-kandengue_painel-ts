@@ -7,7 +7,7 @@ import { useEffect } from 'react'
 import { useAdminsViewModel } from '@/viewModels/AdminViewModel'
 import { showToast } from '@/utils/toasts'
 import { routsNameMain } from '@/constants/routsName'
-import { auditService } from '@/services/audit.service'
+import { auditService } from '@/observability/audit'
 
 export function Private({ children }: Props) {
   const { currentAdminData, removeAdmin } = useAdminStore()

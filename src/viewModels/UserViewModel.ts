@@ -7,7 +7,7 @@ import type { FieldPath } from '@/core/interfaces/IBaseRepository'
 import { firebaseCollections } from '@/constants/firebaseCollections'
 import { useMemo } from 'react'
 import { getUserStatusLabel } from '@/utils/gettersLabels'
-import { withAudit } from '@/services/audit.service'
+import { withAudit } from '@/observability/audit'
 
 export function useUsersViewModel(
   limit?: number,

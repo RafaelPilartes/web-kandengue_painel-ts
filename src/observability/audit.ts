@@ -1,4 +1,9 @@
-// services/audit.service.ts
+// Observabilidade, não acesso a dados.
+//
+// Não é um usecase de propósito: tem estado mutável de sessão (`setAdmin`,
+// chamado do login e do PrivateRoute), recolhe contexto do browser, e o
+// `withAudit` é um decorador que os próprios usecases chamam para se
+// registarem. Convertê-lo poria a camada a depender de si mesma.
 import { FirebaseAuditLogDAO } from '@/modules/Api/firebase/auditLog.dao'
 import type {
   AuditLogInterface,

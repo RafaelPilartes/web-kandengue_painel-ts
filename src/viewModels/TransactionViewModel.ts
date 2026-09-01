@@ -5,7 +5,7 @@ import { TransactionEntity } from '@/core/entities/Transaction'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import type { FieldPath } from '@/core/interfaces/IBaseRepository'
 import { firebaseCollections } from '@/constants/firebaseCollections'
-import { withAudit } from '@/services/audit.service'
+import { withAudit } from '@/observability/audit'
 
 export function useTransactionsViewModel(
   limit?: number,

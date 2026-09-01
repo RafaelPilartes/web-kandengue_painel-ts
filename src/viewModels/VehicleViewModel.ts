@@ -4,7 +4,7 @@ import { vehicleUseCase } from '@/domain/usecases/vehicleUseCase'
 import type { VehicleEntity } from '@/core/entities/Vehicle'
 import type { QueryOptions } from '@/core/interfaces/IBaseRepository'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
-import { withAudit } from '@/services/audit.service'
+import { withAudit } from '@/observability/audit'
 
 type NewVehicle = Omit<VehicleEntity, 'id' | 'created_at' | 'updated_at'>
 

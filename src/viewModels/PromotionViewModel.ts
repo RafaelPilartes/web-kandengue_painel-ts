@@ -5,7 +5,7 @@ import { firebaseCollections } from '@/constants/firebaseCollections'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { promotionUseCase } from '@/domain/usecases/promotionUseCase'
 import { useAdminStore } from '@/stores/userStore'
-import { withAudit } from '@/services/audit.service'
+import { withAudit } from '@/observability/audit'
 
 export function usePromotionsViewModel(
   limit?: number,
