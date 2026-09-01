@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import type { RideInterface } from '@/interfaces/IRide'
 import type { RideStatusType } from '@/types/enum'
-import { RideService } from '@/services/ride.service'
+import { rideUseCase } from '@/domain/usecases/rideUseCase'
 import { useRideTrackingRealtime } from '@/viewModels/RideTrackingViewModel'
 import useDirections from '@/hook/useDirections'
 import { snapToRoads } from '@/utils/snapToRoads'
@@ -32,8 +32,6 @@ const ROUTE_STYLES: Partial<
   picked_up: { color: '#22c55e', weight: 5 } // green-500 — to dropoff
 }
 
-const rideService = new RideService()
-
 export function useRideMapRoutes(
   selectedRide: RideInterface | null
 ): RideMapRoutesReturn {
@@ -56,7 +54,7 @@ export function useRideMapRoutes(
       return
     }
 
-    const unsub = rideService.listenRideRealtime(
+    const unsub = rideUseCase.executeListenRideRealtime(
       selectedRide.id,
       updatedRide => setLiveRide(updatedRide as RideInterface),
       err => console.error('Ride realtime listener error:', err)

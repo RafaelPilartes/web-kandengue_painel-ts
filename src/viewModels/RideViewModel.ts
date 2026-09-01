@@ -1,16 +1,15 @@
 // viewModels/RideViewModel.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { RideService } from '@/services/ride.service'
+import { rideUseCase } from '@/domain/usecases/rideUseCase'
 import { RideEntity } from '@/core/entities/Ride'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
+import type { FieldPath } from '@/core/interfaces/IBaseRepository'
 import { firebaseCollections } from '@/constants/firebaseCollections'
 import { useEffect, useMemo, useRef } from 'react'
 import { getRideStatusLabel, getRideTypeLabel } from '@/utils/gettersLabels'
 import type { BreakdownType, RideFareInterface } from '@/interfaces/IRideFare'
 import type { PayoutsType } from '@/types/ride'
 import { withAudit } from '@/services/audit.service'
-
-const rideService = new RideService()
 
 export function useRidesViewModel(
   limit?: number,
@@ -36,20 +35,20 @@ export function useRidesViewModel(
       searchTerm,
       filtersKey
     ],
-    queryFn: () => rideService.getAll(limit, offset, searchTerm, filters),
+    queryFn: () => rideUseCase.executeGetAll(limit, offset, searchTerm, filters),
     staleTime: 2000 // cache 1min
     // staleTime: 1000 * 60 // cache 1min
   })
 
   /** Buscar lista de corridas por field */
   const fetchAllRidesByField = async (
-    field: string,
+    field: FieldPath<RideEntity>,
     value: any,
     limit?: number,
     offset?: number
   ) => {
     try {
-      return await rideService.getAllByField(field, value, limit, offset)
+      return await rideUseCase.executeGetAllByField(field, value, limit, offset)
     } catch (err) {
       console.error('Erro ao buscar corridas por campo:', err)
       return null
@@ -59,7 +58,7 @@ export function useRidesViewModel(
   /** Criar corrida */
   const createRide = useMutation({
     mutationFn: (ride: Omit<RideEntity, 'id'>) =>
-      withAudit(() => rideService.create(ride), {
+      withAudit(() => rideUseCase.executeCreate(ride), {
         action: 'create',
         module: 'rides',
         description: `Criou nova corrida: ${ride.pickup?.description ?? 'N/A'} para ${ride.dropoff?.description ?? 'N/A'}`,
@@ -82,8 +81,8 @@ export function useRidesViewModel(
       id: string
       ride: Partial<RideEntity>
     }) => {
-      const previous_data = await rideService.getById(id).catch(() => null)
-      return withAudit(() => rideService.update(id, ride), {
+      const previous_data = await rideUseCase.executeGetById(id).catch(() => null)
+      return withAudit(() => rideUseCase.executeUpdate(id, ride), {
         action: 'update',
         module: 'rides',
         description: `Atualizou os dados da corrida - ID: ${id}`,
@@ -103,8 +102,8 @@ export function useRidesViewModel(
   /** Deletar corrida */
   const deleteRide = useMutation({
     mutationFn: async (id: string) => {
-      const previous_data = await rideService.getById(id).catch(() => null)
-      return withAudit(() => rideService.delete(id), {
+      const previous_data = await rideUseCase.executeGetById(id).catch(() => null)
+      return withAudit(() => rideUseCase.executeDelete(id), {
         action: 'delete',
         module: 'rides',
         description: `Excluiu corrida - ID: ${id}`,
@@ -124,7 +123,7 @@ export function useRidesViewModel(
   /** Buscar corrida único (on-demand) */
   const fetchRideById = async (id: string) => {
     try {
-      return await rideService.getById(id)
+      return await rideUseCase.executeGetById(id)
     } catch (err) {
       console.error('Erro ao buscar corrida:', err)
       return null
@@ -249,11 +248,11 @@ export function useRidesViewModel(
 
   /** Buscar ride por field */
   const fetchOneRideByField = async (
-    field: keyof RideEntity,
+    field: FieldPath<RideEntity>,
     value: string
   ) => {
     try {
-      return await rideService.getOneByField(field, value)
+      return await rideUseCase.executeGetOneByField(field, value)
     } catch (err) {
       console.error('Erro ao buscar corrida por campo:', err)
       return null
@@ -269,7 +268,7 @@ export function useRidesViewModel(
     if (rideListenerRef.current) {
       rideListenerRef.current() // remove anterior
     }
-    const unsubscribe = rideService.listenRideRealtime(id, onUpdate, err =>
+    const unsubscribe = rideUseCase.executeListenRideRealtime(id, onUpdate, err =>
       console.error('Erro listener corrida:', err)
     )
     rideListenerRef.current = unsubscribe
@@ -278,14 +277,14 @@ export function useRidesViewModel(
   /** 🔹 Escutar corrida pelo campo em tempo real */
   const fieldListenerRef = useRef<null | (() => void)>(null)
   const listenByField = (
-    field: keyof RideEntity,
+    field: FieldPath<RideEntity>,
     value: string,
     onUpdate: (d: RideEntity) => void
   ) => {
     if (fieldListenerRef.current) {
       fieldListenerRef.current() // remove anterior
     }
-    const unsubscribe = rideService.listenByField(field, value, onUpdate, err =>
+    const unsubscribe = rideUseCase.executeListenByField(field, value, onUpdate, err =>
       console.error('Erro listener corrida:', err)
     )
     fieldListenerRef.current = unsubscribe
@@ -294,7 +293,7 @@ export function useRidesViewModel(
   // 🔹 Escutar corridas em tempo real
   const allListenerRef = useRef<null | (() => void)>(null)
   const listenAllByField = (
-    field: keyof RideEntity,
+    field: FieldPath<RideEntity>,
     value: any,
     onUpdate: (rides: RideEntity[]) => void,
     options?: {
@@ -306,7 +305,7 @@ export function useRidesViewModel(
     if (allListenerRef.current) {
       allListenerRef.current() // remove anterior
     }
-    const unsubscribe = rideService.listenAllByField(
+    const unsubscribe = rideUseCase.executeListenAllByField(
       field,
       value,
       onUpdate,
@@ -329,7 +328,7 @@ export function useRidesViewModel(
     if (allListenerRef.current) {
       allListenerRef.current() // remove anterior
     }
-    const unsubscribe = rideService.listenAll(
+    const unsubscribe = rideUseCase.executeListenAll(
       onUpdate,
       err => console.error('Erro listener motorista:', err),
       options
