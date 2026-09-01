@@ -1,12 +1,11 @@
 // viewModels/TransactionViewModel.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { TransactionService } from '@/services/transaction.service'
+import { transactionUseCase } from '@/domain/usecases/transactionUseCase'
 import { TransactionEntity } from '@/core/entities/Transaction'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
+import type { FieldPath } from '@/core/interfaces/IBaseRepository'
 import { firebaseCollections } from '@/constants/firebaseCollections'
 import { withAudit } from '@/services/audit.service'
-
-const transactionService = new TransactionService()
 
 export function useTransactionsViewModel(
   limit?: number,
@@ -33,19 +32,19 @@ export function useTransactionsViewModel(
       filtersKey
     ],
     queryFn: () =>
-      transactionService.getAll(limit, offset, searchTerm, filters),
+      transactionUseCase.executeGetAll(limit, offset, searchTerm, filters),
     staleTime: 1000 * 60 // cache 1min
   })
 
   /** Buscar lista de transações por field */
   const fetchAllTransactionsByField = async (
-    field: string,
+    field: FieldPath<TransactionEntity>,
     value: any,
     limit?: number,
     offset?: number
   ) => {
     try {
-      return await transactionService.getAllByField(field, value, limit, offset)
+      return await transactionUseCase.executeGetAllByField(field, value, limit, offset)
     } catch (err) {
       console.error('Erro ao buscar transações por campo:', err)
       return null
@@ -55,7 +54,7 @@ export function useTransactionsViewModel(
   /** Criar transação */
   const createTransaction = useMutation({
     mutationFn: (transaction: Omit<TransactionEntity, 'id'>) =>
-      withAudit(() => transactionService.create(transaction), {
+      withAudit(() => transactionUseCase.executeCreate(transaction), {
         action: 'create',
         module: 'transactions',
         description: `Criou transação de ${transaction.type} no valor de ${transaction.amount}`,
@@ -78,10 +77,10 @@ export function useTransactionsViewModel(
       id: string
       transaction: Partial<TransactionEntity>
     }) => {
-      const previous_data = await transactionService
-        .getById(id)
+      const previous_data = await transactionUseCase
+        .executeGetById(id)
         .catch(() => null)
-      return withAudit(() => transactionService.update(id, transaction), {
+      return withAudit(() => transactionUseCase.executeUpdate(id, transaction), {
         action: 'update',
         module: 'transactions',
         description: `Atualizou transação - ID: ${id}`,
@@ -101,10 +100,10 @@ export function useTransactionsViewModel(
   /** Deletar transação */
   const deleteTransaction = useMutation({
     mutationFn: async (id: string) => {
-      const previous_data = await transactionService
-        .getById(id)
+      const previous_data = await transactionUseCase
+        .executeGetById(id)
         .catch(() => null)
-      return withAudit(() => transactionService.delete(id), {
+      return withAudit(() => transactionUseCase.executeDelete(id), {
         action: 'delete',
         module: 'transactions',
         description: `Excluiu transação - ID: ${id}`,
@@ -124,7 +123,7 @@ export function useTransactionsViewModel(
   /** Buscar transação único (on-demand) */
   const fetchTransactionById = async (id: string) => {
     try {
-      return await transactionService.getById(id)
+      return await transactionUseCase.executeGetById(id)
     } catch (err) {
       console.error('Erro ao buscar transação:', err)
       return null
@@ -133,11 +132,11 @@ export function useTransactionsViewModel(
 
   /** Buscar transaction por field */
   const fetchOneTransactionByField = async (
-    field: keyof TransactionEntity,
+    field: FieldPath<TransactionEntity>,
     value: string
   ) => {
     try {
-      return await transactionService.getOneByField(field, value)
+      return await transactionUseCase.executeGetOneByField(field, value)
     } catch (err) {
       console.error('Erro ao buscar transação por campo:', err)
       return null

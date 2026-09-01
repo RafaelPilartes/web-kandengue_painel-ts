@@ -1,12 +1,11 @@
 // viewModels/RideTrackingViewModel.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { RideTrackingService } from '@/services/rideTracking.service'
+import { rideTrackingUseCase } from '@/domain/usecases/rideTrackingUseCase'
 import { RideTrackingEntity } from '@/core/entities/RideTracking'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
+import type { FieldPath } from '@/core/interfaces/IBaseRepository'
 import { firebaseCollections } from '@/constants/firebaseCollections'
 import { useEffect, useState } from 'react'
-
-const rideTrackingService = new RideTrackingService()
 
 export function useRideTrackingsViewModel(
   limit?: number,
@@ -33,19 +32,19 @@ export function useRideTrackingsViewModel(
       filtersKey
     ],
     queryFn: () =>
-      rideTrackingService.getAll(limit, offset, searchTerm, filters),
+      rideTrackingUseCase.executeGetAll(limit, offset, searchTerm, filters),
     staleTime: 1000 * 60 // cache 1min
   })
 
   /** Buscar lista de trajetorias de viagens por field */
   const fetchAllRideTrackingsByField = async (
-    field: string,
+    field: FieldPath<RideTrackingEntity>,
     value: any,
     limit?: number,
     offset?: number
   ) => {
     try {
-      return await rideTrackingService.getAllByField(
+      return await rideTrackingUseCase.executeGetAllByField(
         field,
         value,
         limit,
@@ -60,7 +59,7 @@ export function useRideTrackingsViewModel(
   /** Criar trajetoria de viagem */
   const createRideTracking = useMutation({
     mutationFn: (rideTracking: Omit<RideTrackingEntity, 'id'>) =>
-      rideTrackingService.create(rideTracking),
+      rideTrackingUseCase.executeCreate(rideTracking),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [firebaseCollections.rideTrackings.root]
@@ -76,7 +75,7 @@ export function useRideTrackingsViewModel(
     }: {
       id: string
       rideTracking: Partial<RideTrackingEntity>
-    }) => rideTrackingService.update(id, rideTracking),
+    }) => rideTrackingUseCase.executeUpdate(id, rideTracking),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [firebaseCollections.rideTrackings.root]
@@ -86,7 +85,7 @@ export function useRideTrackingsViewModel(
 
   /** Deletar trajetoria de viagem */
   const deleteRideTracking = useMutation({
-    mutationFn: (id: string) => rideTrackingService.delete(id),
+    mutationFn: (id: string) => rideTrackingUseCase.executeDelete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [firebaseCollections.rideTrackings.root]
@@ -97,7 +96,7 @@ export function useRideTrackingsViewModel(
   /** Buscar trajetoria de viagem único (on-demand) */
   const fetchRideTrackingById = async (id: string) => {
     try {
-      return await rideTrackingService.getById(id)
+      return await rideTrackingUseCase.executeGetById(id)
     } catch (err) {
       console.error('Erro ao buscar trajetoria de viagem:', err)
       return null
@@ -106,11 +105,11 @@ export function useRideTrackingsViewModel(
 
   /** Buscar rideTracking por field */
   const fetchOneRideTrackingByField = async (
-    field: keyof RideTrackingEntity,
+    field: FieldPath<RideTrackingEntity>,
     value: string
   ) => {
     try {
-      return await rideTrackingService.getOneByField(field, value)
+      return await rideTrackingUseCase.executeGetOneByField(field, value)
     } catch (err) {
       console.error('Erro ao buscar trajetoria de viagem por campo:', err)
       return null
@@ -145,7 +144,7 @@ export function useRideTrackingRealtime(rideId?: string) {
     }
 
     setIsLoading(true)
-    const unsubscribe = rideTrackingService.listenByRideId(
+    const unsubscribe = rideTrackingUseCase.listenByRideId(
       rideId,
       data => {
         setTracking(data)
