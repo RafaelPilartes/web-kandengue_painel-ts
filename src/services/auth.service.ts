@@ -1,98 +1,45 @@
-import { auth } from '@/config/firebase.config'
-import {
-  createUserWithEmailAndPassword,
-  onAuthStateChanged,
-  sendPasswordResetEmail,
-  signInWithEmailAndPassword,
-  signOut,
-  updatePassword,
-  updateProfile
-} from 'firebase/auth'
+// Casca de compatibilidade — a lógica real vive em
+// `@/domain/usecases/authUseCase`. Este ficheiro sobrevive só porque
+// `src/hooks/__tests__/useAuthSessionSync.test.ts` mocka o caminho
+// `@/services/auth.service` directamente (intercepta a classe `AuthService`,
+// não uma função exportada), e esse teste não pode ser alterado. Mudar o
+// `useAuthSessionSync` para importar o usecase directamente faz o teste
+// falhar, porque o mock deixa de ser intercetado — verificado empiricamente.
+//
+// Não acrescentar lógica aqui. Cada método delega directo ao usecase.
+import { authUseCase } from '@/domain/usecases/authUseCase'
 import type { User, UserCredential } from 'firebase/auth'
 
 export class AuthService {
-  /** Login */
-  async login(email: string, password: string): Promise<UserCredential> {
-    if (!email || !password) {
-      throw new Error('E-mail e senha são obrigatórios')
-    }
-
-    try {
-      return await signInWithEmailAndPassword(auth, email, password)
-    } catch (error: any) {
-      console.error('Erro no login:', error)
-      throw new Error(error.message || 'Falha ao fazer login')
-    }
+  login(email: string, password: string): Promise<UserCredential> {
+    return authUseCase.executeLogin(email, password)
   }
 
-  async logout(): Promise<void> {
-    try {
-      await signOut(auth)
-    } catch (error: any) {
-      console.error('Erro no logout:', error)
-      throw new Error(error.message || 'Falha ao sair')
-    }
+  logout(): Promise<void> {
+    return authUseCase.executeLogout()
   }
 
-  /** Registrar novo usuário */
-  async register(
+  register(
     email: string,
     password: string,
     displayName?: string
   ): Promise<UserCredential> {
-    if (!email || !password) {
-      throw new Error('E-mail e senha são obrigatórios')
-    }
-
-    try {
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        email,
-        password
-      )
-
-      // Se quiser adicionar um nome
-      if (displayName) {
-        await updateProfile(userCredential.user, { displayName })
-      }
-
-      return userCredential
-    } catch (error: any) {
-      console.error('Erro no registro:', error)
-      throw new Error(error.message || 'Falha ao registrar usuário')
-    }
+    return authUseCase.executeRegister(email, password, displayName)
   }
 
-  /** Resetar senha por email */
-  async resetPassword(email: string): Promise<void> {
-    try {
-      await sendPasswordResetEmail(auth, email)
-    } catch (error: any) {
-      console.error('Erro ao resetar senha:', error)
-      throw new Error(error.message || 'Falha ao enviar reset de senha')
-    }
+  resetPassword(email: string): Promise<void> {
+    return authUseCase.executeResetPassword(email)
   }
 
-  /** Alterar senha logado */
-  async changePassword(newPassword: string): Promise<void> {
-    const user = auth.currentUser
-    if (!user) throw new Error('Usuário não autenticado')
-
-    try {
-      await updatePassword(user, newPassword)
-    } catch (error: any) {
-      console.error('Erro ao alterar senha:', error)
-      throw new Error(error.message || 'Falha ao alterar senha')
-    }
+  changePassword(newPassword: string): Promise<void> {
+    return authUseCase.executeChangePassword(newPassword)
   }
 
-  /** Retorna usuário atual */
   getCurrentUser(): User | null {
-    return auth.currentUser
+    return authUseCase.executeGetCurrentUser()
   }
 
-  /** Listener para mudanças no estado da auth */
-  onAuthChanged(callback: (user: User | null) => void) {
-    return onAuthStateChanged(auth, callback)
+  onAuthChanged(callback: (user: User | null) => void): () => void {
+    return authUseCase.executeOnAuthChanged(callback)
   }
 }
