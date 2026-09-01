@@ -1,14 +1,13 @@
 // viewModels/UserViewModel.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { UserService } from '@/services/users.service'
+import { userUseCase } from '@/domain/usecases/userUseCase'
 import { UserEntity } from '@/core/entities/User'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
+import type { FieldPath } from '@/core/interfaces/IBaseRepository'
 import { firebaseCollections } from '@/constants/firebaseCollections'
 import { useMemo } from 'react'
 import { getUserStatusLabel } from '@/utils/gettersLabels'
 import { withAudit } from '@/services/audit.service'
-
-const userService = new UserService()
 
 export function useUsersViewModel(
   limit?: number,
@@ -34,7 +33,7 @@ export function useUsersViewModel(
       searchTerm,
       filtersKey
     ],
-    queryFn: () => userService.getAll(limit, offset, searchTerm, filters),
+    queryFn: () => userUseCase.executeGetAll(limit, offset, searchTerm, filters),
     staleTime: 1000 * 60 // cache 1min
   })
 
@@ -54,13 +53,13 @@ export function useUsersViewModel(
 
   /** Buscar lista de usuários por field */
   const fetchAllUsersByField = async (
-    field: string,
+    field: FieldPath<UserEntity>,
     value: any,
     limit?: number,
     offset?: number
   ) => {
     try {
-      return await userService.getAllByField(field, value, limit, offset)
+      return await userUseCase.executeGetAllByField(field, value, limit, offset)
     } catch (err) {
       console.error('Erro ao buscar usuários por campo:', err)
       return null
@@ -70,7 +69,7 @@ export function useUsersViewModel(
   /** Criar usuário */
   const createUser = useMutation({
     mutationFn: (user: Omit<UserEntity, 'id'>) =>
-      withAudit(() => userService.create(user), {
+      withAudit(() => userUseCase.executeCreate(user), {
         action: 'create',
         module: 'passengers',
         description: `Criou passageiro: ${user.name} (${user.email || user.phone})`,
@@ -94,8 +93,8 @@ export function useUsersViewModel(
       id: string
       user: Partial<UserEntity>
     }) => {
-      const previous_data = await userService.getById(id).catch(() => null)
-      return withAudit(() => userService.update(id, user), {
+      const previous_data = await userUseCase.executeGetById(id).catch(() => null)
+      return withAudit(() => userUseCase.executeUpdate(id, user), {
         action: 'update',
         module: 'passengers',
         description: `Atualizou passageiro - ID: ${id}`,
@@ -115,8 +114,8 @@ export function useUsersViewModel(
   /** Deletar usuário */
   const deleteUser = useMutation({
     mutationFn: async (id: string) => {
-      const previous_data = await userService.getById(id).catch(() => null)
-      return withAudit(() => userService.delete(id), {
+      const previous_data = await userUseCase.executeGetById(id).catch(() => null)
+      return withAudit(() => userUseCase.executeDelete(id), {
         action: 'delete',
         module: 'passengers',
         description: `Excluiu passageiro - ID: ${id}`,
@@ -142,8 +141,8 @@ export function useUsersViewModel(
       id: string
       firebaseUid?: string
     }) => {
-      const previous_data = await userService.getById(id).catch(() => null)
-      return withAudit(() => userService.softDelete(id, firebaseUid), {
+      const previous_data = await userUseCase.executeGetById(id).catch(() => null)
+      return withAudit(() => userUseCase.executeSoftDelete(id, firebaseUid), {
         action: 'delete',
         module: 'passengers',
         description: `Soft-deletou passageiro - ID: ${id}`,
@@ -163,7 +162,7 @@ export function useUsersViewModel(
   /** Buscar usuário único (on-demand) */
   const fetchUserById = async (id: string) => {
     try {
-      return await userService.getById(id)
+      return await userUseCase.executeGetById(id)
     } catch (err) {
       console.error('Erro ao buscar usuário:', err)
       return null
@@ -173,7 +172,7 @@ export function useUsersViewModel(
   /** Buscar usuário único (on-demand) */
   const fetchUserByEmail = async (email: string) => {
     try {
-      return await userService.getByEmail(email)
+      return await userUseCase.executeGetByEmail(email)
     } catch (err) {
       console.error('Erro ao buscar usuário:', err)
       return null
@@ -182,11 +181,11 @@ export function useUsersViewModel(
 
   /** Buscar user por field */
   const fetchOneUserByField = async (
-    field: keyof UserEntity,
+    field: FieldPath<UserEntity>,
     value: string
   ) => {
     try {
-      return await userService.getOneByField(field, value)
+      return await userUseCase.executeGetOneByField(field, value)
     } catch (err) {
       console.error('Erro ao buscar usuario por campo:', err)
       return null
