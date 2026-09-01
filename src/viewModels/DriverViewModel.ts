@@ -1,14 +1,13 @@
 // viewModels/DriverViewModel.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { DriverService } from '@/services/driver.service'
+import { driverUseCase } from '@/domain/usecases/driverUseCase'
 import { DriverEntity } from '@/core/entities/Driver'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
+import type { FieldPath } from '@/core/interfaces/IBaseRepository'
 import { firebaseCollections } from '@/constants/firebaseCollections'
 import { useMemo, useEffect, useState } from 'react'
 import { getUserStatusLabel } from '@/utils/gettersLabels'
 import { withAudit } from '@/services/audit.service'
-
-const driverService = new DriverService()
 
 export function useDriversViewModel(
   limit?: number,
@@ -34,7 +33,7 @@ export function useDriversViewModel(
       searchTerm,
       filtersKey
     ],
-    queryFn: () => driverService.getAll(limit, offset, searchTerm, filters),
+    queryFn: () => driverUseCase.executeGetAll(limit, offset, searchTerm, filters),
     staleTime: 1000 * 60 // cache 1min
   })
 
@@ -54,13 +53,13 @@ export function useDriversViewModel(
 
   /** Buscar lista de motoristas por field */
   const fetchAllDriversByField = async (
-    field: string,
+    field: FieldPath<DriverEntity>,
     value: any,
     limit?: number,
     offset?: number
   ) => {
     try {
-      return await driverService.getAllByField(field, value, limit, offset)
+      return await driverUseCase.executeGetAllByField(field, value, limit, offset)
     } catch (err) {
       console.error('Erro ao buscar motoristas por campo:', err)
       return null
@@ -70,7 +69,7 @@ export function useDriversViewModel(
   /** Criar motorista */
   const createDriver = useMutation({
     mutationFn: (driver: Omit<DriverEntity, 'id'>) =>
-      withAudit(() => driverService.create(driver), {
+      withAudit(() => driverUseCase.executeCreate(driver), {
         action: 'create',
         module: 'drivers',
         description: `Criou motorista: ${driver.name} (${driver.phone})`,
@@ -94,8 +93,8 @@ export function useDriversViewModel(
       id: string
       driver: Partial<DriverEntity>
     }) => {
-      const previous_data = await driverService.getById(id).catch(() => null)
-      return withAudit(() => driverService.update(id, driver), {
+      const previous_data = await driverUseCase.executeGetById(id).catch(() => null)
+      return withAudit(() => driverUseCase.executeUpdate(id, driver), {
         action: 'update',
         module: 'drivers',
         description: `Atualizou os dados do motorista - ID: ${id}`,
@@ -115,8 +114,8 @@ export function useDriversViewModel(
   /** Deletar motorista */
   const deleteDriver = useMutation({
     mutationFn: async (id: string) => {
-      const previous_data = await driverService.getById(id).catch(() => null)
-      return withAudit(() => driverService.delete(id), {
+      const previous_data = await driverUseCase.executeGetById(id).catch(() => null)
+      return withAudit(() => driverUseCase.executeDelete(id), {
         action: 'delete',
         module: 'drivers',
         description: `Excluiu o motorista - ID: ${id}`,
@@ -142,8 +141,8 @@ export function useDriversViewModel(
       id: string
       firebaseUid?: string
     }) => {
-      const previous_data = await driverService.getById(id).catch(() => null)
-      return withAudit(() => driverService.softDelete(id, firebaseUid), {
+      const previous_data = await driverUseCase.executeGetById(id).catch(() => null)
+      return withAudit(() => driverUseCase.executeSoftDelete(id, firebaseUid), {
         action: 'delete',
         module: 'drivers',
         description: `Soft-deletou motorista - ID: ${id}`,
@@ -163,7 +162,7 @@ export function useDriversViewModel(
   /** Buscar motorista único (on-demand) */
   const fetchDriverById = async (id: string) => {
     try {
-      return await driverService.getById(id)
+      return await driverUseCase.executeGetById(id)
     } catch (err) {
       console.error('Erro ao buscar motorista:', err)
       return null
@@ -172,11 +171,11 @@ export function useDriversViewModel(
 
   /** Buscar driver por field */
   const fetchOneDriverByField = async (
-    field: keyof DriverEntity,
+    field: FieldPath<DriverEntity>,
     value: string
   ) => {
     try {
-      return await driverService.getOneByField(field, value)
+      return await driverUseCase.executeGetOneByField(field, value)
     } catch (err) {
       console.error('Erro ao buscar motorista por campo:', err)
       return null
@@ -209,7 +208,7 @@ export function useDriversOnlineRealtime() {
 
   useEffect(() => {
     setIsLoading(true)
-    const unsubscribe = driverService.listenOnlineDrivers(
+    const unsubscribe = driverUseCase.executeListenOnlineDrivers(
       data => {
         setDrivers(data)
         setIsLoading(false)
