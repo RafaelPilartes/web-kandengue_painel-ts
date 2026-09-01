@@ -8,10 +8,8 @@ const clear = vi.fn()
 
 let currentAdminData: { id: string } | null = { id: 'adm-1' }
 
-vi.mock('@/services/auth.service', () => ({
-  AuthService: class {
-    onAuthChanged = onAuthChanged
-  }
+vi.mock('@/domain/usecases/authUseCase', () => ({
+  authUseCase: { executeOnAuthChanged: onAuthChanged }
 }))
 
 vi.mock('@/stores/userStore', () => ({

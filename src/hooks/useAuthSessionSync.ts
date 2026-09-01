@@ -1,11 +1,7 @@
 import { useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { AuthService } from '@/services/auth.service'
+import { authUseCase } from '@/domain/usecases/authUseCase'
 import { useAdminStore } from '@/stores/userStore'
-
-// Instanciada uma vez a nível de módulo: o serviço não tem estado, e criar
-// uma por render faria o useEffect resubscrever a cada renderização.
-const authService = new AuthService()
 
 /**
  * Mantém o estado local do painel alinhado com a sessão real do Firebase.
@@ -21,7 +17,7 @@ export function useAuthSessionSync(): void {
   const { currentAdminData, removeAdmin } = useAdminStore()
 
   useEffect(() => {
-    const unsubscribe = authService.onAuthChanged(user => {
+    const unsubscribe = authUseCase.executeOnAuthChanged(user => {
       if (user) return
 
       // Só limpa se havia algo para limpar: na página de login não há sessão
