@@ -5,6 +5,25 @@ import {
 } from '@/modules/Api'
 import { NotificationEntity } from '@/core/entities/Notification'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
+import type { QueryOptions } from '@/core/interfaces/IBaseRepository'
+
+// Defaults do DAO antigo — preservados aqui para o motor novo (que usa 50).
+const LEGACY_PAGE_SIZE = 500
+const LEGACY_FIELD_PAGE_SIZE = 10
+
+/**
+ * Traduz `offset` (paginação por número de registos saltados, como o DAO
+ * antigo fazia) para o cursor por `id` que o `BaseFirebaseDAO` espera.
+ * Mesmo custo do código antigo: uma query extra de `offset` documentos.
+ */
+async function offsetToCursor(
+  base: Omit<QueryOptions<NotificationEntity>, 'limit' | 'after'>,
+  offset: number
+): Promise<string | undefined> {
+  if (!offset) return undefined
+  const skipped = await notificationRepository.getAll({ ...base, limit: offset })
+  return skipped.data[skipped.data.length - 1]?.id
+}
 
 export class NotificationService {
   async getAll(
@@ -14,12 +33,13 @@ export class NotificationService {
     filters?: Partial<NotificationEntity>
   ): Promise<ListResponseType<NotificationEntity[]>> {
     try {
-      return await notificationRepository.getAll(
-        limit,
-        offset,
-        searchTerm,
-        filters
-      )
+      const base = { searchTerm, filters }
+      const after = await offsetToCursor(base, offset ?? 0)
+      return await notificationRepository.getAll({
+        ...base,
+        limit: limit ?? LEGACY_PAGE_SIZE,
+        after
+      })
     } catch (error: any) {
       console.error('Erro ao buscar notifications:', error)
       throw new Error(error.message || 'Erro ao buscar notificações')
@@ -41,7 +61,10 @@ export class NotificationService {
     value: any
   ): Promise<NotificationEntity | null> {
     try {
-      return await notificationRepository.getOneByField(field, value)
+      return await notificationRepository.getOneByField(
+        field as keyof NotificationEntity,
+        value
+      )
     } catch (error: any) {
       console.error(`Erro ao buscar notification por ${field}-${value}:`, error)
       throw new Error(error.message || 'Erro ao buscar notification')
@@ -56,12 +79,15 @@ export class NotificationService {
     offset?: number
   ): Promise<ListResponseType<NotificationEntity[]>> {
     try {
-      const { data, pagination } = await notificationRepository.getAllByField(
-        field,
-        value,
-        limit,
-        offset
-      )
+      const filters = { [field]: value } as Partial<NotificationEntity>
+      const base = { filters }
+      const after = await offsetToCursor(base, offset ?? 0)
+
+      const { data, pagination } = await notificationRepository.getAll({
+        ...base,
+        limit: limit ?? LEGACY_FIELD_PAGE_SIZE,
+        after
+      })
 
       return { data, pagination }
     } catch (error: any) {
