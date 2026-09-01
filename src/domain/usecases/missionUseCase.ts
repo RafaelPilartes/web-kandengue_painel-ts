@@ -1,93 +1,106 @@
-import {
-  missionRepository,
-  rideRepository,
-  adminMoneyRepository
-} from '@/modules/Api'
 import { ApiRepository } from '@/modules/Api/factory'
+import { BaseUseCase } from './BaseUseCase'
 import { MissionEntity } from '@/core/entities/Mission'
 import { MissionProgressEntity } from '@/core/entities/MissionProgress'
+import type { RideEntity } from '@/core/entities/Ride'
 import { startOfDay, startOfWeek, startOfMonth, isAfter } from 'date-fns'
 
-// O DAO de progresso vive à parte (colecção `missionProgress`) — ver
-// `ApiRepository.missionProgress` em `@/modules/Api/factory`.
-const missionProgressRepository = ApiRepository.missionProgress
+export class MissionUseCase extends BaseUseCase {
+  protected readonly context = 'MissionUseCase'
 
-export class MissionService {
-  async getAllMissions() {
-    return await missionRepository.getAll()
+  private get repository() {
+    return ApiRepository.missions
   }
 
-  async getActiveMissions() {
-    return await missionRepository.getAll({
-      limit: 100,
-      filters: { is_active: true }
-    })
+  // O DAO de progresso vive à parte (colecção `missionProgress`).
+  private get progressRepository() {
+    return ApiRepository.missionProgress
   }
 
-  async getById(id: string) {
-    return await missionRepository.getById(id)
+  private get rideRepository() {
+    return ApiRepository.rides
   }
 
-  async createMission(mission: Omit<MissionEntity, 'id'>) {
-    return await missionRepository.create(mission)
+  executeGetAllMissions() {
+    return this.run('getAllMissions', () => this.repository.getAll())
   }
 
-  async updateMission(id: string, mission: Partial<MissionEntity>) {
-    return await missionRepository.update(id, mission)
+  executeGetActiveMissions() {
+    return this.run('getActiveMissions', () =>
+      this.repository.getAll({
+        limit: 100,
+        filters: { is_active: true }
+      })
+    )
   }
 
-  async deleteMission(id: string) {
-    return await missionRepository.delete(id)
+  executeGetById(id: string) {
+    return this.run('getById', () => this.repository.getById(id))
   }
 
-  async getDriverProgress(driver_id: string) {
-    try {
-      const res = await missionProgressRepository.getAllProgressByDriver(
+  executeCreateMission(mission: Omit<MissionEntity, 'id'>) {
+    return this.run('createMission', () => this.repository.create(mission))
+  }
+
+  executeUpdateMission(id: string, mission: Partial<MissionEntity>) {
+    return this.run('updateMission', () =>
+      this.repository.update(id, mission)
+    )
+  }
+
+  executeDeleteMission(id: string) {
+    return this.run('deleteMission', () => this.repository.delete(id))
+  }
+
+  executeGetDriverProgress(driver_id: string) {
+    return this.run('getDriverProgress', async () => {
+      const res = await this.progressRepository.getAllProgressByDriver(
         driver_id
       )
 
       if (res.length === 0) {
         await this.updateDriverProgress(driver_id)
-        return await missionProgressRepository.getAllProgressByDriver(
+        return await this.progressRepository.getAllProgressByDriver(
           driver_id
         )
       }
 
       return res
-    } catch (error) {
-      console.error(
-        `Error in getDriverProgress for driver ${driver_id}:`,
-        error
-      )
-      throw error
+    })
+  }
+
+  executeUpdateDriverProgress(driver_id: string) {
+    return this.run('updateDriverProgress', () =>
+      this.updateDriverProgress(driver_id)
+    )
+  }
+
+  private async updateDriverProgress(driver_id: string) {
+    const activeMissions = (await this.repository.getAll({
+      limit: 100,
+      filters: { is_active: true }
+    })).data
+    console.info(
+      `Updating progress for driver ${driver_id}. Found ${activeMissions.length} active missions.`
+    )
+
+    for (const mission of activeMissions) {
+      await this.processMissionProgress(driver_id, mission)
     }
   }
 
-  async updateDriverProgress(driver_id: string) {
-    try {
-      const activeMissions = (await this.getActiveMissions()).data
-      console.info(
-        `Updating progress for driver ${driver_id}. Found ${activeMissions.length} active missions.`
-      )
-
-      for (const mission of activeMissions) {
-        await this.processMissionProgress(driver_id, mission)
-      }
-    } catch (error) {
-      console.error(
-        `CRITICAL: Error updating progress for driver ${driver_id}:`,
-        error
-      )
-      throw error
-    }
-  }
-
+  /**
+   * Recalcula do zero — consulta as corridas concluídas do motorista e
+   * deriva a contagem, em vez de incrementar. É o que torna a duplicação
+   * com o trigger do servidor (`onRideUpdated`) inofensiva: correr duas
+   * vezes dá o mesmo resultado. Não mudar isto.
+   */
   private async processMissionProgress(
     driver_id: string,
     mission: MissionEntity
   ) {
     console.log(`[processMissionProgress] Starting for mission ${mission.id}`)
-    let progress = await missionProgressRepository.getProgress(
+    let progress = await this.progressRepository.getProgress(
       driver_id,
       mission.id
     )
@@ -146,14 +159,14 @@ export class MissionService {
       )
       // We still update to persist any potential reset or just to be safe
     } else {
-      let rides: { data: any[] } = { data: [] }
+      let rides: { data: RideEntity[] } = { data: [] }
       try {
-        rides = await rideRepository.getAll({
+        rides = await this.rideRepository.getAll({
           limit: 1000,
           filters: {
             'driver.id': driver_id,
             status: 'completed'
-          } as any
+          } as Partial<RideEntity>
         })
       } catch (error) {
         console.error(`[processMissionProgress] Error fetching rides:`, error)
@@ -161,9 +174,9 @@ export class MissionService {
       }
 
       const newRidesInCycle = rides.data.filter(ride => {
-        let completedAt = ride.completed_at || ride.created_at
-        if (completedAt && (completedAt as any).toDate) {
-          completedAt = (completedAt as any).toDate()
+        let completedAt: any = ride.completed_at || ride.created_at
+        if (completedAt && completedAt.toDate) {
+          completedAt = completedAt.toDate()
         }
         const isInCycle = completedAt && isAfter(completedAt, startDate)
         const rideIds = progress!.completed_ride_ids || []
@@ -196,7 +209,7 @@ export class MissionService {
       `[processMissionProgress] Updating progress in repository for mission ${mission.id}`
     )
     try {
-      await missionProgressRepository.updateProgress(progress)
+      await this.progressRepository.updateProgress(progress)
       console.log(`[processMissionProgress] Progress updated successfully.`)
     } catch (e) {
       console.error(`[processMissionProgress] Failed to update progress:`, e)
@@ -205,19 +218,23 @@ export class MissionService {
   }
 
   /**
-   * Paga o bónus no servidor, numa transacção única e idempotente.
+   * Paga o bónus no servidor, numa transacção idempotente.
    * `paid: false` significa que a missão já estava paga — não é erro.
-   * `balance` vem `null` quando o pagamento é em dinheiro.
+   *
+   * NÃO passa pelo `run()`: o `toAppError` substituiria a mensagem da API
+   * por uma genérica, e o admin deixaria de saber o que falhou.
    */
-  async payMissionProgress(
-    driver_id: string,
-    mission_id: string,
-    type_paid: 'cash' | 'wallet'
+  executePayMissionProgress(
+    driverId: string,
+    missionId: string,
+    typePaid: 'cash' | 'wallet'
   ): Promise<{ paid: boolean; balance: number | null }> {
-    return adminMoneyRepository.payMissionBonus({
-      driver_id,
-      mission_id,
-      type_paid
+    return ApiRepository.adminMoney.payMissionBonus({
+      driver_id: driverId,
+      mission_id: missionId,
+      type_paid: typePaid
     })
   }
 }
+
+export const missionUseCase = new MissionUseCase()

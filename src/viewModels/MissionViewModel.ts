@@ -1,10 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { MissionService } from '@/services/mission.service'
+import { missionUseCase } from '@/domain/usecases/missionUseCase'
 import { MissionEntity } from '@/core/entities/Mission'
 import { firebaseCollections } from '@/constants/firebaseCollections'
 import { withAudit } from '@/services/audit.service'
-
-const missionService = new MissionService()
 
 export function useMissionViewModel() {
   const queryClient = useQueryClient()
@@ -17,20 +15,22 @@ export function useMissionViewModel() {
     refetch: refetchMissions
   } = useQuery({
     queryKey: [firebaseCollections.missions.root],
-    queryFn: () => missionService.getAllMissions().then(res => res.data)
+    queryFn: () =>
+      missionUseCase.executeGetAllMissions().then(res => res.data)
   })
 
   // Fetch active missions
   const { data: activeMissions = [], isLoading: isLoadingActiveMissions } =
     useQuery({
       queryKey: [firebaseCollections.missions.root, 'active'],
-      queryFn: () => missionService.getActiveMissions().then(res => res.data)
+      queryFn: () =>
+        missionUseCase.executeGetActiveMissions().then(res => res.data)
     })
 
   // Create Mission
   const createMission = useMutation({
     mutationFn: (mission: Omit<MissionEntity, 'id'>) =>
-      withAudit(() => missionService.createMission(mission), {
+      withAudit(() => missionUseCase.executeCreateMission(mission), {
         action: 'create',
         module: 'missions',
         description: `Criou nova missão: ${mission.type}`,
@@ -54,8 +54,10 @@ export function useMissionViewModel() {
       id: string
       mission: Partial<MissionEntity>
     }) => {
-      const previous_data = await missionService.getById(id).catch(() => null)
-      return withAudit(() => missionService.updateMission(id, mission), {
+      const previous_data = await missionUseCase
+        .executeGetById(id)
+        .catch(() => null)
+      return withAudit(() => missionUseCase.executeUpdateMission(id, mission), {
         action: 'update',
         module: 'missions',
         description: `Atualizou missão - ID: ${id}`,
@@ -75,8 +77,10 @@ export function useMissionViewModel() {
   // Delete Mission
   const deleteMission = useMutation({
     mutationFn: async (id: string) => {
-      const previous_data = await missionService.getById(id).catch(() => null)
-      return withAudit(() => missionService.deleteMission(id), {
+      const previous_data = await missionUseCase
+        .executeGetById(id)
+        .catch(() => null)
+      return withAudit(() => missionUseCase.executeDeleteMission(id), {
         action: 'delete',
         module: 'missions',
         description: `Excluiu missão - ID: ${id}`,
@@ -99,7 +103,7 @@ export function useMissionViewModel() {
       queryKey: [firebaseCollections.missionProgress.root, driver_id],
       queryFn: () =>
         driver_id
-          ? missionService.getDriverProgress(driver_id)
+          ? missionUseCase.executeGetDriverProgress(driver_id)
           : Promise.resolve([]),
       enabled: !!driver_id
     })
@@ -108,7 +112,7 @@ export function useMissionViewModel() {
   // Recalculate Driver Progress
   const recalculateProgress = useMutation({
     mutationFn: (driver_id: string) =>
-      withAudit(() => missionService.updateDriverProgress(driver_id), {
+      withAudit(() => missionUseCase.executeUpdateDriverProgress(driver_id), {
         action: 'update',
         module: 'drivers',
         description: `Recalculou progresso das missões do motorista - ID: ${driver_id}`,
@@ -137,7 +141,12 @@ export function useMissionViewModel() {
       driver_id: string
       mission_id: string
       type_paid: 'cash' | 'wallet'
-    }) => missionService.payMissionProgress(driver_id, mission_id, type_paid),
+    }) =>
+      missionUseCase.executePayMissionProgress(
+        driver_id,
+        mission_id,
+        type_paid
+      ),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: [

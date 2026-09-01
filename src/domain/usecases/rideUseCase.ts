@@ -1,13 +1,9 @@
 import { ApiRepository } from '@/modules/Api/factory'
 import { BaseUseCase } from './BaseUseCase'
-import { MissionService } from '@/services/mission.service'
+import { missionUseCase } from './missionUseCase'
 import type { RideEntity } from '@/core/entities/Ride'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import type { FieldPath, ListenOptions } from '@/core/interfaces/IBaseRepository'
-
-// `mission` ainda não foi convertido para usecase (fica para um lote próprio).
-// Chamar o service existente mantém esta conversão pequena.
-const missionService = new MissionService()
 
 // Defaults do DAO antigo — preservados aqui para o motor novo (que usa 50).
 const LEGACY_PAGE_SIZE = 500
@@ -85,8 +81,8 @@ export class RideUseCase extends BaseUseCase {
       // duas vezes dá o mesmo resultado. O erro é engolido de propósito:
       // a corrida actualiza-se na mesma se o progresso falhar.
       if (ride.status === 'completed' && updated.driver?.id) {
-        missionService
-          .updateDriverProgress(updated.driver.id)
+        missionUseCase
+          .executeUpdateDriverProgress(updated.driver.id)
           .catch(err => {
             console.error('Erro ao atualizar progresso de missões:', err)
           })
