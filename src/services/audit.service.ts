@@ -9,8 +9,25 @@ import type {
 import type { AdminInterface } from '@/interfaces/IAdmin'
 import type { LogActionType } from '@/types/enum'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
+import type { QueryOptions } from '@/core/interfaces/IBaseRepository'
 
 const auditLogDAO = new FirebaseAuditLogDAO()
+
+const LEGACY_PAGE_SIZE = 50
+
+/**
+ * Traduz `offset` (paginação por registos saltados, como o DAO antigo fazia)
+ * para o cursor por `id` que o `AppendOnlyDAO`/`BaseFirebaseDAO` espera.
+ * Mesmo custo do código antigo: uma query extra de `offset` documentos.
+ */
+async function offsetToCursor(
+  base: Omit<QueryOptions<AuditLogInterface>, 'limit' | 'after'>,
+  offset: number
+): Promise<string | undefined> {
+  if (!offset) return undefined
+  const skipped = await auditLogDAO.getAll({ ...base, limit: offset })
+  return skipped.data[skipped.data.length - 1]?.id
+}
 
 function getSessionId(): string {
   let sessionId = sessionStorage.getItem('audit_session_id')
@@ -239,7 +256,26 @@ export class AuditService {
       searchTerm?: string
     }
   ): Promise<ListResponseType<AuditLogInterface[]>> {
-    return auditLogDAO.getAll(limit, offset, filters)
+    // `startDate`, `endDate` e `searchTerm` já eram parâmetros mortos no DAO
+    // antigo — nunca entravam na query. Preservado aqui: só os filtros de
+    // igualdade (admin_id, module, action, severity) chegam ao motor.
+    const equalityFilters: Partial<AuditLogInterface> = {
+      ...(filters?.admin_id ? { admin_id: filters.admin_id } : {}),
+      ...(filters?.module ? { module: filters.module } : {}),
+      ...(filters?.action ? { action: filters.action } : {}),
+      ...(filters?.severity
+        ? { severity: filters.severity as AuditLogInterface['severity'] }
+        : {})
+    }
+
+    const base = { filters: equalityFilters }
+    const after = await offsetToCursor(base, offset ?? 0)
+
+    return auditLogDAO.getAll({
+      ...base,
+      limit: limit ?? LEGACY_PAGE_SIZE,
+      after
+    })
   }
 }
 
