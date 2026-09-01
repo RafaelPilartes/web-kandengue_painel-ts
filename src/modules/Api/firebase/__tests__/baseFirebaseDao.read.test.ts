@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, beforeEach, vi } from 'vitest'
 import { deleteDoc, doc, setDoc, Timestamp } from 'firebase/firestore'
+import type { FirestoreDataConverter } from 'firebase/firestore'
 
 vi.mock('@/config/firebase.config', async () => {
   const { testDb } = await import('@/test/firebase.emulator')
@@ -12,6 +13,7 @@ const { BaseFirebaseDAO } =
   await import('@/modules/Api/firebase/BaseFirebaseDAO')
 const { VehicleEntity, vehicleConverter } =
   await import('@/core/entities/Vehicle')
+type SearchField<T> = import('@/modules/Api/firebase/BaseFirebaseDAO').SearchField<T>
 
 const COLLECTION = 'test_vehicles'
 
@@ -24,6 +26,27 @@ class TestDAO extends BaseFirebaseDAO<InstanceType<typeof VehicleEntity>> {
 class NoSearchDAO extends BaseFirebaseDAO<InstanceType<typeof VehicleEntity>> {
   constructor() {
     super(COLLECTION, vehicleConverter, 'veh')
+  }
+}
+
+// ─────────── Task 1: pesquisa em campo aninhado (driver.email) ───────────
+
+const NESTED_COLLECTION = 'test_nested_search'
+
+type NestedEntity = { id: string; driver: { email: string } }
+
+const nestedConverter: FirestoreDataConverter<NestedEntity> = {
+  toFirestore(entity) {
+    return { ...entity }
+  },
+  fromFirestore(snapshot, options) {
+    return snapshot.data(options) as NestedEntity
+  }
+}
+
+class NestedSearchDAO extends BaseFirebaseDAO<NestedEntity> {
+  constructor() {
+    super(NESTED_COLLECTION, nestedConverter, 'nst', 'driver.email')
   }
 }
 
@@ -239,5 +262,48 @@ describe('BaseFirebaseDAO — leitura', () => {
     await expect(
       noSearchDao.getAll({ searchTerm: 'AAA' })
     ).rejects.toMatchObject({ code: 'failed-precondition' })
+  })
+})
+
+describe('SearchField<T> — protecção de tipos', () => {
+  it('aceita campo de topo e caminho aninhado; recusa campo inexistente e typo (verificado por tsc -b)', () => {
+    // Os campos válidos passam; os inválidos são recusados em tempo de compilação.
+    // Se algum destes `@ts-expect-error` deixar de acusar erro, a protecção
+    // que apanhou os bugs do lote 1 desapareceu.
+    type Amostra = { id: string; status: string; driver: { email: string } }
+
+    const topo: SearchField<Amostra> = 'status'
+    const aninhado: SearchField<Amostra> = 'driver.email'
+    // @ts-expect-error — campo que não existe na entidade
+    const inexistente: SearchField<Amostra> = 'email'
+    // @ts-expect-error — typo num campo de topo
+    const typo: SearchField<Amostra> = 'stauts'
+
+    // Runtime só confirma que o teste corre; a verificação real é do tsc -b.
+    expect([topo, aninhado, inexistente, typo]).toHaveLength(4)
+  })
+})
+
+describe('BaseFirebaseDAO — pesquisa em campo aninhado', () => {
+  let nestedDao: NestedSearchDAO
+
+  beforeEach(async () => {
+    await clearCollection(NESTED_COLLECTION)
+    nestedDao = new NestedSearchDAO()
+  })
+
+  it('o Firestore aceita orderBy/where num caminho aninhado e a pesquisa encontra o documento', async () => {
+    await setDoc(doc(testDb, `${NESTED_COLLECTION}/nst-a`), {
+      id: 'nst-a',
+      driver: { email: 'joao@kandengue.ao' }
+    })
+    await setDoc(doc(testDb, `${NESTED_COLLECTION}/nst-b`), {
+      id: 'nst-b',
+      driver: { email: 'maria@kandengue.ao' }
+    })
+
+    const res = await nestedDao.getAll({ searchTerm: 'joao' })
+
+    expect(res.data.map(d => d.id)).toEqual(['nst-a'])
   })
 })

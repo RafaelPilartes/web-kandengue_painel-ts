@@ -35,6 +35,17 @@ import { generateId } from '@/helpers/generateId'
 const PREFIX_END = ''
 
 /**
+ * Campo aceite como `searchField`: ou um campo real da entidade (`keyof T &
+ * string`), ou um caminho aninhado com ponto (`driver.email`).
+ *
+ * O caminho aninhado NÃO é verificado contra a entidade — é uma promessa de
+ * quem chama, porque `keyof` não descreve caminhos aninhados. Um campo de
+ * topo continua sujeito à verificação normal, o que recusa nomes inexistentes
+ * (foi isso que apanhou os bugs do lote 1) e typos.
+ */
+export type SearchField<T> = (keyof T & string) | `${string}.${string}`
+
+/**
  * Motor CRUD + realtime partilhado.
  *
  * Dois contratos que os subclasses TÊM de respeitar:
@@ -58,20 +69,22 @@ export abstract class BaseFirebaseDAO<T extends { id: string }>
   protected readonly ref: CollectionReference<T>
   protected readonly path: string
   protected readonly idPrefix: string
-  protected readonly searchField?: keyof T & string
+  protected readonly searchField?: SearchField<T>
 
   /**
    * @param path        path da colecção — sempre vindo de `firebaseCollections`
    * @param converter   fronteira Doc ↔ Entity
    * @param idPrefix    prefixo dos IDs gerados no cliente (ex.: 'veh')
    * @param searchField campo usado no prefix-search. TEM de estar gravado em
-   *                    minúsculas no documento e ter índice.
+   *                    minúsculas no documento e ter índice. Um caminho com
+   *                    ponto (`driver.email`) é aninhado e NÃO é verificado
+   *                    contra a entidade — é uma promessa de quem chama.
    */
   constructor(
     path: string,
     converter: FirestoreDataConverter<T>,
     idPrefix: string,
-    searchField?: keyof T & string
+    searchField?: SearchField<T>
   ) {
     this.path = path
     this.idPrefix = idPrefix
