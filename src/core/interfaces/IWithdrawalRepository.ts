@@ -1,15 +1,19 @@
 import type { ListResponseType } from '@/interfaces/IApiResponse'
+import type { QueryOptions } from './IBaseRepository'
 import type { WithdrawalStatus } from '@rafaelpilartes/kandengue-shared/withdrawal'
 import {
   ReferralEarningEntity,
   WithdrawalRequestEntity
 } from '../entities/Promotion'
 
+/**
+ * Não estende `IBaseRepository`: isso traria `create`, `update` e `delete`
+ * de volta ao tipo — mesmo que a implementação os recusasse em runtime.
+ * As escritas vivem na API. Ver `IWalletRepository`.
+ */
 export interface IWithdrawalRepository {
   getAll(
-    limit?: number,
-    offset?: number,
-    filters?: { status?: WithdrawalStatus; user_id?: string }
+    options?: QueryOptions<WithdrawalRequestEntity>
   ): Promise<ListResponseType<WithdrawalRequestEntity[]>>
 
   getById(id: string): Promise<WithdrawalRequestEntity | null>

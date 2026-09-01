@@ -1,3 +1,4 @@
+import type { FirestoreDataConverter } from 'firebase/firestore'
 import type {
   Promotion,
   PromotionRules,
@@ -16,6 +17,7 @@ import type {
   WithdrawalRequest,
   WithdrawalStatus
 } from '@rafaelpilartes/kandengue-shared/withdrawal'
+import { toDate } from '@/helpers/firestore'
 
 export class PromotionEntity implements Promotion {
   id: string
@@ -144,5 +146,46 @@ export class WithdrawalRequestEntity implements WithdrawalRequest {
     this.reviewed_at = params.reviewed_at
     this.paid_at = params.paid_at
     this.created_at = params.created_at
+  }
+}
+
+/**
+ * Fronteira única entre o documento `withdrawal_requests` e a aplicação.
+ * Datas próprias desta entidade: `created_at`, `reviewed_at`, `paid_at`.
+ * (`expires_at` e `updated_at` são do `PromotionUsageEntity` — não se aplicam aqui.)
+ */
+export const withdrawalRequestConverter: FirestoreDataConverter<WithdrawalRequestEntity> = {
+  toFirestore(withdrawal) {
+    return { ...withdrawal }
+  },
+  fromFirestore(snapshot, options) {
+    const d = snapshot.data(options) as Record<string, unknown>
+    return new WithdrawalRequestEntity({
+      ...d,
+      id: snapshot.id,
+      created_at: toDate(d.created_at as never) ?? new Date(),
+      reviewed_at: toDate(d.reviewed_at as never) ?? undefined,
+      paid_at: toDate(d.paid_at as never) ?? undefined
+    } as WithdrawalRequest)
+  }
+}
+
+/**
+ * Fronteira única entre o documento `referral_earnings` e a aplicação.
+ * Datas próprias desta entidade: `created_at`, `requested_at`, `paid_at`.
+ */
+export const referralEarningConverter: FirestoreDataConverter<ReferralEarningEntity> = {
+  toFirestore(earning) {
+    return { ...earning }
+  },
+  fromFirestore(snapshot, options) {
+    const d = snapshot.data(options) as Record<string, unknown>
+    return new ReferralEarningEntity({
+      ...d,
+      id: snapshot.id,
+      created_at: toDate(d.created_at as never) ?? new Date(),
+      requested_at: toDate(d.requested_at as never),
+      paid_at: toDate(d.paid_at as never)
+    } as ReferralEarning)
   }
 }
