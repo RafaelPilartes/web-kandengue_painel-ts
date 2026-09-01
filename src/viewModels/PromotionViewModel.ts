@@ -3,11 +3,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { PromotionEntity } from '@/core/entities/Promotion'
 import { firebaseCollections } from '@/constants/firebaseCollections'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
-import { PromotionService } from '@/services/promotion.service'
+import { promotionUseCase } from '@/domain/usecases/promotionUseCase'
 import { useAdminStore } from '@/stores/userStore'
 import { withAudit } from '@/services/audit.service'
-
-const promotionService = new PromotionService()
 
 export function usePromotionsViewModel(
   limit?: number,
@@ -34,7 +32,8 @@ export function usePromotionsViewModel(
       searchTerm,
       filtersKey
     ],
-    queryFn: () => promotionService.getAll(limit, offset, searchTerm, filters),
+    queryFn: () =>
+      promotionUseCase.executeGetAll(limit, offset, searchTerm, filters),
     staleTime: 1000 * 30
   })
 
@@ -42,7 +41,7 @@ export function usePromotionsViewModel(
     mutationFn: (input: Omit<PromotionEntity, 'id'>) =>
       withAudit(
         () =>
-          promotionService.create({
+          promotionUseCase.executeCreate({
             ...input,
             // `||` (não `??`) — o formulário envia sempre created_by como
             // string vazia, que não é "nullish" e por isso nunca acionaria o
@@ -73,10 +72,10 @@ export function usePromotionsViewModel(
       code: string
       patch: Partial<PromotionEntity>
     }) => {
-      const previous_data = await promotionService
-        .getByCode(code)
+      const previous_data = await promotionUseCase
+        .executeGetByCode(code)
         .catch(() => null)
-      return withAudit(() => promotionService.update(code, patch), {
+      return withAudit(() => promotionUseCase.executeUpdate(code, patch), {
         action: 'update',
         module: 'promotions',
         description: `Atualizou promoção - Código: ${code}`,
@@ -95,7 +94,7 @@ export function usePromotionsViewModel(
 
   const toggleActive = useMutation({
     mutationFn: ({ code, active }: { code: string; active: boolean }) =>
-      withAudit(() => promotionService.setActive(code, active), {
+      withAudit(() => promotionUseCase.executeSetActive(code, active), {
         action: 'update',
         module: 'promotions',
         description: `${active ? 'Ativou' : 'Desativou'} promoção - Código: ${code}`,
@@ -112,7 +111,7 @@ export function usePromotionsViewModel(
 
   const addAllowedUsersBulk = useMutation({
     mutationFn: ({ code, userIds }: { code: string; userIds: string[] }) =>
-      promotionService.addAllowedUsersBulk(code, userIds, adminId)
+      promotionUseCase.executeAddAllowedUsersBulk(code, userIds, adminId)
   })
 
   return {
@@ -131,21 +130,21 @@ export function usePromotionsViewModel(
 export function usePromotionDetailViewModel(code: string | undefined) {
   const promotionQuery = useQuery({
     queryKey: [firebaseCollections.promotions.root, 'detail', code],
-    queryFn: () => promotionService.getByCode(code!),
+    queryFn: () => promotionUseCase.executeGetByCode(code!),
     enabled: !!code,
     staleTime: 30 * 1000
   })
 
   const usagesQuery = useQuery({
     queryKey: [firebaseCollections.promotions.root, 'usages', code],
-    queryFn: () => promotionService.listUsages(code!, 200),
+    queryFn: () => promotionUseCase.executeListUsages(code!, 200),
     enabled: !!code,
     staleTime: 60 * 1000
   })
 
   const allowedUsersQuery = useQuery({
     queryKey: [firebaseCollections.promotions.root, 'allowed', code],
-    queryFn: () => promotionService.listAllowedUsers(code!),
+    queryFn: () => promotionUseCase.executeListAllowedUsers(code!),
     enabled: !!code && !!promotionQuery.data?.rules?.has_specific_users,
     staleTime: 60 * 1000
   })
