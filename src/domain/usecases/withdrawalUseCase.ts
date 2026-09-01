@@ -23,10 +23,6 @@ export class WithdrawalUseCase extends BaseUseCase {
     return ApiRepository.withdrawals
   }
 
-  private get adminMoneyRepository() {
-    return ApiRepository.adminMoney
-  }
-
   executeGetAll(
     limit?: number,
     offset?: number,
@@ -72,7 +68,7 @@ export class WithdrawalUseCase extends BaseUseCase {
    * `ApiDAO` já extrai a mensagem do servidor.
    */
   executeApprove(id: string): Promise<{ changed: boolean }> {
-    return this.adminMoneyRepository.approveWithdrawal(id)
+    return ApiRepository.adminMoney.approveWithdrawal(id)
   }
 
   /**
@@ -83,7 +79,7 @@ export class WithdrawalUseCase extends BaseUseCase {
     id: string,
     reason: string
   ): Promise<{ changed: boolean; revertedEarnings: number }> {
-    return this.adminMoneyRepository.rejectWithdrawal(id, reason)
+    return ApiRepository.adminMoney.rejectWithdrawal(id, reason)
   }
 
   /**
@@ -93,7 +89,7 @@ export class WithdrawalUseCase extends BaseUseCase {
   executeMarkAsPaid(
     id: string
   ): Promise<{ changed: boolean; paidEarnings: number }> {
-    return this.adminMoneyRepository.markWithdrawalPaid(id)
+    return ApiRepository.adminMoney.markWithdrawalPaid(id)
   }
 }
 

@@ -20,10 +20,6 @@ export class WalletUseCase extends BaseUseCase {
     return ApiRepository.wallets
   }
 
-  private get adminMoneyRepository() {
-    return ApiRepository.adminMoney
-  }
-
   executeGetAll(
     limit?: number,
     offset?: number,
@@ -97,7 +93,7 @@ export class WalletUseCase extends BaseUseCase {
     status: string
     reason?: string
   }): Promise<{ walletId: string; balance: number }> {
-    return this.adminMoneyRepository.createWallet(input)
+    return ApiRepository.adminMoney.createWallet(input)
   }
 
   /**
@@ -112,7 +108,7 @@ export class WalletUseCase extends BaseUseCase {
     status: 'active' | 'inactive',
     reason?: string
   ): Promise<{ changed: boolean; status: 'active' | 'inactive' }> {
-    return this.adminMoneyRepository.setWalletStatus(walletId, status, reason)
+    return ApiRepository.adminMoney.setWalletStatus(walletId, status, reason)
   }
 }
 
