@@ -1,11 +1,9 @@
 // viewModels/NotificationViewModel.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { NotificationService } from '@/services/notification.service'
+import { notificationUseCase } from '@/domain/usecases/notificationUseCase'
 import { NotificationEntity } from '@/core/entities/Notification'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { withAudit } from '@/services/audit.service'
-
-const notificationService = new NotificationService()
 
 export function useNotificationsViewModel(
   limit?: number,
@@ -26,7 +24,7 @@ export function useNotificationsViewModel(
   } = useQuery<ListResponseType<NotificationEntity[]>>({
     queryKey: ['notifications', limit, offset, searchTerm, filtersKey],
     queryFn: () =>
-      notificationService.getAll(limit, offset, searchTerm, filters),
+      notificationUseCase.executeGetAll(limit, offset, searchTerm, filters),
     staleTime: 1000 * 60 // cache 1min
   })
 
@@ -38,7 +36,7 @@ export function useNotificationsViewModel(
     offset?: number
   ) => {
     try {
-      return await notificationService.getAllByField(
+      return await notificationUseCase.executeGetAllByField(
         field,
         value,
         limit,
@@ -55,7 +53,7 @@ export function useNotificationsViewModel(
     mutationFn: async (notification: Omit<NotificationEntity, 'id'>) => {
       // 1. Gravar na Firebase + Disparar Push via API (com auditoria cruzada)
       const createdDoc = await withAudit(
-        () => notificationService.createAndSendPush(notification),
+        () => notificationUseCase.executeCreateAndSendPush(notification),
         {
           action: 'create',
           module: 'notifications',
@@ -82,10 +80,10 @@ export function useNotificationsViewModel(
       id: string
       notification: Partial<NotificationEntity>
     }) => {
-      const previous_data = await notificationService
-        .getById(id)
+      const previous_data = await notificationUseCase
+        .executeGetById(id)
         .catch(() => null)
-      return withAudit(() => notificationService.update(id, notification), {
+      return withAudit(() => notificationUseCase.executeUpdate(id, notification), {
         action: 'update',
         module: 'notifications',
         description: `Atualizou notificação - ID: ${id}`,
@@ -103,10 +101,10 @@ export function useNotificationsViewModel(
   /** Deletar notificação */
   const deleteNotification = useMutation({
     mutationFn: async (id: string) => {
-      const previous_data = await notificationService
-        .getById(id)
+      const previous_data = await notificationUseCase
+        .executeGetById(id)
         .catch(() => null)
-      return withAudit(() => notificationService.delete(id), {
+      return withAudit(() => notificationUseCase.executeDelete(id), {
         action: 'delete',
         module: 'notifications',
         description: `Excluiu notificação - ID: ${id}`,
@@ -124,7 +122,7 @@ export function useNotificationsViewModel(
   /** Buscar notificação único (on-demand) */
   const fetchNotificationById = async (id: string) => {
     try {
-      return await notificationService.getById(id)
+      return await notificationUseCase.executeGetById(id)
     } catch (err) {
       console.error('Erro ao buscar notificação:', err)
       return null
@@ -137,7 +135,7 @@ export function useNotificationsViewModel(
     value: string
   ) => {
     try {
-      return await notificationService.getOneByField(field, value)
+      return await notificationUseCase.executeGetOneByField(field, value)
     } catch (err) {
       console.error('Erro ao buscar notificações por campo:', err)
       return null
