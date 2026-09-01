@@ -3,9 +3,14 @@ import {
   rideRepository,
   adminMoneyRepository
 } from '@/modules/Api'
+import { ApiRepository } from '@/modules/Api/factory'
 import { MissionEntity } from '@/core/entities/Mission'
 import { MissionProgressEntity } from '@/core/entities/MissionProgress'
 import { startOfDay, startOfWeek, startOfMonth, isAfter } from 'date-fns'
+
+// O DAO de progresso vive à parte (colecção `missionProgress`) — ver
+// `ApiRepository.missionProgress` em `@/modules/Api/factory`.
+const missionProgressRepository = ApiRepository.missionProgress
 
 export class MissionService {
   async getAllMissions() {
@@ -13,8 +18,9 @@ export class MissionService {
   }
 
   async getActiveMissions() {
-    return await missionRepository.getAll(100, 0, undefined, {
-      is_active: true
+    return await missionRepository.getAll({
+      limit: 100,
+      filters: { is_active: true }
     })
   }
 
@@ -36,11 +42,15 @@ export class MissionService {
 
   async getDriverProgress(driver_id: string) {
     try {
-      const res = await missionRepository.getAllProgressByDriver(driver_id)
+      const res = await missionProgressRepository.getAllProgressByDriver(
+        driver_id
+      )
 
       if (res.length === 0) {
         await this.updateDriverProgress(driver_id)
-        return await missionRepository.getAllProgressByDriver(driver_id)
+        return await missionProgressRepository.getAllProgressByDriver(
+          driver_id
+        )
       }
 
       return res
@@ -77,7 +87,10 @@ export class MissionService {
     mission: MissionEntity
   ) {
     console.log(`[processMissionProgress] Starting for mission ${mission.id}`)
-    let progress = await missionRepository.getProgress(driver_id, mission.id)
+    let progress = await missionProgressRepository.getProgress(
+      driver_id,
+      mission.id
+    )
 
     const now = new Date()
     let startDate: Date
@@ -117,6 +130,7 @@ export class MissionService {
         `[processMissionProgress] Creating new progress entity for mission ${mission.id}`
       )
       progress = new MissionProgressEntity({
+        id: `${driver_id}_${mission.id}`,
         driver_id,
         mission_id: mission.id,
         current_count: 0,
@@ -182,7 +196,7 @@ export class MissionService {
       `[processMissionProgress] Updating progress in repository for mission ${mission.id}`
     )
     try {
-      await missionRepository.updateProgress(progress)
+      await missionProgressRepository.updateProgress(progress)
       console.log(`[processMissionProgress] Progress updated successfully.`)
     } catch (e) {
       console.error(`[processMissionProgress] Failed to update progress:`, e)
