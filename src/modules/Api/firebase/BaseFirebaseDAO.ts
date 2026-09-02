@@ -116,9 +116,9 @@ export abstract class BaseFirebaseDAO<T extends { id: string }>
   }
 
   /**
-   * Fronteira Doc → Entity. Substitui o que o `withConverter` fazia por
-   * baixo, e existe para o mesmo motor correr no React Native, onde essa
-   * API do SDK web não existe.
+   * Fronteira Doc → Entity. Substitui a conversão automática que o SDK web
+   * fazia por baixo da referência da colecção, e existe para o mesmo motor
+   * correr no React Native, onde essa API não existe.
    */
   protected toEntity(snap: DocumentSnapshot | QueryDocumentSnapshot): T {
     return this.converter.fromFirestore(snap as QueryDocumentSnapshot, {})

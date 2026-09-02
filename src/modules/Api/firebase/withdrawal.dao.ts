@@ -1,5 +1,6 @@
 // modules/Api/firebase/withdrawal.dao.ts
 import { collection, documentId, getDocs, query, where } from 'firebase/firestore'
+import type { FirestoreDataConverter } from 'firebase/firestore'
 import { db } from '@/config/firebase.config'
 import {
   ReferralEarningEntity,
@@ -20,11 +21,11 @@ export class FirebaseWithdrawalDAO
   implements IWithdrawalRepository
 {
   // Segunda colecção: resolve os earnings ligados a um saque no ecrã de
-  // detalhe. Não é do motor — query e converter escritos à mão.
-  private earningsRef = collection(
-    db,
-    firebaseCollections.referralEarnings.root
-  ).withConverter(referralEarningConverter)
+  // detalhe. Não é do motor — query e conversão escritas à mão, sem a API
+  // de conversão automática do SDK web (que não existe no React Native).
+  private earningsRef = collection(db, firebaseCollections.referralEarnings.root)
+  private earningsConverter: FirestoreDataConverter<ReferralEarningEntity> =
+    referralEarningConverter
 
   constructor() {
     // Sem searchField: o DAO actual não faz prefix-search sobre saques.
@@ -47,7 +48,9 @@ export class FirebaseWithdrawalDAO
       const snap = await getDocs(
         query(this.earningsRef, where(documentId(), 'in', slice))
       )
-      results.push(...snap.docs.map(d => d.data()))
+      results.push(
+        ...snap.docs.map(d => this.earningsConverter.fromFirestore(d, {}))
+      )
     }
     return results
   }

@@ -307,3 +307,14 @@ describe('BaseFirebaseDAO — pesquisa em campo aninhado', () => {
     expect(res.data.map(d => d.id)).toEqual(['nst-a'])
   })
 })
+
+describe('BaseFirebaseDAO — portabilidade', () => {
+  it('o motor não usa withConverter — o React Native não o tem', async () => {
+    const { readFile } = await import('node:fs/promises')
+    const fonte = await readFile(
+      new URL('../BaseFirebaseDAO.ts', import.meta.url),
+      'utf8'
+    )
+    expect(fonte).not.toContain('withConverter')
+  })
+})
