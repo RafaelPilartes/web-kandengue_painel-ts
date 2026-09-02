@@ -17,8 +17,10 @@ import {
 } from 'firebase/firestore'
 import type {
   CollectionReference,
+  DocumentSnapshot,
   FirestoreDataConverter,
   QueryConstraint,
+  QueryDocumentSnapshot,
   Query
 } from 'firebase/firestore'
 import { db } from '@/config/firebase.config'
@@ -69,7 +71,8 @@ export type SearchField<T> = (keyof T & string) | `${string}.${string}`
 export abstract class BaseFirebaseDAO<T extends { id: string }>
   implements IBaseRepository<T>
 {
-  protected readonly ref: CollectionReference<T>
+  protected readonly ref: CollectionReference
+  protected readonly converter: FirestoreDataConverter<T>
   protected readonly path: string
   protected readonly idPrefix: string
   protected readonly searchField?: SearchField<T>
@@ -100,15 +103,25 @@ export abstract class BaseFirebaseDAO<T extends { id: string }>
     defaultOrderField?: keyof T & string
   ) {
     this.path = path
+    this.converter = converter
     this.idPrefix = idPrefix
     this.searchField = searchField
     this.defaultOrderField = defaultOrderField ?? 'created_at'
-    this.ref = collection(db, path).withConverter(converter)
+    this.ref = collection(db, path)
   }
 
   /** Todos os erros do Firestore passam por aqui: contexto + código legível. */
   protected fail(op: string, err: unknown): never {
     throw toAppError(err, `[${this.path}.${op}]`)
+  }
+
+  /**
+   * Fronteira Doc → Entity. Substitui o que o `withConverter` fazia por
+   * baixo, e existe para o mesmo motor correr no React Native, onde essa
+   * API do SDK web não existe.
+   */
+  protected toEntity(snap: DocumentSnapshot | QueryDocumentSnapshot): T {
+    return this.converter.fromFirestore(snap as QueryDocumentSnapshot, {})
   }
 
   protected equalityConstraints(filters?: Partial<T>): QueryConstraint[] {
@@ -183,7 +196,7 @@ export abstract class BaseFirebaseDAO<T extends { id: string }>
       const snap = await getDocs(paged)
       const hasMore = snap.docs.length > limitValue
       const docs = hasMore ? snap.docs.slice(0, limitValue) : snap.docs
-      const data = docs.map(d => d.data())
+      const data = docs.map(d => this.toEntity(d))
 
       return {
         data,
@@ -203,7 +216,7 @@ export abstract class BaseFirebaseDAO<T extends { id: string }>
   async getById(id: string): Promise<T | null> {
     try {
       const snap = await getDoc(doc(this.ref, id))
-      return snap.exists() ? snap.data() : null
+      return snap.exists() ? this.toEntity(snap) : null
     } catch (err) {
       this.fail('getById', err)
     }
@@ -225,7 +238,7 @@ export abstract class BaseFirebaseDAO<T extends { id: string }>
       const snap = await getDocs(
         query(this.ref, where(field as string, '==', value), fbLimit(1))
       )
-      return snap.empty ? null : snap.docs[0].data()
+      return snap.empty ? null : this.toEntity(snap.docs[0])
     } catch (err) {
       this.fail('getOneByField', err)
     }
@@ -331,7 +344,7 @@ export abstract class BaseFirebaseDAO<T extends { id: string }>
   ): () => void {
     return onSnapshot(
       doc(this.ref, id),
-      snap => onUpdate(snap.exists() ? snap.data() : null),
+      snap => onUpdate(snap.exists() ? this.toEntity(snap) : null),
       err => this.onListenError('listenById', err, onError)
     )
   }
@@ -344,7 +357,7 @@ export abstract class BaseFirebaseDAO<T extends { id: string }>
     // Limite por omissão: um listener sem travão lê a colecção inteira a cada
     // alteração e paga 1 leitura por documento.
     const limitValue = options.limit ?? 50
-    const q: Query<T> = query(
+    const q: Query = query(
       this.ref,
       ...this.constraints(options),
       fbLimit(limitValue)
@@ -353,7 +366,7 @@ export abstract class BaseFirebaseDAO<T extends { id: string }>
     return onSnapshot(
       q,
       // Os documentos vêm no próprio snapshot — nunca re-fazer a query aqui.
-      snap => onUpdate(snap.docs.map(d => d.data())),
+      snap => onUpdate(snap.docs.map(d => this.toEntity(d))),
       err => this.onListenError('listenAll', err, onError)
     )
   }

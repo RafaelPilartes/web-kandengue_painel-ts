@@ -60,7 +60,7 @@ export class FirebaseMissionProgressDAO
           fbLimit(1)
         )
       )
-      return snap.empty ? null : snap.docs[0].data()
+      return snap.empty ? null : this.toEntity(snap.docs[0])
     } catch (err) {
       this.fail('getProgress', err)
     }
@@ -103,7 +103,7 @@ export class FirebaseMissionProgressDAO
       const snap = await getDocs(
         query(this.ref, where('driver_id', '==', driverId))
       )
-      return snap.docs.map(d => d.data())
+      return snap.docs.map(d => this.toEntity(d))
     } catch (err) {
       this.fail('getAllProgressByDriver', err)
     }

@@ -8,7 +8,6 @@ import {
   orderBy,
   onSnapshot
 } from 'firebase/firestore'
-import type { QuerySnapshot, QueryDocumentSnapshot } from 'firebase/firestore'
 import { deleteUser } from 'firebase/auth'
 import type { IDriverRepository } from '@/core/interfaces/IDriverRepository'
 import { DriverEntity, driverConverter } from '@/core/entities/Driver'
@@ -62,12 +61,8 @@ export class FirebaseDriverDAO
 
     return onSnapshot(
       q,
-      (snapshot: QuerySnapshot<DriverEntity>) => {
-        onUpdate(
-          snapshot.docs.map((docSnap: QueryDocumentSnapshot<DriverEntity>) =>
-            docSnap.data()
-          )
-        )
+      snapshot => {
+        onUpdate(snapshot.docs.map(docSnap => this.toEntity(docSnap)))
       },
       err => this.onListenError('listenOnlineDrivers', err, onError)
     )
