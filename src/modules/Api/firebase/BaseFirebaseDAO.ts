@@ -34,8 +34,13 @@ import type {
 import { AppError, toAppError } from '@/domain/errors/AppError'
 import { generateId } from '@/helpers/generateId'
 
-/** Sentinela de fim de intervalo para pesquisa por prefixo no Firestore. */
-const PREFIX_END = ''
+/**
+ * Sentinela de fim de intervalo para pesquisa por prefixo no Firestore.
+ * Escrito como escape (e não como o caractere U+F8FF literal) porque o literal
+ * é invisível e já se perdeu uma vez numa cópia entre repositórios — o que
+ * degrada a pesquisa por prefixo a igualdade exacta, em silêncio.
+ */
+const PREFIX_END = '\uf8ff'
 
 /**
  * Campo aceite como `searchField`: ou um campo real da entidade (`keyof T &
