@@ -189,3 +189,54 @@ export const referralEarningConverter: FirestoreDataConverter<ReferralEarningEnt
     } as ReferralEarning)
   }
 }
+
+/**
+ * Fronteira única entre o documento `promotions` e a aplicação.
+ * Datas próprias: `valid_from`, `valid_until`, `created_at`.
+ *
+ * O `id` vem de `snapshot.id`. No documento existe também um campo `id`
+ * gravado por `create`, com o mesmo valor (o código normalizado) — mas o id
+ * do snapshot é a fonte fiável, e é o que os restantes converters usam.
+ */
+export const promotionConverter: FirestoreDataConverter<PromotionEntity> = {
+  toFirestore(promotion) {
+    return { ...promotion }
+  },
+  fromFirestore(snapshot, options) {
+    const d = snapshot.data(options) as Record<string, unknown>
+    return new PromotionEntity({
+      ...d,
+      id: snapshot.id,
+      valid_from: toDate(d.valid_from as never) ?? new Date(),
+      valid_until: toDate(d.valid_until as never) ?? new Date(),
+      created_at: toDate(d.created_at as never) ?? new Date()
+    } as Promotion)
+  }
+}
+
+/**
+ * Fronteira única entre o documento `promotionUsages` e a aplicação.
+ * Além das datas próprias, converte as datas dentro de
+ * `cancellation_history`, que o motor não alcança sozinho.
+ */
+export const promotionUsageConverter: FirestoreDataConverter<PromotionUsageEntity> =
+  {
+    toFirestore(usage) {
+      return { ...usage }
+    },
+    fromFirestore(snapshot, options) {
+      const d = snapshot.data(options) as Record<string, unknown>
+      const history = (d.cancellation_history ?? []) as CancellationRecord[]
+      return new PromotionUsageEntity({
+        ...d,
+        id: snapshot.id,
+        expires_at: d.expires_at ? toDate(d.expires_at as never) : null,
+        created_at: toDate(d.created_at as never) ?? new Date(),
+        updated_at: toDate(d.updated_at as never) ?? new Date(),
+        cancellation_history: history.map(r => ({
+          ...r,
+          cancelled_at: toDate(r.cancelled_at as never) ?? new Date()
+        }))
+      } as PromotionUsage)
+    }
+  }

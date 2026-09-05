@@ -9,6 +9,10 @@ import type { AllowedUser } from '@rafaelpilartes/kandengue-shared/promotion'
 
 // A normalização do código (uppercase + trim) já vive no
 // `FirebasePromotionDAO.normalizeCode` — não duplicar aqui.
+
+/** Default do DAO anterior (o motor usa 50). Preservado para não mudar o
+ *  número de promoções que a página recebe. */
+const LEGACY_PAGE_SIZE = 100
 export class PromotionUseCase extends BaseUseCase {
   protected readonly context = 'PromotionUseCase'
 
@@ -22,9 +26,19 @@ export class PromotionUseCase extends BaseUseCase {
     searchTerm?: string,
     filters?: Partial<PromotionEntity>
   ): Promise<ListResponseType<PromotionEntity[]>> {
-    return this.run('getAll', () =>
-      this.repository.getAll(limit, offset, searchTerm, filters)
-    )
+    return this.run('getAll', async () => {
+      const base = { searchTerm, filters }
+      const after = await this.offsetToCursor(
+        this.repository,
+        base,
+        offset ?? 0
+      )
+      return this.repository.getAll({
+        ...base,
+        limit: limit ?? LEGACY_PAGE_SIZE,
+        after
+      })
+    })
   }
 
   executeGetByCode(code: string): Promise<PromotionEntity | null> {

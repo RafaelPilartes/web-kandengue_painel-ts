@@ -1,15 +1,29 @@
+// modules/Api/firebase/promotion.dao.ts
+//
+// Assenta no motor para a leitura (getAll/getById/count/getAllByField e os
+// listeners), e sobrepõe-lhe `create` e `update`, que esta colecção não pode
+// herdar:
+//
+// - o id do documento é o código normalizado, não um id gerado;
+// - `create` tem de inicializar os 10 shards de contagem no mesmo batch do
+//   documento principal, ou a CAMADA 1 do `apply` fica sem contadores;
+// - `update` tem de apagar campos de facto quando o admin os limpa, e tem de
+//   recusar alterações ao código, aos contadores e à auditoria de criação.
+//
+// Não se declara `searchField`. A página de promoções filtra por *substring*
+// no cliente (`p.code.includes(t)`) e passa `searchTerm: undefined` de
+// propósito — a pesquisa por prefixo do motor é outra semântica, e ligá-la
+// aqui mudaria o que o admin vê.
 import {
   collection,
+  deleteDoc,
   deleteField,
   doc,
-  getCountFromServer,
-  getDoc,
   getDocs,
   limit as fbLimit,
   orderBy,
   query,
   setDoc,
-  startAfter,
   Timestamp,
   updateDoc,
   where,
@@ -18,193 +32,175 @@ import {
 import { db } from '@/config/firebase.config'
 import {
   PromotionEntity,
-  PromotionUsageEntity
+  PromotionUsageEntity,
+  promotionConverter,
+  promotionUsageConverter
 } from '@/core/entities/Promotion'
 import type { IPromotionRepository } from '@/core/interfaces/IPromotionRepository'
 import { firebaseCollections } from '@/constants/firebaseCollections'
-import type { ListResponseType } from '@/interfaces/IApiResponse'
+import { toDate } from '@/helpers/firestore'
 import type { AllowedUser } from '@rafaelpilartes/kandengue-shared/promotion'
+import { BaseFirebaseDAO } from './BaseFirebaseDAO'
 
 const NUM_SHARDS = 10
+
+/** Limite de operações por batch no Firestore é 500; deixa-se folga. */
+const BATCH_CHUNK = 450
 
 function normalizeCode(code: string): string {
   return code.trim().toUpperCase()
 }
 
-function toDate(v: any): Date {
-  if (!v) return new Date()
-  if (v instanceof Date) return v
-  if (typeof v?.toDate === 'function') return v.toDate()
-  return new Date(v)
-}
+export class FirebasePromotionDAO
+  extends BaseFirebaseDAO<PromotionEntity>
+  implements IPromotionRepository
+{
+  private readonly usagesRef = collection(
+    db,
+    firebaseCollections.promotionUsages.root
+  )
 
-function mapPromotion(data: any): PromotionEntity {
-  return new PromotionEntity({
-    ...data,
-    valid_from: toDate(data.valid_from),
-    valid_until: toDate(data.valid_until),
-    created_at: toDate(data.created_at)
-  })
-}
+  constructor() {
+    super(firebaseCollections.promotions.root, promotionConverter, 'promo')
+  }
 
-function mapUsage(id: string, data: any): PromotionUsageEntity {
-  return new PromotionUsageEntity({
-    ...data,
-    id,
-    expires_at: data.expires_at ? toDate(data.expires_at) : null,
-    created_at: toDate(data.created_at),
-    updated_at: toDate(data.updated_at),
-    cancellation_history: (data.cancellation_history ?? []).map((r: any) => ({
-      ...r,
-      cancelled_at: toDate(r.cancelled_at)
-    }))
-  })
-}
-
-export class FirebasePromotionDAO implements IPromotionRepository {
-  private ref = collection(db, firebaseCollections.promotions.root)
-  private usagesRef = collection(db, firebaseCollections.promotionUsages.root)
-
-  private sanitize<T extends Record<string, any>>(data: T): T {
+  /** Omite as chaves com valor `undefined` — nunca apaga o que já lá está. */
+  private sanitize<T extends Record<string, unknown>>(data: T): T {
     return Object.fromEntries(
-      Object.entries(data).filter(([_, v]) => v !== undefined)
+      Object.entries(data).filter(([, v]) => v !== undefined)
     ) as T
   }
 
   // Para updateDoc(): um valor `undefined` significa "o admin limpou este
-  // campo" e deve apagá-lo de facto no Firestore via deleteField() — ao
-  // contrário de sanitize(), que apenas omite a chave (e por isso nunca
-  // consegue limpar um valor já persistido).
+  // campo" e deve apagá-lo de facto via deleteField() — ao contrário de
+  // sanitize(), que apenas omite a chave (e por isso nunca consegue limpar
+  // um valor já persistido).
+  // `any` no valor, e não `unknown`: o retorno vai directo a `updateDoc`,
+  // cuja assinatura exige `FieldValue | Partial<T>` — `unknown` não é
+  // atribuível, e é este o tipo que o DAO anterior já usava aqui.
   private sanitizeForUpdate(
     data: Record<string, any>
   ): Record<string, any> {
     return Object.fromEntries(
-      Object.entries(data).map(([k, v]) => [k, v === undefined ? deleteField() : v])
+      Object.entries(data).map(([k, v]) => [
+        k,
+        v === undefined ? deleteField() : v
+      ])
     )
   }
 
-  async getAll(
-    limitValue: number = 100,
-    offset = 0,
-    _searchTerm?: string,
-    filters?: Partial<PromotionEntity>
-  ): Promise<ListResponseType<PromotionEntity[]>> {
-    let baseQuery = query(this.ref, orderBy('created_at', 'desc'))
-    if (filters) {
-      Object.entries(filters).forEach(([field, value]) => {
-        if (value !== undefined && value !== '' && value !== null) {
-          baseQuery = query(baseQuery, where(field, '==', value))
-        }
-      })
-    }
-
-    let total = 0
-    try {
-      const countSnap = await getCountFromServer(baseQuery)
-      total = countSnap.data().count
-    } catch (err) {
-      console.warn('Erro ao obter count de promoções:', err)
-    }
-
-    let finalQuery = query(baseQuery, fbLimit(limitValue))
-    if (offset > 0) {
-      // NOTE: este "skip" é caro para offsets grandes — mesmo padrão
-      // usado nos restantes DAOs deste projeto (ex: admins.dao.ts).
-      const skipSnap = await getDocs(query(baseQuery, fbLimit(offset)))
-      const lastVisible = skipSnap.docs[skipSnap.docs.length - 1]
-      if (!lastVisible) {
-        return { data: [], pagination: { limit: limitValue, offset, count: total } }
-      }
-      finalQuery = query(baseQuery, startAfter(lastVisible), fbLimit(limitValue))
-    }
-
-    const snap = await getDocs(finalQuery)
-    const data = snap.docs.map(d => mapPromotion(d.data()))
-    return {
-      data,
-      pagination: { limit: limitValue, offset, count: total }
-    }
-  }
-
+  /** Atalho de leitura — o código normalizado é o id do documento. */
   async getByCode(code: string): Promise<PromotionEntity | null> {
-    const id = normalizeCode(code)
-    const snap = await getDoc(doc(this.ref, id))
-    if (!snap.exists()) return null
-    return mapPromotion(snap.data())
+    return this.getById(normalizeCode(code))
   }
 
   async create(
     promotion: Omit<PromotionEntity, 'id'>
   ): Promise<PromotionEntity> {
-    const code = normalizeCode(promotion.code)
+    try {
+      const code = normalizeCode(promotion.code)
 
-    // Garante atomicidade entre o doc principal e a inicialização dos shards.
-    const batch = writeBatch(db)
-    const promoRef = doc(this.ref, code)
+      // Garante atomicidade entre o doc principal e a inicialização dos
+      // shards. É por isto que este create não pode ser o do motor.
+      const batch = writeBatch(db)
+      const promoRef = doc(this.ref, code)
 
-    const payload = {
-      ...this.sanitize(promotion as Record<string, any>),
-      rules: this.sanitize(promotion.rules ?? {}),
-      id: code,
-      code,
-      used_count_approx: 0,
-      reserved_count_approx: 0,
-      valid_from: Timestamp.fromDate(promotion.valid_from),
-      valid_until: Timestamp.fromDate(promotion.valid_until),
-      created_at: Timestamp.now()
-    }
-    batch.set(promoRef, payload)
-
-    // Inicializa todos os shards com zeros.
-    const countersRef = collection(promoRef, 'counters')
-    for (let i = 0; i < NUM_SHARDS; i++) {
-      batch.set(doc(countersRef, `shard_${i}`), {
-        used_count: 0,
-        reserved_count: 0
+      batch.set(promoRef, {
+        ...this.sanitize(promotion as unknown as Record<string, unknown>),
+        rules: this.sanitize(
+          (promotion.rules ?? {}) as unknown as Record<string, unknown>
+        ),
+        id: code,
+        code,
+        used_count_approx: 0,
+        reserved_count_approx: 0,
+        valid_from: Timestamp.fromDate(promotion.valid_from),
+        valid_until: Timestamp.fromDate(promotion.valid_until),
+        created_at: Timestamp.now()
       })
+
+      const countersRef = collection(promoRef, 'counters')
+      for (let i = 0; i < NUM_SHARDS; i++) {
+        batch.set(doc(countersRef, `shard_${i}`), {
+          used_count: 0,
+          reserved_count: 0
+        })
+      }
+
+      await batch.commit()
+
+      // Read-back, como no motor: devolve o que ficou gravado, não uma
+      // reconstrução optimista.
+      const created = await this.getById(code)
+      if (!created) {
+        return this.fail(
+          'create',
+          new Error('promoção não encontrada após criação')
+        )
+      }
+      return created
+    } catch (err) {
+      return this.fail('create', err)
     }
-
-    await batch.commit()
-
-    return mapPromotion(payload)
   }
 
   async update(
     code: string,
     promotion: Partial<PromotionEntity>
   ): Promise<PromotionEntity> {
-    const id = normalizeCode(code)
-    const patch: Record<string, any> = this.sanitizeForUpdate(promotion)
+    try {
+      const id = normalizeCode(code)
+      const patch = this.sanitizeForUpdate(
+        promotion as unknown as Record<string, any>
+      )
 
-    // rules é substituído por inteiro (não é merge profundo no Firestore),
-    // por isso undefined aqui significa apenas "não enviado" — nunca
-    // apagar o campo inteiro.
-    delete patch.rules
-    if (promotion.rules !== undefined)
-      patch.rules = this.sanitize(promotion.rules)
+      // rules é substituído por inteiro (não é merge profundo no Firestore),
+      // por isso undefined aqui significa apenas "não enviado" — nunca
+      // apagar o campo inteiro.
+      delete patch.rules
+      if (promotion.rules !== undefined) {
+        patch.rules = this.sanitize(
+          promotion.rules as unknown as Record<string, unknown>
+        )
+      }
 
-    if (promotion.valid_from)
-      patch.valid_from = Timestamp.fromDate(promotion.valid_from)
-    if (promotion.valid_until)
-      patch.valid_until = Timestamp.fromDate(promotion.valid_until)
+      if (promotion.valid_from) {
+        patch.valid_from = Timestamp.fromDate(promotion.valid_from)
+      }
+      if (promotion.valid_until) {
+        patch.valid_until = Timestamp.fromDate(promotion.valid_until)
+      }
 
-    // Nunca permitir mudar o code (é o doc id), os contadores, nem os
-    // campos de auditoria de criação — mesmo que o caller os envie.
-    delete patch.id
-    delete patch.code
-    delete patch.used_count_approx
-    delete patch.reserved_count_approx
-    delete patch.created_by
-    delete patch.created_at
+      // Nunca permitir mudar o code (é o doc id), os contadores, nem os
+      // campos de auditoria de criação — mesmo que o caller os envie.
+      delete patch.id
+      delete patch.code
+      delete patch.used_count_approx
+      delete patch.reserved_count_approx
+      delete patch.created_by
+      delete patch.created_at
 
-    await updateDoc(doc(this.ref, id), patch)
-    const updated = await this.getByCode(id)
-    if (!updated) throw new Error('Promotion not found after update')
-    return updated
+      await updateDoc(doc(this.ref, id), patch)
+
+      const updated = await this.getById(id)
+      if (!updated) {
+        return this.fail(
+          'update',
+          new Error('promoção não encontrada após update')
+        )
+      }
+      return updated
+    } catch (err) {
+      return this.fail('update', err)
+    }
   }
 
   async setActive(code: string, active: boolean): Promise<void> {
-    await updateDoc(doc(this.ref, normalizeCode(code)), { active })
+    try {
+      await updateDoc(doc(this.ref, normalizeCode(code)), { active })
+    } catch (err) {
+      this.fail('setActive', err)
+    }
   }
 
   // ─────────────── Allowed users ───────────────
@@ -214,15 +210,14 @@ export class FirebasePromotionDAO implements IPromotionRepository {
     userId: string,
     addedBy: string
   ): Promise<void> {
-    const id = normalizeCode(code)
-    await setDoc(
-      doc(this.ref, id, 'allowed_users', userId),
-      {
-        user_id: userId,
-        added_at: Timestamp.now(),
-        added_by: addedBy
-      }
-    )
+    try {
+      await setDoc(
+        doc(this.ref, normalizeCode(code), 'allowed_users', userId),
+        { user_id: userId, added_at: Timestamp.now(), added_by: addedBy }
+      )
+    } catch (err) {
+      this.fail('addAllowedUser', err)
+    }
   }
 
   async addAllowedUsersBulk(
@@ -231,41 +226,50 @@ export class FirebasePromotionDAO implements IPromotionRepository {
     addedBy: string
   ): Promise<void> {
     if (userIds.length === 0) return
-    const id = normalizeCode(code)
-    // Firestore batch limit = 500 ops; usar chunks.
-    const CHUNK = 450
-    for (let i = 0; i < userIds.length; i += CHUNK) {
-      const slice = userIds.slice(i, i + CHUNK)
-      const batch = writeBatch(db)
-      for (const uid of slice) {
-        batch.set(doc(this.ref, id, 'allowed_users', uid), {
-          user_id: uid,
-          added_at: Timestamp.now(),
-          added_by: addedBy
-        })
+    try {
+      const id = normalizeCode(code)
+      for (let i = 0; i < userIds.length; i += BATCH_CHUNK) {
+        const batch = writeBatch(db)
+        for (const uid of userIds.slice(i, i + BATCH_CHUNK)) {
+          batch.set(doc(this.ref, id, 'allowed_users', uid), {
+            user_id: uid,
+            added_at: Timestamp.now(),
+            added_by: addedBy
+          })
+        }
+        await batch.commit()
       }
-      await batch.commit()
+    } catch (err) {
+      this.fail('addAllowedUsersBulk', err)
     }
   }
 
   async removeAllowedUser(code: string, userId: string): Promise<void> {
-    const id = normalizeCode(code)
-    const ref = doc(this.ref, id, 'allowed_users', userId)
-    const { deleteDoc } = await import('firebase/firestore')
-    await deleteDoc(ref)
+    try {
+      await deleteDoc(
+        doc(this.ref, normalizeCode(code), 'allowed_users', userId)
+      )
+    } catch (err) {
+      this.fail('removeAllowedUser', err)
+    }
   }
 
   async listAllowedUsers(code: string): Promise<AllowedUser[]> {
-    const id = normalizeCode(code)
-    const snap = await getDocs(collection(this.ref, id, 'allowed_users'))
-    return snap.docs.map(d => {
-      const data = d.data()
-      return {
-        user_id: data.user_id ?? d.id,
-        added_at: toDate(data.added_at),
-        added_by: data.added_by ?? 'unknown'
-      }
-    })
+    try {
+      const snap = await getDocs(
+        collection(this.ref, normalizeCode(code), 'allowed_users')
+      )
+      return snap.docs.map(d => {
+        const data = d.data()
+        return {
+          user_id: data.user_id ?? d.id,
+          added_at: toDate(data.added_at) ?? new Date(),
+          added_by: data.added_by ?? 'unknown'
+        }
+      })
+    } catch (err) {
+      return this.fail('listAllowedUsers', err)
+    }
   }
 
   // ─────────────── Usages ───────────────
@@ -274,14 +278,18 @@ export class FirebasePromotionDAO implements IPromotionRepository {
     code: string,
     limitValue = 100
   ): Promise<PromotionUsageEntity[]> {
-    const id = normalizeCode(code)
-    const q = query(
-      this.usagesRef,
-      where('promotion_id', '==', id),
-      orderBy('created_at', 'desc'),
-      fbLimit(limitValue)
-    )
-    const snap = await getDocs(q)
-    return snap.docs.map(d => mapUsage(d.id, d.data()))
+    try {
+      const snap = await getDocs(
+        query(
+          this.usagesRef,
+          where('promotion_id', '==', normalizeCode(code)),
+          orderBy('created_at', 'desc'),
+          fbLimit(limitValue)
+        )
+      )
+      return snap.docs.map(d => promotionUsageConverter.fromFirestore(d, {}))
+    } catch (err) {
+      return this.fail('listUsages', err)
+    }
   }
 }
