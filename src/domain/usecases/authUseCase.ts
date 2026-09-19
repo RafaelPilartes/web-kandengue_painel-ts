@@ -20,6 +20,12 @@ import { BaseUseCase } from './BaseUseCase'
  * valor" — que é para o que o `run()` serve.
  */
 export class AuthUseCase extends BaseUseCase {
+  // Nenhum método apanha o erro para o re-lançar. Faziam-no antes, com
+  // `throw new Error(error.message)` — o que descarta o `code` do Firebase,
+  // e é o `code` que o `toAppError` do `run()` usa para escolher a mensagem.
+  // O resultado era toda e qualquer falha de login sair como "Ocorreu um
+  // erro inesperado.", incluindo uma senha errada.
+
   protected readonly context = 'AuthUseCase'
 
   /** Login */
@@ -29,23 +35,13 @@ export class AuthUseCase extends BaseUseCase {
         throw new Error('E-mail e senha são obrigatórios')
       }
 
-      try {
-        return await signInWithEmailAndPassword(auth, email, password)
-      } catch (error: any) {
-        console.error('Erro no login:', error)
-        throw new Error(error.message || 'Falha ao fazer login')
-      }
+      return signInWithEmailAndPassword(auth, email, password)
     })
   }
 
   executeLogout(): Promise<void> {
     return this.run('logout', async () => {
-      try {
-        await signOut(auth)
-      } catch (error: any) {
-        console.error('Erro no logout:', error)
-        throw new Error(error.message || 'Falha ao sair')
-      }
+      await signOut(auth)
     })
   }
 
@@ -60,35 +56,24 @@ export class AuthUseCase extends BaseUseCase {
         throw new Error('E-mail e senha são obrigatórios')
       }
 
-      try {
-        const userCredential = await createUserWithEmailAndPassword(
-          auth,
-          email,
-          password
-        )
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      )
 
-        // Se quiser adicionar um nome
-        if (displayName) {
-          await updateProfile(userCredential.user, { displayName })
-        }
-
-        return userCredential
-      } catch (error: any) {
-        console.error('Erro no registro:', error)
-        throw new Error(error.message || 'Falha ao registrar usuário')
+      if (displayName) {
+        await updateProfile(userCredential.user, { displayName })
       }
+
+      return userCredential
     })
   }
 
   /** Reseta senha por email */
   executeResetPassword(email: string): Promise<void> {
     return this.run('resetPassword', async () => {
-      try {
-        await sendPasswordResetEmail(auth, email)
-      } catch (error: any) {
-        console.error('Erro ao resetar senha:', error)
-        throw new Error(error.message || 'Falha ao enviar reset de senha')
-      }
+      await sendPasswordResetEmail(auth, email)
     })
   }
 
@@ -98,12 +83,7 @@ export class AuthUseCase extends BaseUseCase {
       const user = auth.currentUser
       if (!user) throw new Error('Usuário não autenticado')
 
-      try {
-        await updatePassword(user, newPassword)
-      } catch (error: any) {
-        console.error('Erro ao alterar senha:', error)
-        throw new Error(error.message || 'Falha ao alterar senha')
-      }
+      await updatePassword(user, newPassword)
     })
   }
 
