@@ -1,5 +1,6 @@
 // viewModels/AdminViewModel.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { AppError } from '@/domain/errors/AppError'
 import { adminUseCase } from '@/domain/usecases/adminUseCase'
 import { AdminEntity } from '@/core/entities/Admin'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
@@ -75,6 +76,13 @@ export function useAdminsViewModel(
     try {
       return await adminUseCase.executeGetAllByField(field, value, limit, offset)
     } catch (err) {
+      // Engolir o erro e devolver `null` faz o chamador concluir "não
+      // existe" — e foi isso que o ecrã de login mostrou quando as regras
+      // recusaram a leitura por falta de claim no token. Uma recusa não é
+      // uma ausência: essa distingue-se, e sobe.
+      if (err instanceof AppError && err.code === 'permission-denied') {
+        throw err
+      }
       console.error('Erro ao buscar administradores por campo:', err)
       return null
     }

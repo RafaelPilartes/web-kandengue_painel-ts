@@ -53,6 +53,16 @@ export function Login() {
       })
 
       if (authRes.user.uid) {
+        // Força a renovação do token antes de ler o Firestore.
+        //
+        // As Security Rules decidem pelo papel que vem numa custom claim
+        // (`request.auth.token.role`). Uma claim gravada pelo servidor só
+        // entra no token na renovação seguinte — que pode demorar até uma
+        // hora. Sem este `true`, um admin acabado de promover, ou com uma
+        // sessão anterior em cache, é recusado pelas regras e o ecrã
+        // dizia-lhe que não existia.
+        await authRes.user.getIdToken(true)
+
         const response = await fetchAllAdminsByField(
           'email',
           authRes.user.email
@@ -100,6 +110,9 @@ export function Login() {
         dataForm.email,
         err?.message || 'Erro desconhecido'
       )
+      // Sem isto o erro morria na consola e o ecrã ficava parado, sem dizer
+      // nada — que é pior do que uma mensagem errada.
+      showToast('error', mapFirebaseError(err))
       console.error(err)
     }
   }
