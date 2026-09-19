@@ -15,6 +15,7 @@ import { useAdminsViewModel } from '@/viewModels/AdminViewModel'
 import { useAuthViewModel } from '@/viewModels/AuthViewModel'
 import type { AdminEntity } from '@/core/entities/Admin'
 import { mapFirebaseError } from '@/helpers/mapFirebaseError'
+import { AppError } from '@/domain/errors/AppError'
 import { auditService } from '@/observability/audit'
 
 const loginUserSchema = z.object({
@@ -61,7 +62,24 @@ export function Login() {
         // hora. Sem este `true`, um admin acabado de promover, ou com uma
         // sessão anterior em cache, é recusado pelas regras e o ecrã
         // dizia-lhe que não existia.
-        await authRes.user.getIdToken(true)
+        const token = await authRes.user.getIdTokenResult(true)
+
+        // Diagnóstico: se as regras recusarem, a primeira pergunta é sempre
+        // "o token trazia o papel?". Sem isto, a resposta era um palpite.
+        if (import.meta.env.DEV) {
+          console.info('[login] claims no token:', {
+            role: token.claims.role ?? '(nenhuma)',
+            app_id: token.claims.app_id ?? '(nenhuma)'
+          })
+        }
+
+        if (!token.claims.role) {
+          throw new AppError(
+            'permission-denied',
+            'A sua conta ainda não tem o papel atribuído. ' +
+              'Contacte o administrador do sistema.'
+          )
+        }
 
         const response = await fetchAllAdminsByField(
           'email',
