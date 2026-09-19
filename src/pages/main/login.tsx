@@ -65,19 +65,24 @@ export function Login() {
         const token = await authRes.user.getIdTokenResult(true)
 
         // Diagnóstico: se as regras recusarem, a primeira pergunta é sempre
-        // "o token trazia o papel?". Sem isto, a resposta era um palpite.
-        if (import.meta.env.DEV) {
-          console.info('[login] claims no token:', {
-            role: token.claims.role ?? '(nenhuma)',
-            app_id: token.claims.app_id ?? '(nenhuma)'
-          })
-        }
+        // "o token trazia o papel?". Sem isto, a resposta era um palpite —
+        // e num build de produção o `console.info` abaixo nem aparece, por
+        // isso o que importa vai também na mensagem do erro.
+        console.info('[login] claims no token:', {
+          uid: authRes.user.uid,
+          aud: token.claims.aud,
+          role: token.claims.role ?? '(ausente)',
+          app_id: token.claims.app_id ?? '(ausente)',
+          emitido: token.issuedAtTime
+        })
 
         if (!token.claims.role) {
+          const presentes = Object.keys(token.claims).join(', ')
           throw new AppError(
             'permission-denied',
-            'A sua conta ainda não tem o papel atribuído. ' +
-              'Contacte o administrador do sistema.'
+            'A sua conta não tem papel atribuído neste token. ' +
+              `uid=${authRes.user.uid} · projeto=${token.claims.aud} · ` +
+              `emitido=${token.issuedAtTime} · claims=[${presentes}]`
           )
         }
 
