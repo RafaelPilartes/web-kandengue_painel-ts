@@ -160,9 +160,20 @@ export function RealtimePage() {
           scrollWheelZoom={true}
           zoomControl={false}
         >
+          {/*
+            OpenStreetMap, como nas outras três páginas com mapa.
+
+            Estava a usar as telhas `basemaps.cartocdn.com` da CARTO, que
+            passaram a exigir chave: sem ela a CARTO serve a telha na mesma,
+            carimbada com "API KEY REQUIRED" por cima do mapa inteiro.
+
+            O estilo `voyager` da CARTO era mais bonito, mas obrigava a uma
+            chave e a uma conta a mais para manter. Esta é a mesma fonte que
+            o resto do painel já usa.
+          */}
           <TileLayer
-            url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           />
 
           {/* Controlador da centralização */}
