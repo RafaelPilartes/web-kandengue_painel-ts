@@ -11,8 +11,11 @@
     <script type="module" src="/src/main.tsx"></script>
   </body>
 
-  <script
-    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCcaxxnCRThBiRzzjF4SHO-yo6qtV8q7iM&libraries=places&load=async"
+  <!-- Chave restringida ao referrer painel.kandengueatrevido.ao e às
+     APIs Maps JS, Places e Roads. Vai no HTML por necessidade: o SDK
+     carrega-se por <script>. A protecção é a restrição, não o segredo. -->
+<script
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB_7KlWPUmfmsPf4NjPInvANiuTIKSaBhs&libraries=places&load=async"
     async
     defer
   ></script>
