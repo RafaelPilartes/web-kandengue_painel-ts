@@ -118,9 +118,15 @@ describe('BaseFirebaseDAO — escrita', () => {
   })
 
   it('update falha com AppError quando o documento não existe', async () => {
+    // A `message` é a que o utilizador lê — sem o contexto lá dentro.
+    // O contexto continua a existir, à parte, para quem diagnostica.
     await expect(
       dao.update('nao-existe', { status: 'validated' })
-    ).rejects.toThrow(/test_vehicles.update/)
+    ).rejects.toMatchObject({
+      code: 'not-found',
+      message: 'Registo não encontrado.',
+      context: '[test_vehicles.update]'
+    })
   })
 
   it('delete remove o documento', async () => {

@@ -106,7 +106,9 @@ export function Login() {
 
   useEffect(() => {
     if (loginError) {
-      showToast('error', mapFirebaseError(loginError.message))
+      // O erro inteiro, não `.message`: o `mapFirebaseError` precisa do
+      // `code` para traduzir, e um `AppError` já traz a mensagem pronta.
+      showToast('error', mapFirebaseError(loginError))
     }
   }, [loginError])
 

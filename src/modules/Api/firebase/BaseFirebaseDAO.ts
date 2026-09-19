@@ -339,7 +339,9 @@ export abstract class BaseFirebaseDAO<T extends { id: string }>
       onError(appError)
       return
     }
-    console.error(appError.message, appError)
+    // O contexto deixou de ir dentro da `message` — essa é para o
+    // utilizador. Aqui, que é registo, vai à frente.
+    console.error(`${appError.context ?? ''} ${appError.message}`.trim(), appError)
   }
 
   listenById(

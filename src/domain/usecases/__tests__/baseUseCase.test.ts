@@ -80,17 +80,18 @@ describe('run() preserva o código do erro', () => {
   }
   const uc = new Falhador()
 
-  it('um erro de auth chega com a mensagem própria', async () => {
+  it('um erro de auth chega com a mensagem própria, sem o contexto lá dentro', async () => {
     await expect(uc.comCodigo('auth/invalid-credential')).rejects.toMatchObject({
       code: 'invalid-credential',
-      message: '[Teste.op] E-mail ou senha incorretos.'
+      message: 'E-mail ou senha incorretos.',
+      context: '[Teste.op]'
     })
   })
 
   it('um erro sem código continua a ser genérico — é o que se quer evitar', async () => {
     await expect(uc.semCodigo()).rejects.toMatchObject({
       code: 'unknown',
-      message: '[Teste.op] Ocorreu um erro inesperado.'
+      message: 'Ocorreu um erro inesperado.'
     })
   })
 })

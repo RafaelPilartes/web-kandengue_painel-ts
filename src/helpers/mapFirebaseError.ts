@@ -1,7 +1,17 @@
 import { extractFirebaseCode } from './extractFirebaseCode'
+import { AppError } from '@/domain/errors/AppError'
 
 export function mapFirebaseError(error: any): string {
   if (!error) return 'Ocorreu um erro inesperado. Tente novamente.'
+
+  // Um `AppError` já vem traduzido pelo `toAppError` dos usecases. Mapeá-lo
+  // outra vez só o embrulharia — era assim que o ecrã de login mostrava
+  // `Erro mapeado: "[AuthUseCase.login] E-mail ou senha incorretos."`.
+  if (error instanceof AppError) return error.message
+
+  // Uma string já é uma mensagem; não tem `code` para mapear. Chega aqui
+  // quando o chamador passa `err.message` em vez de `err`.
+  if (typeof error === 'string') return error
 
   const errorCode = extractFirebaseCode(error)
 

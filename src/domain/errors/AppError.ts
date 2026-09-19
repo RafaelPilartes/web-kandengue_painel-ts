@@ -49,12 +49,20 @@ const MESSAGES: Record<AppErrorCode, string> = {
 export class AppError extends Error {
   readonly code: AppErrorCode
   readonly original?: unknown
+  /** Onde aconteceu, ex. `[AuthUseCase.login]`. Para registo, não para o ecrã. */
+  readonly context?: string
 
-  constructor(code: AppErrorCode, message: string, original?: unknown) {
+  constructor(
+    code: AppErrorCode,
+    message: string,
+    original?: unknown,
+    context?: string
+  ) {
     super(message)
     this.name = 'AppError'
     this.code = code
     this.original = original
+    this.context = context
   }
 }
 
@@ -72,6 +80,13 @@ export function toAppError(err: unknown, context = ''): AppError {
     console.error(`${context} índice em falta:`, (err as Error)?.message)
   }
 
-  const message = context ? `${context} ${MESSAGES[code]}` : MESSAGES[code]
-  return new AppError(code, message, err)
+  // A `message` é o que o utilizador lê — e um utilizador não tem nada que
+  // ver `[AuthUseCase.login]`. O contexto vai no campo `context`, para quem
+  // diagnostica.
+  //
+  // Esta função NÃO escreve na consola. Escrever aqui parecia útil, mas
+  // quebra o contrato do motor: `onListenError` só regista quando não há um
+  // `onError` a tratar do erro. Quem quiser registar, regista — com o
+  // `context` à mão.
+  return new AppError(code, MESSAGES[code], err, context || undefined)
 }

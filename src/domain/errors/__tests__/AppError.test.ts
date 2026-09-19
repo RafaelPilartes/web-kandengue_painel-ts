@@ -21,13 +21,17 @@ describe('toAppError', () => {
     expect(toAppError(new Error('boom')).code).toBe('unknown')
   })
 
-  it('prefixa a mensagem com o contexto', () => {
+  it('guarda o contexto à parte, fora da mensagem', () => {
+    // Antes o contexto ia à frente da mensagem, e chegava ao ecrã:
+    // `Erro mapeado: "[AuthUseCase.login] E-mail ou senha incorretos."`.
+    // A mensagem é para o utilizador; o contexto é para quem diagnostica.
     const err = toAppError(
       { code: 'firestore/not-found' },
       '[vehicles.getById]'
     )
 
-    expect(err.message).toBe('[vehicles.getById] Registo não encontrado.')
+    expect(err.message).toBe('Registo não encontrado.')
+    expect(err.context).toBe('[vehicles.getById]')
   })
 
   it('preserva o erro original', () => {
@@ -67,10 +71,13 @@ describe('toAppError — erros de autenticação', () => {
     expect(erro.code).not.toBe('unknown')
   })
 
-  it('mantém o contexto à frente da mensagem', () => {
-    expect(toAppError({ code: 'auth/invalid-credential' }, '[AuthUseCase.login]').message).toBe(
-      '[AuthUseCase.login] E-mail ou senha incorretos.'
-    )
+  it('o contexto fica fora da mensagem que o utilizador lê', () => {
+    const erro = toAppError({ code: 'auth/invalid-credential' }, '[AuthUseCase.login]')
+
+    // O que aparece no ecrã: limpo.
+    expect(erro.message).toBe('E-mail ou senha incorretos.')
+    // O que serve para diagnosticar: à parte.
+    expect(erro.context).toBe('[AuthUseCase.login]')
   })
 
   it('um código de auth desconhecido continua a cair em unknown', () => {

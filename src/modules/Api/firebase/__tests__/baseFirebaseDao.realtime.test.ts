@@ -205,7 +205,11 @@ describe('BaseFirebaseDAO — realtime', () => {
       // Sem isto o erro desaparecia por completo e o listener morria em
       // silêncio — a UI apenas deixava de actualizar.
       expect(spy).toHaveBeenCalledTimes(1)
+      // O contexto saiu da `message` — essa é para o utilizador — mas no
+      // registo tem de continuar a aparecer, ou não se sabe qual listener
+      // morreu.
       expect(String(spy.mock.calls[0][0])).toContain('[test_vehicles.listenAll]')
+      expect(String(spy.mock.calls[0][0])).toContain('Não tem permissão')
     } finally {
       spy.mockRestore()
     }
