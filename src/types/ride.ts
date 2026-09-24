@@ -12,23 +12,16 @@ export type RideDetailsType = {
   }
 }
 
-export type RateType = {
-  start_time: string
-  end_time: string
-  base_fare: number
-  price_per_km: number
-  wait_time_free_minutes: number
-  price_per_minute: number
-}
-
-export type PayoutsType = {
-  driver_percent: number
-  company_percent: number
-  pension_fund_percent: number
-}
-
-export type LiveLocationType = {
-  latitude: number
-  longitude: number
-  timestamp: Date
-}
+/**
+ * Estes tipos vivem agora em `@rafaelpilartes/kandengue-shared/ride`.
+ *
+ * Estavam copiados a mao aqui e nas duas apps — identicos nos tres, e
+ * portanto tres sitios para manter a mesma coisa. Re-exporta-se em vez de
+ * mudar os imports: quem ja importava daqui continua a importar daqui, e a
+ * fonte de verdade passa a ser uma so.
+ */
+export type {
+  RateType,
+  PayoutsType,
+  LiveLocationType
+} from '@rafaelpilartes/kandengue-shared/ride'

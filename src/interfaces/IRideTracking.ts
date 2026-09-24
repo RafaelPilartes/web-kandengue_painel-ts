@@ -1,8 +1,9 @@
-import type { LiveLocationType } from '@/types/ride'
-
-export interface RideTrackingsInterface {
-  id: string
-  ride_id: string
-  path: LiveLocationType[] // todas localizações ao longo da corrida
-  created_at?: Date
-}
+/**
+ * Estes tipos vivem agora em `@rafaelpilartes/kandengue-shared/ride`.
+ *
+ * Estavam copiados a mao aqui e nas duas apps — identicos nos tres, e
+ * portanto tres sitios para manter a mesma coisa. Re-exporta-se em vez de
+ * mudar os imports: quem ja importava daqui continua a importar daqui, e a
+ * fonte de verdade passa a ser uma so.
+ */
+export type { RideTrackingsInterface } from '@rafaelpilartes/kandengue-shared/ride'

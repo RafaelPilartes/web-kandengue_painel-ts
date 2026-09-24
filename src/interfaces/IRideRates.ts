@@ -1,11 +1,9 @@
-import type { RateType, PayoutsType } from '@/types/ride'
-
-// Tipo principal
-export interface RideRatesInterface {
-  id: string
-  day_rates: RateType
-  night_rates: RateType
-  insurance_percent: number
-  payouts: PayoutsType
-  updated_at?: Date
-}
+/**
+ * Estes tipos vivem agora em `@rafaelpilartes/kandengue-shared/ride`.
+ *
+ * Estavam copiados a mao aqui e nas duas apps — identicos nos tres, e
+ * portanto tres sitios para manter a mesma coisa. Re-exporta-se em vez de
+ * mudar os imports: quem ja importava daqui continua a importar daqui, e a
+ * fonte de verdade passa a ser uma so.
+ */
+export type { RideRatesInterface } from '@rafaelpilartes/kandengue-shared/ride'
