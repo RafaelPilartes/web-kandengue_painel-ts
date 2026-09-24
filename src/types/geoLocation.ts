@@ -1,16 +1,13 @@
-export type GeoLocationType = {
-  description: string
-  place_id: string
-  name?: string
-  latitude: number
-  longitude: number
-}
 
-export type LocationType = {
-  latitude: number
-  longitude: number
-  heading?: number
-  speed?: number
-  accuracy?: number
-  updated_at?: Date
-}
+
+/**
+ * Os tipos acima vivem agora em `@rafaelpilartes/kandengue-shared/geo`.
+ *
+ * Eram identicos nos tres repositorios — verificado simbolo a simbolo, com
+ * os membros das unioes ordenados. Re-exportam-se daqui para os imports
+ * existentes continuarem a funcionar.
+ */
+export type {
+  GeoLocationType,
+  LocationType
+} from '@rafaelpilartes/kandengue-shared/geo'
