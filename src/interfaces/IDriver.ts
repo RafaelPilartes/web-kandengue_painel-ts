@@ -1,10 +1,9 @@
-import type { UserInterface } from './IUser'
-import type { VehicleInterface } from './IVehicle'
-import type { GeoLocationType } from '@/types/geoLocation'
-
-export interface DriverInterface extends UserInterface {
-  is_online: boolean
-  vehicle?: VehicleInterface
-  rating?: number
-  current_location?: GeoLocationType
-}
+/**
+ * Vive agora em `@rafaelpilartes/kandengue-shared/domain`.
+ *
+ * O painel estava atrasado nos campos das promocoes; as apps sao a fonte
+ * da verdade. Re-exporta-se para os imports existentes continuarem a valer.
+ */
+export type {
+  DriverInterface
+} from '@rafaelpilartes/kandengue-shared/domain'

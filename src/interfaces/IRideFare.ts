@@ -1,19 +1,15 @@
-export type BreakdownType = {
-  base_fare: number // Preço base
-  distance_cost: number // Custo total pela distância
-  wait_cost: number // Custo total pela espera
-  insurance_fee: number // Taxa de seguro
-  discount?: number // Desconto
-}
-
-export type PayoutsType = {
-  driver_earnings: number
-  company_earnings: number
-  pension_fund: number
-}
-
-export interface RideFareInterface {
-  total: number
-  breakdown: BreakdownType
-  payouts: PayoutsType
-}
+/**
+ * Vive agora em `@rafaelpilartes/kandengue-shared/domain`.
+ *
+ * ── Uma renomeacao ──
+ * O que aqui se chamava `PayoutsType` (valores: driver_earnings,
+ * company_earnings, pension_fund) passa a `PayoutsBreakdownType`. O nome
+ * antigo colidia com o `PayoutsType` de `types/ride.ts`, que sao
+ * PERCENTAGENS — dois conceitos diferentes com o mesmo nome no mesmo
+ * ecossistema.
+ */
+export type {
+  BreakdownType,
+  PayoutsBreakdownType,
+  RideFareInterface
+} from '@rafaelpilartes/kandengue-shared/domain'

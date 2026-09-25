@@ -19,6 +19,7 @@ export const users: UserInterface[] = [
     name: 'Carlos Mendes',
     email: 'carlos@admin.com',
     phone: '+244900111111',
+    availability: 'available',
     status: 'active',
     created_at: new Date()
   },
@@ -28,6 +29,7 @@ export const users: UserInterface[] = [
     name: 'Ana Silva',
     email: 'ana@admin.com',
     phone: '+244900222222',
+    availability: 'available',
     status: 'active',
     created_at: new Date()
   },
@@ -37,6 +39,7 @@ export const users: UserInterface[] = [
     name: 'Marcos Paulo',
     email: 'marcos@user.com',
     phone: '+244900333333',
+    availability: 'available',
     status: 'active',
     created_at: new Date()
   },
@@ -46,6 +49,7 @@ export const users: UserInterface[] = [
     name: 'Beatriz Santos',
     email: 'bia@user.com',
     phone: '+244900444444',
+    availability: 'available',
     status: 'pending',
     created_at: new Date()
   },
@@ -55,6 +59,7 @@ export const users: UserInterface[] = [
     name: 'João Pedro',
     email: 'joao@driver.com',
     phone: '+244900555555',
+    availability: 'available',
     status: 'active',
     created_at: new Date()
   },
@@ -64,6 +69,7 @@ export const users: UserInterface[] = [
     name: 'Maria Oliveira',
     email: 'maria@driver.com',
     phone: '+244900666666',
+    availability: 'available',
     status: 'active',
     created_at: new Date()
   }
@@ -309,6 +315,7 @@ export const rides: RideInterface[] = [
         base_fare: 1000,
         distance_cost: 1500,
         wait_cost: 200,
+        subtotal: 2700,
         insurance_fee: 300
       },
       payouts: {
@@ -346,6 +353,7 @@ export const rides: RideInterface[] = [
         base_fare: 800,
         distance_cost: 900,
         wait_cost: 100,
+        subtotal: 1800,
         insurance_fee: 200
       },
       payouts: {
@@ -383,6 +391,7 @@ export const rides: RideInterface[] = [
         base_fare: 0,
         distance_cost: 0,
         wait_cost: 0,
+        subtotal: 0,
         insurance_fee: 0
       },
       payouts: {
@@ -421,6 +430,7 @@ export const rides: RideInterface[] = [
         base_fare: 900,
         distance_cost: 1100,
         wait_cost: 200,
+        subtotal: 2200,
         insurance_fee: 300
       },
       payouts: {

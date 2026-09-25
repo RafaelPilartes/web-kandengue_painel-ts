@@ -9,8 +9,14 @@ import type { GeoLocationType } from '@/types/geoLocation'
 import type { RideDetailsType } from '@/types/ride'
 import { toDate } from '@/helpers/firestore'
 
+/**
+ * `id` sempre presente — ver o comentario equivalente em `UserEntityParams`.
+ * O `fromFirestore` passa `snapshot.id`, que e sempre uma string.
+ */
+export type RideEntityParams = Omit<RideInterface, 'id'> & { id: string }
+
 export class RideEntity implements RideInterface {
-  id?: string
+  id: string
   user: UserInterface
   driver?: DriverInterface
   pickup: GeoLocationType
@@ -38,7 +44,7 @@ export class RideEntity implements RideInterface {
   created_at?: Date
   updated_at?: Date
 
-  constructor(params: RideInterface) {
+  constructor(params: RideEntityParams) {
     this.id = params.id
     this.user = params.user
     this.driver = params.driver

@@ -196,6 +196,10 @@ export function ModalCreateDriver({
         ...dataForm,
         photo: imageUploaded,
         status: 'inactive',
+        // Um motorista acabado de criar nao esta em missao. Os dados reais
+        // concordam: dos 12 motoristas em producao, 11 tem 'available' e um
+        // nao tem o campo.
+        availability: 'available',
         email_verified: false,
         phone_verified: false,
         is_online: false

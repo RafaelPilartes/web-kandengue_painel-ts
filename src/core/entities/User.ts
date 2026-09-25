@@ -1,7 +1,7 @@
 // core/entities/User.ts
 import type { FirestoreDataConverter, Timestamp } from 'firebase/firestore'
 import type { UserInterface } from '@/interfaces/IUser'
-import type { UserStatus } from '@/types/enum'
+import type { UserAvailability, UserStatus } from '@/types/enum'
 import { toDate } from '@/helpers/firestore'
 
 /**
@@ -20,6 +20,7 @@ export class UserEntity implements UserInterface {
   phone: string
   password?: string
   status: UserStatus
+  availability: UserAvailability
   email_verified?: boolean
   phone_verified?: boolean
   created_at?: Date
@@ -36,6 +37,10 @@ export class UserEntity implements UserInterface {
     this.entity_code = params.entity_code
     this.photo = params.photo
     this.status = params.status
+    // Obrigatorio na interface, mas ausente em documentos antigos: dos 12
+    // motoristas em producao, um nao o tem. 'available' e o que os outros
+    // 111 documentos (100 users + 11 drivers) dizem.
+    this.availability = params.availability ?? 'available'
     this.email_verified = params.email_verified || false
     this.phone_verified = params.phone_verified || false
     this.created_at = params.created_at

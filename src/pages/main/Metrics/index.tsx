@@ -22,7 +22,7 @@ import { SelectSearchableCustom } from '@/components/selects/SelectSearchableCus
 import { DatePickerCustom } from '@/components/selects/DatePickerCustom'
 import type {
   BreakdownType,
-  PayoutsType,
+  PayoutsBreakdownType,
   RideFareInterface
 } from '@/interfaces/IRideFare'
 import { monthKey, monthLabel, rangeMonths, toDate } from '@/helpers/metrics'
@@ -141,7 +141,7 @@ export function MetricsPage() {
     for (const rideFor of filteredRides) {
       const fare = rideFor.fare ?? ({} as RideFareInterface)
       const breakdown = fare.breakdown ?? ({} as BreakdownType)
-      const payouts = fare.payouts ?? ({} as PayoutsType)
+      const payouts = fare.payouts ?? ({} as PayoutsBreakdownType)
 
       // totals
       const totalFor = Number(fare.total ?? 0)

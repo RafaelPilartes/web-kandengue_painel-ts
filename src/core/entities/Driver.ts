@@ -3,7 +3,7 @@ import { UserEntity } from './User'
 import type { UserDoc } from './User'
 import type { DriverInterface } from '@/interfaces/IDriver'
 import type { VehicleInterface } from '@/interfaces/IVehicle'
-import type { GeoLocationType } from '@/types/geoLocation'
+import type { LocationType } from '@/types/geoLocation'
 import { toDate } from '@/helpers/firestore'
 
 /** `id` sempre presente — ver o comentário equivalente em `UserEntityParams`. */
@@ -13,7 +13,15 @@ export class DriverEntity extends UserEntity implements DriverInterface {
   is_online: boolean
   vehicle?: VehicleInterface
   rating?: number
-  current_location?: GeoLocationType
+  /*
+   * `LocationType`, nao `GeoLocationType`.
+   *
+   * O painel declarava-o como `GeoLocationType` — um sitio com morada e
+   * `place_id`. Mas a posicao actual de um motorista e uma leitura do GPS:
+   * coordenadas, rumo, velocidade. E o que as apps escrevem, e o que o
+   * painel de facto le (so `latitude` e `longitude`, em Rides/realtime).
+   */
+  current_location?: LocationType
 
   constructor(params: DriverEntityParams) {
     super(params)
@@ -34,7 +42,15 @@ export interface DriverDoc extends Omit<UserDoc, 'id'> {
   is_online?: boolean
   vehicle?: VehicleInterface
   rating?: number
-  current_location?: GeoLocationType
+  /*
+   * `LocationType`, nao `GeoLocationType`.
+   *
+   * O painel declarava-o como `GeoLocationType` — um sitio com morada e
+   * `place_id`. Mas a posicao actual de um motorista e uma leitura do GPS:
+   * coordenadas, rumo, velocidade. E o que as apps escrevem, e o que o
+   * painel de facto le (so `latitude` e `longitude`, em Rides/realtime).
+   */
+  current_location?: LocationType
 }
 
 /** Fronteira única entre o documento Firestore e a aplicação. */
