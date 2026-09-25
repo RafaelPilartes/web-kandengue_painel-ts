@@ -12,8 +12,5 @@
  * `PayoutsBreakdownType`. O nome antigo colidia com o `PayoutsType` de
  * `types/ride.ts`, que sao PERCENTAGENS.
  */
-export type { RideFareInterface } from '@rafaelpilartes/kandengue-shared/domain'
-export type {
-  BreakdownType,
-  PayoutsBreakdownType
-} from '@rafaelpilartes/kandengue-shared/ride'
+export type { RideFareInterface } from '@rafaelpilartes/kandengue-shared/interfaces'
+export type { BreakdownType, PayoutsBreakdownType } from '@rafaelpilartes/kandengue-shared/types'

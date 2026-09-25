@@ -1,7 +1,7 @@
 /**
- * Vive agora em `@rafaelpilartes/kandengue-shared/id`.
+ * Vive agora em `@rafaelpilartes/kandengue-shared/functions`.
  *
  * Usava `crypto.randomUUID().slice(0, 8)`; a lib usa `getRandomValues`, que
  * existe nos tres ambientes. Mesmo formato, mesmos 32 bits.
  */
-export { generateId } from '@rafaelpilartes/kandengue-shared/id'
+export { generateId } from '@rafaelpilartes/kandengue-shared/functions'

@@ -10,7 +10,7 @@ import {
 } from '@/core/entities/Promotion'
 import type { IWithdrawalRepository } from '@/core/interfaces/IWithdrawalRepository'
 import { firebaseCollections } from '@/constants/firebaseCollections'
-import type { WithdrawalStatus } from '@rafaelpilartes/kandengue-shared/withdrawal'
+import type { WithdrawalStatus } from '@rafaelpilartes/kandengue-shared/types'
 import { ReadOnlyDAO } from './ReadOnlyDAO'
 
 /** Firestore limita o operador `in` a 30 valores por query — agrupa em chunks. */

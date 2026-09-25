@@ -6,11 +6,7 @@ import { Spinner } from 'phosphor-react'
 import { Breadcrumbs } from '@/components/Breadcrumbs'
 import { routsNameMain } from '@/constants/routsName'
 import { PromotionEntity } from '@/core/entities/Promotion'
-import type {
-  PromotionType,
-  RideKind,
-  RidePaymentMethod
-} from '@rafaelpilartes/kandengue-shared/promotion'
+import type { PromotionType, RideKind, RidePaymentMethod } from '@rafaelpilartes/kandengue-shared/types'
 import {
   usePromotionDetailViewModel,
   usePromotionsViewModel

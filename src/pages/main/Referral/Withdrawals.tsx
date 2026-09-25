@@ -5,7 +5,7 @@ import { Spinner } from 'phosphor-react'
 import { ToastContainer } from 'react-toastify'
 import { Breadcrumbs } from '@/components/Breadcrumbs'
 import { routsNameMain } from '@/constants/routsName'
-import type { WithdrawalStatus } from '@rafaelpilartes/kandengue-shared/withdrawal'
+import type { WithdrawalStatus } from '@rafaelpilartes/kandengue-shared/types'
 import { useWithdrawalsViewModel } from '@/viewModels/WithdrawalViewModel'
 import { formatMoney } from '@/utils/number'
 

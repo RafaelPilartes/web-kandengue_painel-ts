@@ -39,7 +39,7 @@ import {
 import type { IPromotionRepository } from '@/core/interfaces/IPromotionRepository'
 import { firebaseCollections } from '@/constants/firebaseCollections'
 import { toDate } from '@/helpers/firestore'
-import type { AllowedUser } from '@rafaelpilartes/kandengue-shared/promotion'
+import type { AllowedUser } from '@rafaelpilartes/kandengue-shared/interfaces'
 import { BaseFirebaseDAO } from './BaseFirebaseDAO'
 
 const NUM_SHARDS = 10

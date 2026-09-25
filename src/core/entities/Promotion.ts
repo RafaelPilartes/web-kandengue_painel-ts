@@ -1,22 +1,12 @@
 import type { FirestoreDataConverter } from 'firebase/firestore'
-import type {
-  Promotion,
-  PromotionRules,
-  PromotionType,
-  ReferralConfig,
-  ReferralRewardType
-} from '@rafaelpilartes/kandengue-shared/promotion'
-import type {
-  CancellationRecord,
-  PromotionUsage,
-  PromotionUsageStatus
-} from '@rafaelpilartes/kandengue-shared/usage'
-import type { EarningStatus, ReferralEarning } from '@rafaelpilartes/kandengue-shared/referral'
-import type {
-  PaymentDetails,
-  WithdrawalRequest,
-  WithdrawalStatus
-} from '@rafaelpilartes/kandengue-shared/withdrawal'
+import type { Promotion, PromotionRules, ReferralConfig } from '@rafaelpilartes/kandengue-shared/interfaces'
+import type { PromotionType, ReferralRewardType } from '@rafaelpilartes/kandengue-shared/types'
+import type { CancellationRecord, PromotionUsage } from '@rafaelpilartes/kandengue-shared/interfaces'
+import type { PromotionUsageStatus } from '@rafaelpilartes/kandengue-shared/types'
+import type { ReferralEarning } from '@rafaelpilartes/kandengue-shared/interfaces'
+import type { EarningStatus } from '@rafaelpilartes/kandengue-shared/types'
+import type { PaymentDetails, WithdrawalRequest } from '@rafaelpilartes/kandengue-shared/interfaces'
+import type { WithdrawalStatus } from '@rafaelpilartes/kandengue-shared/types'
 import { toDate } from '@/helpers/firestore'
 
 export class PromotionEntity implements Promotion {

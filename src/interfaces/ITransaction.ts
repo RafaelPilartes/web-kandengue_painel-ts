@@ -1,9 +1,7 @@
 /**
- * Vive agora em `@rafaelpilartes/kandengue-shared/domain`.
+ * Vive agora em `@rafaelpilartes/kandengue-shared/interfaces`.
  *
  * O painel estava atrasado nos campos das promocoes; as apps sao a fonte
  * da verdade. Re-exporta-se para os imports existentes continuarem a valer.
  */
-export type {
-  TransactionInterface
-} from '@rafaelpilartes/kandengue-shared/domain'
+export type { TransactionInterface } from '@rafaelpilartes/kandengue-shared/interfaces'

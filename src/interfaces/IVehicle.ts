@@ -3,9 +3,9 @@ import type { VehicleStatusEnumType, VehicleType } from '@/types/enum'
 
 /**
  * O `VehicleInterface` vive agora em
- * `@rafaelpilartes/kandengue-shared/domain`.
+ * `@rafaelpilartes/kandengue-shared/interfaces`.
  */
-export type { VehicleInterface } from '@rafaelpilartes/kandengue-shared/domain'
+export type { VehicleInterface } from '@rafaelpilartes/kandengue-shared/interfaces'
 
 /**
  * A forma CRUA do documento no Firestore — com `Timestamp` em vez de `Date`

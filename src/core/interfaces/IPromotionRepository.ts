@@ -1,6 +1,6 @@
 // core/interfaces/IPromotionRepository.ts
 import type { IBaseRepository } from './IBaseRepository'
-import type { AllowedUser } from '@rafaelpilartes/kandengue-shared/promotion'
+import type { AllowedUser } from '@rafaelpilartes/kandengue-shared/interfaces'
 import type {
   PromotionEntity,
   PromotionUsageEntity

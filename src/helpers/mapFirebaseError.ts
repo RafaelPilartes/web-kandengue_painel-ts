@@ -1,4 +1,4 @@
-import { mapFirebaseError as traduzir } from '@rafaelpilartes/kandengue-shared/errors'
+import { mapFirebaseError as translate } from '@rafaelpilartes/kandengue-shared/functions'
 import { AppError } from '@/domain/errors/AppError'
 
 /**
@@ -24,5 +24,5 @@ export function mapFirebaseError(error: any): string {
   // quando o chamador passa `err.message` em vez de `err`.
   if (typeof error === 'string') return error
 
-  return traduzir(error)
+  return translate(error)
 }

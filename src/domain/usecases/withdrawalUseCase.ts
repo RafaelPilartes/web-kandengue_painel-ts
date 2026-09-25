@@ -5,7 +5,7 @@ import {
   WithdrawalRequestEntity
 } from '@/core/entities/Promotion'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
-import type { WithdrawalStatus } from '@rafaelpilartes/kandengue-shared/withdrawal'
+import type { WithdrawalStatus } from '@rafaelpilartes/kandengue-shared/types'
 
 // Default do DAO antigo — preservado aqui para o motor novo (que usa 50).
 const LEGACY_PAGE_SIZE = 50

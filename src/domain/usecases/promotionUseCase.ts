@@ -5,7 +5,7 @@ import {
   PromotionUsageEntity
 } from '@/core/entities/Promotion'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
-import type { AllowedUser } from '@rafaelpilartes/kandengue-shared/promotion'
+import type { AllowedUser } from '@rafaelpilartes/kandengue-shared/interfaces'
 
 // A normalização do código (uppercase + trim) já vive no
 // `FirebasePromotionDAO.normalizeCode` — não duplicar aqui.
