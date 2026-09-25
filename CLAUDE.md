@@ -79,11 +79,14 @@ src/
 
 ## Schema source-of-truth
 
-As entidades replicadas (`PromotionEntity`, `PromotionUsageEntity`,
-`ReferralEarningEntity`, `WithdrawalRequestEntity`) e respetivas interfaces
-(`IPromotion.ts`) seguem o documento **`08 — Firestore Schema`** —
-qualquer alteração tem de ser propagada manualmente entre os 4 repos
-(API, app passageiro, app motorista, painel).
+`PromotionEntity`, `PromotionUsageEntity`, `ReferralEarningEntity` e
+`WithdrawalRequestEntity`, com as interfaces que cumprem, vivem em
+`@rafaelpilartes/kandengue-shared/entities`. Os ficheiros em
+`src/core/entities/` só guardam o converter. Mudar um tipo é mudá-lo na lib,
+publicar uma tag nova e subir a dependência nos cinco repositórios.
+
+O documento **`08 — Firestore Schema`** continua a ser a fonte de verdade do
+schema do Firestore; a lib é a fonte de verdade dos tipos.
 
 > A criação de promoções pré-cria os shards `counters/shard_0..9` no
 > `FirebasePromotionDAO.create()`. É conveniência idempotente, não um
