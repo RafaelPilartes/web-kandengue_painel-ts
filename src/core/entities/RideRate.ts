@@ -1,28 +1,16 @@
-// core/entities/RideRate.ts
+/*
+ * As classes vivem agora em `@rafaelpilartes/kandengue-shared/entities`.
+ *
+ * Fica aqui o que nao e partilhavel: o converter, que depende do SDK do
+ * Firestore deste repositorio.
+ */
+import { RideRateEntity } from '@rafaelpilartes/kandengue-shared/entities'
+export { RideRateEntity }
+
 import type { FirestoreDataConverter, Timestamp } from 'firebase/firestore'
 import type { RideRatesInterface } from '@/interfaces/IRideRates'
 import type { RateType, PayoutsType } from '@/types/ride'
 import { toDate } from '@/helpers/firestore'
-
-export class RideRateEntity implements RideRatesInterface {
-  id: string
-  day_rates: RateType
-  night_rates: RateType
-  insurance_percent: number
-  payouts: PayoutsType
-
-  updated_at?: Date
-
-  constructor(params: RideRatesInterface) {
-    this.id = params.id
-    this.day_rates = params.day_rates
-    this.night_rates = params.night_rates
-    this.insurance_percent = params.insurance_percent
-    this.payouts = params.payouts
-
-    this.updated_at = params.updated_at
-  }
-}
 
 /**
  * Forma CRUA do documento em `rideRates`, tal como o Firestore o devolve.

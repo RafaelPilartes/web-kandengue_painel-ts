@@ -1,4 +1,12 @@
-// core/entities/Wallet.ts
+/*
+ * As classes vivem agora em `@rafaelpilartes/kandengue-shared/entities`.
+ *
+ * Fica aqui o que nao e partilhavel: o converter, que depende do SDK do
+ * Firestore deste repositorio.
+ */
+import { WalletEntity } from '@rafaelpilartes/kandengue-shared/entities'
+export { WalletEntity }
+
 
 import type { FirestoreDataConverter, Timestamp } from 'firebase/firestore'
 import type { WalletInterface } from '@/interfaces/IWallet'
@@ -12,27 +20,6 @@ import { toDate } from '@/helpers/firestore'
  * (`BaseFirebaseDAO<T extends { id: string }>`) exige.
  */
 export type WalletEntityParams = Omit<WalletInterface, 'id'> & { id: string }
-
-export class WalletEntity implements WalletInterface {
-  id: string
-  user: DriverInterface
-  balance: number
-  status: StatusEnumType
-  currency: currencyEnumType
-  created_at?: Date
-  updated_at?: Date
-
-  constructor(params: WalletEntityParams) {
-    this.id = params.id
-
-    this.user = params.user
-    this.balance = params.balance
-    this.status = params.status
-    this.currency = params.currency
-    this.created_at = params.created_at
-    this.updated_at = params.updated_at
-  }
-}
 
 /**
  * Forma crua do documento em `wallets`, tal como o Firestore o devolve.

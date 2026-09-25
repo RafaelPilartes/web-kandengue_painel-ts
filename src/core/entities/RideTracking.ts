@@ -1,22 +1,16 @@
-// core/entities/RideTracking.ts
+/*
+ * As classes vivem agora em `@rafaelpilartes/kandengue-shared/entities`.
+ *
+ * Fica aqui o que nao e partilhavel: o converter, que depende do SDK do
+ * Firestore deste repositorio.
+ */
+import { RideTrackingEntity } from '@rafaelpilartes/kandengue-shared/entities'
+export { RideTrackingEntity }
+
 import type { FirestoreDataConverter, Timestamp } from 'firebase/firestore'
 import type { RideTrackingsInterface } from '@/interfaces/IRideTracking'
 import type { LiveLocationType } from '@/types/ride'
 import { toDate } from '@/helpers/firestore'
-
-export class RideTrackingEntity implements RideTrackingsInterface {
-  id: string
-  ride_id: string
-  path: LiveLocationType[]
-  created_at?: Date
-
-  constructor(params: RideTrackingsInterface) {
-    this.id = params.id
-    this.ride_id = params.ride_id
-    this.path = params.path
-    this.created_at = params.created_at
-  }
-}
 
 /** Forma crua de um ponto do trajeto — cada um tem o seu próprio timestamp. */
 type LiveLocationDoc = Omit<LiveLocationType, 'timestamp'> & {
