@@ -1,24 +1,17 @@
+/*
+ * As classes vivem agora em `@rafaelpilartes/kandengue-shared/entities`.
+ *
+ * Fica aqui o que nao e partilhavel: o converter, que depende do SDK do
+ * Firestore deste repositorio.
+ */
+import { AdminEntity, type AdminEntityParams } from '@rafaelpilartes/kandengue-shared/entities'
+export { AdminEntity, type AdminEntityParams }
+
 import type { FirestoreDataConverter } from 'firebase/firestore'
-import type { AdminInterface } from '@/interfaces/IAdmin'
 import type { AdminRole } from '@/types/enum'
 import type { OptionType } from '@/types/option'
-import { UserEntity } from './User'
 import type { UserDoc } from './User'
 import { toDate } from '@/helpers/firestore'
-
-/** `id` sempre presente — ver o comentário equivalente em `UserEntityParams`. */
-export type AdminEntityParams = Omit<AdminInterface, 'id'> & { id: string }
-
-export class AdminEntity extends UserEntity implements AdminInterface {
-  role: AdminRole
-  permissions: OptionType[]
-
-  constructor(params: AdminEntityParams) {
-    super(params)
-    this.role = params.role
-    this.permissions = params.permissions
-  }
-}
 
 /**
  * Forma CRUA do documento em `admins`. As datas (`created_at`, `updated_at`,

@@ -1,36 +1,17 @@
+/*
+ * As classes vivem agora em `@rafaelpilartes/kandengue-shared/entities`.
+ *
+ * Fica aqui o que nao e partilhavel: o converter, que depende do SDK do
+ * Firestore deste repositorio.
+ */
+import { DriverEntity, type DriverEntityParams } from '@rafaelpilartes/kandengue-shared/entities'
+export { DriverEntity, type DriverEntityParams }
+
 import type { FirestoreDataConverter } from 'firebase/firestore'
-import { UserEntity } from './User'
 import type { UserDoc } from './User'
-import type { DriverInterface } from '@/interfaces/IDriver'
 import type { VehicleInterface } from '@/interfaces/IVehicle'
 import type { LocationType } from '@/types/geoLocation'
 import { toDate } from '@/helpers/firestore'
-
-/** `id` sempre presente — ver o comentário equivalente em `UserEntityParams`. */
-export type DriverEntityParams = Omit<DriverInterface, 'id'> & { id: string }
-
-export class DriverEntity extends UserEntity implements DriverInterface {
-  is_online: boolean
-  vehicle?: VehicleInterface
-  rating?: number
-  /*
-   * `LocationType`, nao `GeoLocationType`.
-   *
-   * O painel declarava-o como `GeoLocationType` — um sitio com morada e
-   * `place_id`. Mas a posicao actual de um motorista e uma leitura do GPS:
-   * coordenadas, rumo, velocidade. E o que as apps escrevem, e o que o
-   * painel de facto le (so `latitude` e `longitude`, em Rides/realtime).
-   */
-  current_location?: LocationType
-
-  constructor(params: DriverEntityParams) {
-    super(params)
-    this.is_online = params.is_online
-    this.vehicle = params.vehicle
-    this.rating = params.rating
-    this.current_location = params.current_location
-  }
-}
 
 /**
  * Forma CRUA do documento em `drivers`. As datas (`created_at`, `updated_at`,
