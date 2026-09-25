@@ -1,18 +1,6 @@
-import type { NotificationType, NotificationCategory } from '@/types/enum'
-import type { UserInterface } from './IUser'
-
-export interface NotificationInterface {
-  id: string
-  title: string
-  message: string
-  type: NotificationType
-  category: NotificationCategory
-  specific_user?: boolean
-  user?: UserInterface
-  user_id?: string
-  user_role?: 'driver' | 'passenger'
-  is_read?: boolean
-  sent?: boolean
-  sent_at?: Date
-  created_at?: Date
-}
+/**
+ * Vive agora em `@rafaelpilartes/kandengue-shared/interfaces`.
+ *
+ * As apps sao a fonte da verdade destes tipos; o painel consome-os da lib.
+ */
+export type { NotificationInterface } from '@rafaelpilartes/kandengue-shared/interfaces'

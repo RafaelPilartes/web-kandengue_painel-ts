@@ -1,15 +1,6 @@
-import type { DocumentType } from '@/types/document'
-import type { UserInterface } from './IUser'
-import type { DocumentStatus } from '@/types/enum'
-
-export interface DocumentInterface {
-  id: string
-  user: UserInterface
-  type: DocumentType
-  url: string
-  status: DocumentStatus
-  vehicle_id?: string
-  feedback?: string
-  created_at?: Date
-  updated_at?: Date
-}
+/**
+ * Vive agora em `@rafaelpilartes/kandengue-shared/interfaces`.
+ *
+ * As apps sao a fonte da verdade destes tipos; o painel consome-os da lib.
+ */
+export type { DocumentInterface } from '@rafaelpilartes/kandengue-shared/interfaces'
