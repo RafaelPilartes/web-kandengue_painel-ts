@@ -4,14 +4,14 @@
  * Fica aqui o que nao e partilhavel: o converter, que depende do SDK do
  * Firestore deste repositorio.
  */
-import { AdminEntity, type AdminEntityParams } from '@rafaelpilartes/kandengue-shared/entities'
-export { AdminEntity, type AdminEntityParams }
-
 import type { FirestoreDataConverter } from 'firebase/firestore'
 import type { AdminRole } from '@/types/enum'
 import type { OptionType } from '@/types/option'
 import type { UserDoc } from './User'
 import { toDate } from '@/helpers/firestore'
+import { AdminEntity, type AdminEntityParams } from '@rafaelpilartes/kandengue-shared/entities'
+
+export { AdminEntity, type AdminEntityParams }
 
 /**
  * Forma CRUA do documento em `admins`. As datas (`created_at`, `updated_at`,

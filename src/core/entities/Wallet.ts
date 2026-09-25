@@ -4,15 +4,14 @@
  * Fica aqui o que nao e partilhavel: o converter, que depende do SDK do
  * Firestore deste repositorio.
  */
-import { WalletEntity } from '@rafaelpilartes/kandengue-shared/entities'
-export { WalletEntity }
-
-
 import type { FirestoreDataConverter, Timestamp } from 'firebase/firestore'
 import type { WalletInterface } from '@/interfaces/IWallet'
 import type { DriverInterface } from '@/interfaces/IDriver'
 import type { currencyEnumType, StatusEnumType } from '@/types/enum'
 import { toDate } from '@/helpers/firestore'
+import { WalletEntity } from '@rafaelpilartes/kandengue-shared/entities'
+
+export { WalletEntity }
 
 /**
  * `id` é opcional em `WalletInterface` (formulários que ainda não gravaram),

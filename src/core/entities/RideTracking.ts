@@ -4,13 +4,13 @@
  * Fica aqui o que nao e partilhavel: o converter, que depende do SDK do
  * Firestore deste repositorio.
  */
-import { RideTrackingEntity } from '@rafaelpilartes/kandengue-shared/entities'
-export { RideTrackingEntity }
-
 import type { FirestoreDataConverter, Timestamp } from 'firebase/firestore'
 import type { RideTrackingsInterface } from '@/interfaces/IRideTracking'
 import type { LiveLocationType } from '@/types/ride'
 import { toDate } from '@/helpers/firestore'
+import { RideTrackingEntity } from '@rafaelpilartes/kandengue-shared/entities'
+
+export { RideTrackingEntity }
 
 /** Forma crua de um ponto do trajeto — cada um tem o seu próprio timestamp. */
 type LiveLocationDoc = Omit<LiveLocationType, 'timestamp'> & {

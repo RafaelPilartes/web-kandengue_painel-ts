@@ -4,13 +4,12 @@
  * Fica aqui o que nao e partilhavel: o converter, que depende do SDK do
  * Firestore deste repositorio.
  */
-import { WalletTopupRequestEntity } from '@rafaelpilartes/kandengue-shared/entities'
-export { WalletTopupRequestEntity }
-
-
 import type { FirestoreDataConverter, Timestamp } from 'firebase/firestore'
 import type { WalletTopupRequestInterface } from '@/interfaces/IWalletTopupRequest'
 import { toDate } from '@/helpers/firestore'
+import { WalletTopupRequestEntity } from '@rafaelpilartes/kandengue-shared/entities'
+
+export { WalletTopupRequestEntity }
 
 /**
  * Forma crua do documento em `topupRequests`, tal como o Firestore o devolve.

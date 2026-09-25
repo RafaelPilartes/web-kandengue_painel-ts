@@ -4,12 +4,12 @@
  * Fica aqui o que nao e partilhavel: o converter, que depende do SDK do
  * Firestore deste repositorio.
  */
-import { MissionEntity } from '@rafaelpilartes/kandengue-shared/entities'
-export { MissionEntity }
-
 import type { FirestoreDataConverter } from 'firebase/firestore'
 import type { IMission } from '@/interfaces/IMission'
 import { toDate } from '@/helpers/firestore'
+import { MissionEntity } from '@rafaelpilartes/kandengue-shared/entities'
+
+export { MissionEntity }
 
 /** Fronteira única entre o documento `missions` e a aplicação. */
 export const missionConverter: FirestoreDataConverter<MissionEntity> = {

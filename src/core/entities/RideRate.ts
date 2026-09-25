@@ -4,13 +4,13 @@
  * Fica aqui o que nao e partilhavel: o converter, que depende do SDK do
  * Firestore deste repositorio.
  */
-import { RideRateEntity } from '@rafaelpilartes/kandengue-shared/entities'
-export { RideRateEntity }
-
 import type { FirestoreDataConverter, Timestamp } from 'firebase/firestore'
 import type { RideRatesInterface } from '@/interfaces/IRideRates'
 import type { RateType, PayoutsType } from '@/types/ride'
 import { toDate } from '@/helpers/firestore'
+import { RideRateEntity } from '@rafaelpilartes/kandengue-shared/entities'
+
+export { RideRateEntity }
 
 /**
  * Forma CRUA do documento em `rideRates`, tal como o Firestore o devolve.

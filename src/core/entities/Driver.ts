@@ -4,14 +4,14 @@
  * Fica aqui o que nao e partilhavel: o converter, que depende do SDK do
  * Firestore deste repositorio.
  */
-import { DriverEntity, type DriverEntityParams } from '@rafaelpilartes/kandengue-shared/entities'
-export { DriverEntity, type DriverEntityParams }
-
 import type { FirestoreDataConverter } from 'firebase/firestore'
 import type { UserDoc } from './User'
 import type { VehicleInterface } from '@/interfaces/IVehicle'
 import type { LocationType } from '@/types/geoLocation'
 import { toDate } from '@/helpers/firestore'
+import { DriverEntity, type DriverEntityParams } from '@rafaelpilartes/kandengue-shared/entities'
+
+export { DriverEntity, type DriverEntityParams }
 
 /**
  * Forma CRUA do documento em `drivers`. As datas (`created_at`, `updated_at`,

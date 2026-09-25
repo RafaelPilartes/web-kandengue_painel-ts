@@ -4,16 +4,15 @@
  * Fica aqui o que nao e partilhavel: o converter, que depende do SDK do
  * Firestore deste repositorio.
  */
-import { DocumentEntity } from '@rafaelpilartes/kandengue-shared/entities'
-export { DocumentEntity }
-
-
 import type { FirestoreDataConverter, Timestamp } from 'firebase/firestore'
 import type { DocumentInterface } from '@/interfaces/IDocument'
 import type { UserInterface } from '@/interfaces/IUser'
 import type { DocumentType } from '@/types/document'
 import type { DocumentStatus } from '@/types/enum'
 import { toDate } from '@/helpers/firestore'
+import { DocumentEntity } from '@rafaelpilartes/kandengue-shared/entities'
+
+export { DocumentEntity }
 
 /**
  * Forma CRUA do documento em `documents`, tal como o Firestore o devolve.

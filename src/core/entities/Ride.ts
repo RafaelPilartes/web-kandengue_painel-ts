@@ -4,12 +4,12 @@
  * Fica aqui o que nao e partilhavel: o converter, que depende do SDK do
  * Firestore deste repositorio.
  */
-import { RideEntity } from '@rafaelpilartes/kandengue-shared/entities'
-export { RideEntity }
-
 import type { FirestoreDataConverter, Timestamp } from 'firebase/firestore'
 import type { RideInterface } from '@/interfaces/IRide'
 import { toDate } from '@/helpers/firestore'
+import { RideEntity } from '@rafaelpilartes/kandengue-shared/entities'
+
+export { RideEntity }
 
 /**
  * `id` sempre presente — ver o comentario equivalente em `UserEntityParams`.

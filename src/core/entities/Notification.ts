@@ -4,15 +4,14 @@
  * Fica aqui o que nao e partilhavel: o converter, que depende do SDK do
  * Firestore deste repositorio.
  */
-import { NotificationEntity } from '@rafaelpilartes/kandengue-shared/entities'
-export { NotificationEntity }
-
-
 import type { FirestoreDataConverter, Timestamp } from 'firebase/firestore'
 import type { NotificationInterface } from '@/interfaces/INotification'
 import type { UserInterface } from '@/interfaces/IUser'
 import type { NotificationType, NotificationCategory } from '@/types/enum'
 import { toDate } from '@/helpers/firestore'
+import { NotificationEntity } from '@rafaelpilartes/kandengue-shared/entities'
+
+export { NotificationEntity }
 
 /**
  * Forma CRUA do documento em `notifications`, tal como o Firestore o devolve.

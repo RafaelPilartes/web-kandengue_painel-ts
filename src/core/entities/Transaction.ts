@@ -4,10 +4,6 @@
  * Fica aqui o que nao e partilhavel: o converter, que depende do SDK do
  * Firestore deste repositorio.
  */
-import { TransactionEntity } from '@rafaelpilartes/kandengue-shared/entities'
-export { TransactionEntity }
-
-
 import type { FirestoreDataConverter, Timestamp } from 'firebase/firestore'
 import type { TransactionInterface } from '@/interfaces/ITransaction'
 import type {
@@ -16,6 +12,9 @@ import type {
   TransactionType
 } from '@/types/enum'
 import { toDate } from '@/helpers/firestore'
+import { TransactionEntity } from '@rafaelpilartes/kandengue-shared/entities'
+
+export { TransactionEntity }
 
 /**
  * Forma CRUA do documento em `transactions`, tal como o Firestore o devolve.

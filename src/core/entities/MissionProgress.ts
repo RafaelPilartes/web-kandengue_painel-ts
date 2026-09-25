@@ -4,11 +4,11 @@
  * Fica aqui o que nao e partilhavel: o converter, que depende do SDK do
  * Firestore deste repositorio.
  */
-import { MissionProgressEntity, type MissionProgressEntityParams } from '@rafaelpilartes/kandengue-shared/entities'
-export { MissionProgressEntity, type MissionProgressEntityParams }
-
 import type { FirestoreDataConverter } from 'firebase/firestore'
 import { toDate } from '@/helpers/firestore'
+import { MissionProgressEntity, type MissionProgressEntityParams } from '@rafaelpilartes/kandengue-shared/entities'
+
+export { MissionProgressEntity, type MissionProgressEntityParams }
 
 /**
  * Fronteira única entre o documento `missionProgress` e a aplicação.
