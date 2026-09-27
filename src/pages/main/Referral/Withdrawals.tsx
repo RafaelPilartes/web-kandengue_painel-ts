@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Eye, Wallet } from 'lucide-react'
 import { Spinner } from 'phosphor-react'
-import { ToastContainer } from 'react-toastify'
 import { Breadcrumbs } from '@/components/Breadcrumbs'
 import { routsNameMain } from '@/constants/routsName'
 import type { WithdrawalStatus } from '@rafaelpilartes/kandengue-shared/types'
@@ -32,7 +31,6 @@ export function WithdrawalsPage() {
 
   return (
     <div className="w-full flex flex-col gap-6">
-      <ToastContainer />
       <Breadcrumbs items={items} />
 
       <div className="flex justify-between items-center">

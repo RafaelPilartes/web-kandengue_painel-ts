@@ -19,7 +19,6 @@ import {
   Legend,
   Title
 } from 'chart.js'
-import { ToastContainer } from 'react-toastify'
 import { Breadcrumbs } from '@/components/Breadcrumbs'
 import { routsNameMain } from '@/constants/routsName'
 import { formatMoney } from '@/utils/number'
@@ -134,7 +133,6 @@ export function PromotionDetailsPage() {
 
   return (
     <div className="w-full flex flex-col gap-6">
-      <ToastContainer />
       <Breadcrumbs items={items} />
 
       {/* Header */}

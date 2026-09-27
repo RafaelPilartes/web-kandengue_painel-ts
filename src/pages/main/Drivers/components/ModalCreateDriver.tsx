@@ -1,10 +1,8 @@
+import { AppModal } from '@/components/modal/AppModal'
 import { useState } from 'react'
 
 // Lib
-import Modal from 'react-modal'
-import { X } from 'lucide-react'
 import { BeatLoader } from 'react-spinners'
-import { ToastContainer } from 'react-toastify'
 
 // Form
 import { useForm } from 'react-hook-form'
@@ -19,7 +17,6 @@ import { useDriversViewModel } from '@/viewModels/DriverViewModel'
 import { CustomInput } from '@/components/input/InputLabel'
 
 // Style
-import { customStylesModalCenter } from '@/styles/custom/modals'
 
 // Types
 import type { modalCreateType } from '@/types/modal'
@@ -86,9 +83,6 @@ export function ModalCreateDriver({
   // Modal
   function closeModal() {
     setModalCreateRowIsOpen(false)
-  }
-  function afterOpenModal() {
-    // references are now sync'd and can be accessed.
   }
 
   // Image
@@ -227,34 +221,14 @@ export function ModalCreateDriver({
 
   return (
     <>
-      <Modal
-        isOpen={modalCreateRowIsOpen}
-        onAfterOpen={afterOpenModal}
-        onRequestClose={closeModal}
-        ariaHideApp={false}
-        style={customStylesModalCenter}
-        contentLabel="Example Modal"
-      >
-        <div className="w-full h-full flex items-center justify-center ">
-          <ToastContainer />
-
-          <div className="w-full h-auto max-h-[90%] max-w-3xl flex flex-col items-center p-0  rounded-md overflow-y-auto bg-dark overflow-x-hidden scroll-smooth">
-            <div className="w-full py-4 px-5 flex flex-row justify-between items-center border-b-[1px] border-gray-600 ">
-              <p className="text-xl font-medium text-light">
-                Criar {namePageSingular}
-              </p>
-
-              <button
-                onClick={closeModal}
-                className="py-2 px-2 rounded-lg text-light hover:bg-gray-300/20 dark:hover:bg-gray-500/20 active:bg-gray-300 active:text-dark flex flex-row items-center justify-center gap-4 transition-all duration-300"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
+      <AppModal
+      isOpen={modalCreateRowIsOpen}
+      onClose={closeModal}
+      title={`Criar ${namePageSingular}`}
+    >
             <form
               onSubmit={handleSubmit(handleSubmitForm)}
-              className="w-full p-6 flex flex-col justify-center items-center gap-6"
+              className="w-full flex flex-col justify-center items-center gap-6"
             >
               <div className="w-full flex flex-col items-start justify-start">
                 <div className="w-full max-w-[14rem] flex items-start justify-start ">
@@ -371,9 +345,7 @@ export function ModalCreateDriver({
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      </Modal>
+      </AppModal>
     </>
   )
 }

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ToastContainer } from 'react-toastify'
 import { ArrowLeft, Save } from 'lucide-react'
 import { Spinner } from 'phosphor-react'
 import { Breadcrumbs } from '@/components/Breadcrumbs'
@@ -237,7 +236,6 @@ export function PromotionFormPage() {
 
   return (
     <div className="w-full max-w-7xl mx-auto flex flex-col gap-6 pb-20">
-      <ToastContainer />
 
       <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-md rounded-2xl p-6 border border-gray-200/50 dark:border-gray-700/50 shadow-sm sticky top-4 z-10">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

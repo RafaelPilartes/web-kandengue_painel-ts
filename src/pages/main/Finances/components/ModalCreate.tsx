@@ -1,9 +1,6 @@
-// src/components/modals/ModalCreateWallet.tsx
-import { useEffect, useState } from 'react'
+import { useMemo, useState } from 'react'
 
 // Lib
-import Modal from 'react-modal'
-import { X } from 'lucide-react'
 import { BeatLoader } from 'react-spinners'
 
 // Form
@@ -13,137 +10,128 @@ import { z } from 'zod'
 
 // ViewModels
 import { useWalletsViewModel } from '@/viewModels/WalletViewModel'
+import { useDriversViewModel } from '@/viewModels/DriverViewModel'
 
 // Components
+import { AppModal } from '@/components/modal/AppModal'
+import { CustomInput } from '@/components/input/InputLabel'
+import { SelectCustomZod } from '@/components/selects/SelectCustomZod'
 import { SelectSearchableCustomZod } from '@/components/selects/SelectSearchableCustomZod'
-
-// Style
-import { customStylesModalCenter } from '@/styles/custom/modals'
 
 // Types
 import type { modalCreateType } from '@/types/modal'
-import type { OptionType } from '@/types/option'
-
-// Interfaces
-import type { DriverInterface } from '@/interfaces/IDriver'
 
 // Utils
 import { showToast } from '@/utils/toasts'
-import { ToastContainer } from 'react-toastify'
-import { useDriversViewModel } from '@/viewModels/DriverViewModel'
-import { mapUserToOptionsJson } from '@/utils/arrays'
+import { mapArrayToOptions } from '@/utils/arrays'
 import { mapFirebaseError } from '@/helpers/mapFirebaseError'
 
-// Schema de validação
-// const requiredStringField = (message = 'Campo obrigatório') => z.string(message)
+const statusCarteiraOptions = [
+  { value: 'active', label: 'Ativa' },
+  { value: 'inactive', label: 'Inativa' }
+]
 
+const moedaOptions = [
+  { value: 'AOA', label: 'AOA — Kwanza' },
+  { value: 'USD', label: 'USD — Dólar' }
+]
+
+/*
+ * O formulário guarda o **id** do motorista, não o objecto inteiro.
+ *
+ * Antes as opções levavam o motorista serializado em JSON no `value`, o
+ * campo registado chamava-se `user_id` mas o esquema validava `user`, e o
+ * objecto só lá chegava por um `setValue` manual depois de um `JSON.parse`.
+ * Funcionava por acaso — a validação passava porque o `setValue` corria
+ * primeiro. Com o id, o campo registado e o validado são o mesmo, e o
+ * motorista procura-se na lista que já está em memória.
+ */
 const formSchema = z.object({
-  user: z.custom<DriverInterface>(val => !!val, {
-    message: 'Selecione um motorista'
-  }),
-  balance: z.number('O saldo deve ser numérico'),
+  user_id: z.string().min(1, 'Selecione um motorista'),
+  // `coerce` porque o input devolve texto. Vazio passa a 0, que é o saldo
+  // inicial natural de uma carteira nova.
+  balance: z.coerce
+    .number('O saldo deve ser numérico')
+    .min(0, 'O saldo inicial não pode ser negativo'),
   status: z.enum(['active', 'inactive'], {
-    error: () => ({ message: 'Selecione uma moeda válida' })
+    error: () => ({ message: 'Selecione um estado válido' })
   }),
   currency: z.enum(['AOA', 'USD'], {
     error: () => ({ message: 'Selecione uma moeda válida' })
   })
 })
 
-type formType = z.infer<typeof formSchema>
+/*
+ * `z.coerce` faz a entrada e a saída divergirem: o input do formulário
+ * entrega texto (`unknown` para o Zod) e o esquema devolve `number`. O
+ * react-hook-form precisa de saber os dois — daí os três parâmetros de tipo
+ * no `useForm`.
+ */
+type formInput = z.input<typeof formSchema>
+type formOutput = z.output<typeof formSchema>
 
 export function ModalCreateWallet({
-  // handleUpdateListing,
   modalCreateRowIsOpen,
   setModalCreateRowIsOpen
 }: modalCreateType<any>) {
   const { createWallet, fetchAllWalletsByField } = useWalletsViewModel()
   const [isSending, setIsSending] = useState(false)
-  const [rowsDriverOption, setRowsDriverOption] = useState<OptionType[]>([])
-
-  // Selected
-  const [selectedDriver, setSelectedDriver] = useState<
-    DriverInterface | undefined
-  >()
 
   const { drivers, isLoadingDrivers } = useDriversViewModel(
     500,
     undefined,
     undefined,
-    {
-      status: 'active'
-    }
+    { status: 'active' }
   )
 
-  const namePageSingular = 'Carteira'
+  const driverOptions = useMemo(() => mapArrayToOptions(drivers), [drivers])
 
-  // Form Zod
   const {
     control,
-    register,
     handleSubmit,
-    setValue,
+    reset,
     formState: { errors }
-  } = useForm<formType>({
+  } = useForm<formInput, unknown, formOutput>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      status: 'active',
-      currency: 'AOA'
-    }
+    defaultValues: { user_id: '', balance: 0, status: 'active', currency: 'AOA' }
   })
 
   function closeModal() {
+    reset()
     setModalCreateRowIsOpen(false)
   }
 
-  const handleDriverSelect = (value: string) => {
-    if (!value) {
-      setSelectedDriver(undefined)
+  async function handleSubmitForm(dataForm: formOutput) {
+    const driver = drivers.find(d => String(d.id) === dataForm.user_id)
+
+    if (!driver) {
+      showToast('error', 'Motorista não encontrado. Recarregue a página.')
       return
     }
 
-    try {
-      const driverObj = JSON.parse(value)
-      setValue('user', driverObj)
-    } catch (err) {
-      console.error('Erro ao parsear option selecionada:', err)
-      setSelectedDriver(undefined)
+    if (!driver.firebase_uid || !driver.id) {
+      showToast(
+        'error',
+        `O registo do motorista ${driver.name ?? 'seleccionado'} está incompleto ` +
+          '(falta o ID ou a conta Firebase associada). Sem isso a carteira ficaria ' +
+          'inacessível na app. Corrija o registo do motorista primeiro.'
+      )
+      return
     }
-  }
 
-  // Função para enviar formulário
-  async function handleSubmitForm(dataForm: formType) {
     setIsSending(true)
 
     try {
-      const responseFetch = await fetchAllWalletsByField(
-        'user.email',
-        dataForm.user.email
-      )
+      const existente = await fetchAllWalletsByField('user.email', driver.email)
 
-      if (responseFetch?.data[0]) {
-        showToast(
-          'error',
-          'O motorista selecionado já tem uma carteira criada!'
-        )
-        setIsSending(false)
-        return
-      }
-
-      if (!dataForm.user?.firebase_uid || !dataForm.user?.id) {
-        showToast(
-          'error',
-          `O registo do motorista ${dataForm.user?.name ?? 'seleccionado'} está incompleto ` +
-            '(falta o ID ou a conta Firebase associada). Sem isso a carteira ficaria ' +
-            'inacessível na app. Corrija o registo do motorista primeiro.'
-        )
-        setIsSending(false)
+      if (existente?.data[0]) {
+        showToast('error', 'O motorista selecionado já tem uma carteira criada!')
         return
       }
 
       const resultSubmit = await createWallet.mutateAsync({
-        user_id: dataForm.user.id,
-        user: { ...dataForm.user, id: dataForm.user.id, firebase_uid: dataForm.user.firebase_uid },
+        user_id: driver.id,
+        user: { ...driver, id: driver.id, firebase_uid: driver.firebase_uid },
         initial_balance: dataForm.balance,
         currency: dataForm.currency,
         status: dataForm.status
@@ -151,150 +139,104 @@ export function ModalCreateWallet({
 
       if (!resultSubmit?.walletId) {
         showToast('error', 'Houve algum erro durante a criação da carteira')
-        setIsSending(false)
-      } else {
-        showToast('success', 'Carteira criada com sucesso!')
-        setTimeout(() => {
-          setIsSending(false)
-          closeModal()
-        }, 2000)
+        return
       }
-    } catch (error) {
-      const message = mapFirebaseError(error)
 
-      showToast('error', String(message))
+      showToast('success', 'Carteira criada com sucesso!')
+      // Fecha já. O atraso de 2s que aqui estava só prendia o ecrã aberto
+      // depois de o trabalho estar feito.
+      closeModal()
+    } catch (error) {
+      showToast('error', String(mapFirebaseError(error)))
+    } finally {
       setIsSending(false)
     }
   }
 
-  // Buscar motoristas
-  async function fetchDriverData() {
-    if (drivers.length >= 1) {
-      const arrayData = drivers
-      const dataOptions = mapUserToOptionsJson(arrayData)
-      setRowsDriverOption(dataOptions)
-    }
-  }
-
-  useEffect(() => {
-    fetchDriverData()
-  }, [drivers])
-
   return (
-    <Modal
+    <AppModal
+      variant="drawer"
       isOpen={modalCreateRowIsOpen}
-      onRequestClose={closeModal}
-      ariaHideApp={false}
-      style={customStylesModalCenter}
-      contentLabel="Create Wallet Modal"
-    >
-      <div className="w-full h-full flex items-center justify-center ">
-        <ToastContainer />
-
-        <div className="w-full h-auto max-h-[90%] max-w-3xl flex flex-col items-center p-0 rounded-md overflow-y-auto bg-dark overflow-x-hidden scroll-smooth">
-          {/* Header */}
-          <div className="w-full py-4 px-5 flex justify-between items-center border-b border-gray-600">
-            <p className="text-xl font-medium text-dark dark:text-light">
-              Criar {namePageSingular}
-            </p>
-            <button
-              onClick={closeModal}
-              className="p-2 rounded-lg text-dark dark:text-light hover:bg-gray-300/20 dark:hover:bg-gray-500/20"
-            >
-              <X size={20} />
-            </button>
-          </div>
-
-          {/* Form */}
-          <form
-            onSubmit={handleSubmit(handleSubmitForm)}
-            className="w-full p-6 flex flex-col justify-center items-center gap-6"
+      onClose={closeModal}
+      title="Criar carteira"
+      description="A carteira fica associada a um motorista activo, e só pode haver uma por motorista."
+      size="md"
+      footer={
+        <>
+          <button
+            type="button"
+            onClick={closeModal}
+            disabled={isSending}
+            className="rounded-lg px-5 py-2.5 text-sm font-medium text-gray-500 transition-colors hover:bg-gray-100 disabled:opacity-50 dark:text-gray-300 dark:hover:bg-gray-500/20"
           >
-            {/* Usuário (Motorista) */}
-            {isLoadingDrivers ? (
-              <div className="w-full flex items-center gap-4">
-                <span className="text-sm text-light">Buscando usuários...</span>
-                <BeatLoader color="white" size={10} />
-              </div>
-            ) : (
-              <SelectSearchableCustomZod
-                name="user_id"
-                label="Motorista"
-                control={control}
-                error={errors.user}
-                options={rowsDriverOption}
-                defaultValue={
-                  selectedDriver ? JSON.stringify(selectedDriver) : ''
-                }
-                onOptionChange={handleDriverSelect}
-              />
-            )}
+            Cancelar
+          </button>
 
-            {/* Saldo */}
-            <div className="w-full">
-              <label className="block text-sm text-gray-300 mb-1">
-                Saldo Inicial
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                {...register('balance', { valueAsNumber: true })}
-                className="w-full px-3 py-2 rounded-md bg-gray-800 text-white border border-gray-700"
-              />
-              {errors.balance && (
-                <p className="text-red-400 text-sm mt-1">
-                  {errors.balance.message}
-                </p>
-              )}
-            </div>
+          {/* O botão vive no rodapé do modal, e por isso submete o
+              formulário pelo atributo `form`. */}
+          <button
+            type="submit"
+            form="form-criar-carteira"
+            disabled={isSending}
+            className="flex items-center justify-center gap-2 rounded-lg bg-primary-200 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-300 disabled:opacity-50"
+          >
+            {isSending ? <BeatLoader size={8} color="white" /> : 'Criar carteira'}
+          </button>
+        </>
+      }
+    >
+      <form
+        id="form-criar-carteira"
+        onSubmit={handleSubmit(handleSubmitForm)}
+        className="flex w-full flex-col gap-6"
+      >
+        {isLoadingDrivers ? (
+          <div className="flex w-full items-center gap-4">
+            <span className="text-sm text-gray-500 dark:text-gray-300">
+              A procurar motoristas…
+            </span>
+            <BeatLoader color="#e0212d" size={10} />
+          </div>
+        ) : (
+          <SelectSearchableCustomZod
+            name="user_id"
+            label="Motorista"
+            control={control}
+            error={errors.user_id}
+            options={driverOptions}
+            onOptionChange={() => {}}
+          />
+        )}
 
-            {/* Status */}
-            <div className="w-full">
-              <label className="block text-sm text-gray-300 mb-1">Status</label>
-              <select
-                {...register('status')}
-                className="w-full px-3 py-2 rounded-md bg-gray-800 text-white border border-gray-700"
-              >
-                <option value="active">Ativa</option>
-                <option value="inactive">Inativa</option>
-              </select>
-              {errors.status && (
-                <p className="text-red-400 text-sm mt-1">
-                  {errors.status.message}
-                </p>
-              )}
-            </div>
+        <CustomInput
+          htmlFor="balance"
+          label="Saldo inicial"
+          type="number"
+          placeholder="0"
+          control={control}
+          error={errors.balance}
+        />
 
-            {/* Moeda */}
-            <div className="w-full">
-              <label className="block text-sm text-gray-300 mb-1">Moeda</label>
-              <select
-                {...register('currency')}
-                className="w-full px-3 py-2 rounded-md bg-gray-800 text-white border border-gray-700"
-              >
-                <option value="AOA">AOA</option>
-                <option value="USD">USD</option>
-              </select>
-              {errors.currency && (
-                <p className="text-red-400 text-sm mt-1">
-                  {errors.currency.message}
-                </p>
-              )}
-            </div>
+        <SelectCustomZod
+          name="status"
+          label="Estado"
+          control={control}
+          error={errors.status}
+          options={statusCarteiraOptions}
+          defaultValue="active"
+          onOptionChange={() => {}}
+        />
 
-            {/* Footer */}
-            <div className="w-full pt-4 flex justify-end border-t border-gray-600">
-              <button
-                type="submit"
-                disabled={isSending}
-                className="flex items-center justify-center gap-2 text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-sm px-5 py-2.5 disabled:opacity-50"
-              >
-                {isSending ? <BeatLoader size={8} color="white" /> : 'Criar'}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </Modal>
+        <SelectCustomZod
+          name="currency"
+          label="Moeda"
+          control={control}
+          error={errors.currency}
+          options={moedaOptions}
+          defaultValue="AOA"
+          onOptionChange={() => {}}
+        />
+      </form>
+    </AppModal>
   )
 }

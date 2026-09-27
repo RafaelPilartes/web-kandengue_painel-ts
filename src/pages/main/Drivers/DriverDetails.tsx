@@ -36,7 +36,6 @@ import { formatDateTimeFromFirestore } from '@/utils/date'
 import { formatMoney } from '@/utils/number'
 import { Card } from '@/components/ui/card'
 import { useTransactionsViewModel } from '@/viewModels/TransactionViewModel'
-import { ToastContainer } from 'react-toastify'
 import { showToast, showToastLoading, updateToast } from '@/utils/toasts'
 import type { TransactionInterface } from '@/interfaces/ITransaction'
 import {
@@ -505,7 +504,6 @@ export function DriverViewPage() {
 
   return (
     <div className="w-full flex flex-col gap-6">
-      <ToastContainer />
 
       {/* Header */}
       <div className="w-full flex items-center gap-4 border-b border-gray-400 dark:border-gray-600 pb-4 max-w-s-640:flex-col">

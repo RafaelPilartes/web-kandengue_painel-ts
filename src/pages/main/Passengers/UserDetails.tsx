@@ -17,7 +17,6 @@ import type { RideInterface } from '@/interfaces/IRide'
 import { formatDateTimeFromFirestore } from '@/utils/date'
 import { formatMoney } from '@/utils/number'
 import { Card } from '@/components/ui/card'
-import { ToastContainer } from 'react-toastify'
 import { getRideStatusLabel } from '@/utils/gettersLabels'
 
 export function UserViewPage() {
@@ -108,7 +107,6 @@ export function UserViewPage() {
 
   return (
     <div className="w-full flex flex-col gap-6">
-      <ToastContainer />
       
       <RideDetailsDrawer 
         ride={selectedRide} 

@@ -7,7 +7,6 @@ import { Plus, Target, Trophy } from 'lucide-react'
 import { Spinner } from 'phosphor-react'
 import { MissionEntity } from '@/core/entities/Mission'
 import { showToast } from '@/utils/toasts'
-import { ToastContainer } from 'react-toastify'
 
 export function MissionsPage() {
   const { 
@@ -100,7 +99,6 @@ export function MissionsPage() {
 
   return (
     <div className="w-full flex flex-col gap-6">
-      <ToastContainer />
       <Breadcrumbs items={itemsBreadcrumbs} />
 
       <div className="flex justify-between items-center">

@@ -1,8 +1,6 @@
+import { AppModal } from '@/components/modal/AppModal'
 import { useState, useEffect } from 'react'
-import Modal from 'react-modal'
-import { X } from 'lucide-react'
 import { BeatLoader } from 'react-spinners'
-import { ToastContainer } from 'react-toastify'
 
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -14,7 +12,6 @@ import { adminRoleOptions, statusOptions } from '@/data/selectOption'
 
 import { CustomInput } from '@/components/input/InputLabel'
 import { SelectCustomZod } from '@/components/selects/SelectCustomZod'
-import { customStylesModalCenter } from '@/styles/custom/modals'
 
 import type { modalEditType } from '@/types/modal'
 import type { AdminInterface } from '@/interfaces/IAdmin'
@@ -199,33 +196,14 @@ export function ModalEditAdmin({
   }
 
   return (
-    <Modal
+    <AppModal
       isOpen={modalEditRowIsOpen}
-      onRequestClose={closeModal}
-      ariaHideApp={false}
-      style={customStylesModalCenter}
-      contentLabel="Modal Editar"
+      onClose={closeModal}
+      title={`Editar ${namePageSingular}`}
     >
-      <div className="w-full h-full flex items-center justify-center">
-        <ToastContainer />
-
-        <div className="w-full h-auto max-h-[90%] max-w-3xl flex flex-col items-center p-0 rounded-md overflow-y-auto bg-dark">
-          <div className="w-full py-4 px-5 flex flex-row justify-between items-center border-b border-gray-600">
-            <p className="text-xl font-medium text-light">
-              Editar {namePageSingular}
-            </p>
-
-            <button
-              onClick={closeModal}
-              className="p-2 rounded-lg text-light hover:bg-gray-300/20"
-            >
-              <X size={20} />
-            </button>
-          </div>
-
           <form
             onSubmit={handleSubmit(handleSubmitForm)}
-            className="w-full p-6 flex flex-col justify-center items-center gap-6"
+            className="w-full flex flex-col justify-center items-center gap-6"
           >
             {/* Upload Imagem */}
             <div className="w-full flex flex-col items-start justify-start">
@@ -350,8 +328,6 @@ export function ModalEditAdmin({
               </button>
             </div>
           </form>
-        </div>
-      </div>
-    </Modal>
+    </AppModal>
   )
 }

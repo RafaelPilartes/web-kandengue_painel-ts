@@ -1,15 +1,12 @@
+import { AppModal } from '@/components/modal/AppModal'
 // src/components/modals/ModalSendNotification.tsx
 import { useEffect, useState } from 'react'
-import { IoCloseOutline } from 'react-icons/io5'
-import Modal from 'react-modal'
 
 import { SelectSearchableCustom } from '@/components/selects/SelectSearchableCustom'
 import { SelectCustom } from '@/components/selects/SelectCustom'
 import type { NotificationCategory, NotificationType } from '@/types/enum'
 import { InputLabelSimple } from '@/components/input/InputLabelSimple'
 import { TextAreaLabelSimple } from '@/components/input/TextAreaLabelSimple'
-import { customStylesModalCenter } from '@/styles/custom/modals'
-import { ToastContainer } from 'react-toastify'
 import {
   notificationTypeOptions,
   notificationCategoryOptions
@@ -188,31 +185,12 @@ export function ModalSendNotification({
   }, [category, specificUser])
 
   return (
-    <Modal
+    <AppModal
       isOpen={isOpen}
-      onRequestClose={handleCloseModal}
-      ariaHideApp={false}
-      style={customStylesModalCenter}
-      contentLabel="Send notification Modal"
+      onClose={handleCloseModal}
+      title="Enviar Notificação"
     >
-      <div className="w-full h-full flex items-center justify-center ">
-        <ToastContainer />
-
-        <div className="w-full h-auto max-h-[90%] max-w-3xl flex flex-col items-center p-0 rounded-md overflow-y-auto bg-dark overflow-x-hidden scroll-smooth">
-          {/* Header */}
-          <div className="w-full py-4 px-5 flex justify-between items-center border-b border-gray-600">
-            <h2 className="text-xl font-bold text-dark dark:text-light">
-              Enviar Notificação
-            </h2>
-            <button
-              onClick={handleCloseModal}
-              className="p-2 rounded-lg text-dark dark:text-light hover:bg-gray-300/20 dark:hover:bg-gray-500/20"
-            >
-              <IoCloseOutline size={24} />
-            </button>
-          </div>
-
-          <div className="w-full p-6 flex flex-col justify-center items-center gap-6">
+          <div className="w-full flex flex-col justify-center items-center gap-6">
             {/* Título */}
             <div className="w-full">
               <InputLabelSimple
@@ -306,8 +284,6 @@ export function ModalSendNotification({
               </button>
             </div>
           </div>
-        </div>
-      </div>
-    </Modal>
+    </AppModal>
   )
 }

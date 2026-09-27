@@ -1,10 +1,9 @@
+import { AppModal } from '@/components/modal/AppModal'
 // src/components/modals/ModalViewTopupRequest.tsx
 // Lib
-import Modal from 'react-modal'
-import { X, ExternalLink, Calendar, Clock, User, Wallet } from 'lucide-react'
+import { ExternalLink, Calendar, Clock, User, Wallet } from 'lucide-react'
 
 // Style
-import { customStylesModalCenter } from '@/styles/custom/modals'
 
 // Types
 import type { modalViewType } from '@/types/modal'
@@ -75,28 +74,13 @@ export function ModalViewTopupRequest({
   }
 
   return (
-    <Modal
+    <AppModal
+      variant="drawer"
+      size="md"
       isOpen={modalViewRowIsOpen}
-      onRequestClose={closeModal}
-      ariaHideApp={false}
-      style={customStylesModalCenter}
-      contentLabel="View Wallet Top up Request Modal"
+      onClose={closeModal}
+      title={`Detalhes da ${namePageSingular}`}
     >
-      <div className="w-full h-full flex items-center justify-center">
-        <div className="w-full h-auto max-h-[90%] max-w-3xl flex flex-col items-center p-0 rounded-md overflow-y-auto bg-dark overflow-x-hidden scroll-smooth">
-          {/* Header */}
-          <div className="w-full py-4 px-5 flex justify-between items-center border-b border-gray-600">
-            <p className="text-xl font-medium text-light">
-              Detalhes da {namePageSingular}
-            </p>
-            <button
-              onClick={closeModal}
-              className="p-2 rounded-lg text-light hover:bg-gray-300/20 dark:hover:bg-gray-500/20"
-            >
-              <X size={20} />
-            </button>
-          </div>
-
           {/* Content (Details) */}
           <div className="w-full p-6 space-y-6">
             {/* Solicitante */}
@@ -326,7 +310,7 @@ export function ModalViewTopupRequest({
           </div>
 
           {/* Footer */}
-          <div className="w-full p-6 flex justify-end border-t border-gray-600">
+          <div className="w-full flex justify-end border-t border-gray-600">
             <button
               type="button"
               onClick={closeModal}
@@ -335,8 +319,6 @@ export function ModalViewTopupRequest({
               Fechar
             </button>
           </div>
-        </div>
-      </div>
-    </Modal>
+    </AppModal>
   )
 }

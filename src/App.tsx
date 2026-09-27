@@ -1,3 +1,6 @@
+import { ToastContainer } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
+
 import { AppProvider } from './provider/AppProvider'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Router } from './routes/Routes'
@@ -19,6 +22,12 @@ export function App() {
     <AppProvider>
       <QueryClientProvider client={queryClient}>
         <AuthSessionGate />
+        {/*
+          Um único contentor para a aplicação inteira. Havia dezanove
+          espalhados por páginas e modais: com mais do que um montado ao
+          mesmo tempo, o mesmo toast aparecia repetido em cada um deles.
+        */}
+        <ToastContainer position="top-right" autoClose={3000} />
       </QueryClientProvider>
     </AppProvider>
   )

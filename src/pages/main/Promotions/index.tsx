@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Plus, Tag, Eye, Edit2, Power } from 'lucide-react'
 import { Spinner } from 'phosphor-react'
-import { ToastContainer } from 'react-toastify'
 import { Breadcrumbs } from '@/components/Breadcrumbs'
 import { routsNameMain } from '@/constants/routsName'
 import { PromotionEntity } from '@/core/entities/Promotion'
@@ -94,7 +93,6 @@ export function PromotionsPage() {
 
   return (
     <div className="w-full flex flex-col gap-6">
-      <ToastContainer />
       <Breadcrumbs items={items} />
 
       <div className="flex justify-between items-center">

@@ -8,7 +8,6 @@ import { InputFloatingLabel } from '../../components/input/InputFloatingLabel'
 import { Mail, Lock } from 'lucide-react'
 import { BaseButton } from '../../components/buttons/baseButton'
 import { useAdminStore } from '../../stores/userStore'
-import { ToastContainer } from 'react-toastify'
 import { showToast } from '../../utils/toasts'
 import { BeatLoader } from 'react-spinners'
 import { useAdminsViewModel } from '@/viewModels/AdminViewModel'
@@ -177,7 +176,6 @@ export function Login() {
   return (
     <>
       <div className="relative w-screen h-screen flex flex-row justify-center items-center gap-0 bg-white dark:bg-baseBgDark">
-        <ToastContainer />
 
         <div className="font-[sans-serif]">
           <div className="min-h-screen flex fle-col items-center justify-center py-6 md:py-0 px-4 md:px-0">

@@ -1,15 +1,12 @@
+import { AppModal } from '@/components/modal/AppModal'
 // src/components/modals/ModalViewTransactions.tsx
 import { useEffect, useState } from 'react'
-import Modal from 'react-modal'
-import { X } from 'lucide-react'
 import { BeatLoader } from 'react-spinners'
-import { ToastContainer } from 'react-toastify'
 
 // ViewModel
 import { useTransactionsViewModel } from '@/viewModels/TransactionViewModel'
 
 // Styles
-import { customStylesModalCenter } from '@/styles/custom/modals'
 
 // Types
 import type { modalViewType } from '@/types/modal'
@@ -89,30 +86,13 @@ export function ModalViewTransactions({
   }, [modalViewRowIsOpen])
 
   return (
-    <Modal
+    <AppModal
+      variant="drawer"
+      size="md"
       isOpen={modalViewRowIsOpen}
-      onRequestClose={closeModal}
-      ariaHideApp={false}
-      style={customStylesModalCenter}
-      contentLabel="View Transactions Modal"
+      onClose={closeModal}
+      title="Transações da Carteira"
     >
-      <div className="w-full h-full flex items-center justify-center">
-        <ToastContainer />
-
-        <div className="w-full max-w-4xl flex flex-col rounded-md overflow-hidden bg-dark">
-          {/* Header */}
-          <div className="w-full py-4 px-5 flex justify-between items-center border-b border-gray-600">
-            <p className="text-xl font-medium text-light">
-              Transações da Carteira
-            </p>
-            <button
-              onClick={closeModal}
-              className="p-2 rounded-lg text-light hover:bg-gray-300/20 dark:hover:bg-gray-500/20"
-            >
-              <X size={20} />
-            </button>
-          </div>
-
           {/* Body */}
           <div className="w-full p-6 max-h-[70vh] overflow-y-auto">
             {isLoading ? (
@@ -217,8 +197,6 @@ export function ModalViewTransactions({
               Fechar
             </button>
           </div>
-        </div>
-      </div>
-    </Modal>
+    </AppModal>
   )
 }

@@ -23,20 +23,6 @@
   @apply hover:bg-gradient-to-r hover:from-primary-200 hover:to-secondary-200 transition-all duration-300;
 }
 
-/* swiper */
-.swiper-horizontal > .swiper-pagination-bullets .swiper-pagination-bullet,
-.swiper-pagination-horizontal.swiper-pagination-bullets
-  .swiper-pagination-bullet {
-  background-color: #e24222;
-}
-
-.swiper-button-next:after,
-.swiper-button-prev:after,
-.swiper-button-next:after,
-.swiper-rtl .swiper-button-prev:after {
-  color: #e24222;
-}
-
 /* react-select */
 .react-select__control {
   @apply outline-none bg-gray-100/10 dark:bg-gray-700/60 border-gray-300/60 dark:border-gray-500/60 text-gray-400 dark:text-gray-300;
@@ -77,5 +63,65 @@
     background-color: #e24222;
     border-radius: 14px;
     height: 2px;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Transições dos modais (AppModal)
+
+   São animações, e não transições com troca de classe. Duas razões:
+
+   1. Uma animação toca assim que o elemento entra no DOM. Não é preciso
+      estado em React, nem `requestAnimationFrame` — que, já agora, não
+      dispara com a aba em segundo plano.
+   2. O react-modal concatena `base + afterOpen` por fora do `cn()`, por isso
+      o `tailwind-merge` não via o conflito entre `scale-95` e `scale-100`, e
+      ganhava a que viesse depois no CSS gerado — que não controlamos. O
+      painel ficava preso a 0.95 e a animação nunca aparecia.
+   --------------------------------------------------------------------------- */
+@keyframes modal-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-panel-in-center {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes modal-panel-in-drawer {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.modal-overlay {
+  animation: modal-overlay-in 180ms ease-out both;
+}
+.modal-panel--center {
+  animation: modal-panel-in-center 200ms ease-out both;
+}
+.modal-panel--drawer {
+  animation: modal-panel-in-drawer 240ms cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-overlay,
+  .modal-panel--center,
+  .modal-panel--drawer {
+    animation: none;
   }
 }

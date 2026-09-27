@@ -21,7 +21,6 @@ import {
 import { useApplicationsViewModel } from '@/viewModels/ApplicationViewModel'
 import type { ApplicationInterface } from '@/interfaces/IApplication'
 import { formatDateTimeFromFirestore } from '@/utils/date'
-import { ToastContainer } from 'react-toastify'
 import CategoryBadge from '@/components/badge/BadgeCategory'
 
 export function ApplicationViewPage() {
@@ -126,7 +125,6 @@ export function ApplicationViewPage() {
 
   return (
     <div className="w-full flex flex-col gap-6">
-      <ToastContainer />
 
       {/* Header */}
       <div className="w-full flex flex-col gap-4 border-b border-gray-200 dark:border-gray-700 pb-6">

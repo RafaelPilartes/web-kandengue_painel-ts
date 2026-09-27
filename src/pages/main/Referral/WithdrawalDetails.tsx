@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Check, X, DollarSign } from 'lucide-react'
 import { Spinner } from 'phosphor-react'
-import { ToastContainer } from 'react-toastify'
 import { Breadcrumbs } from '@/components/Breadcrumbs'
 import { routsNameMain } from '@/constants/routsName'
 import {
@@ -131,7 +130,6 @@ export function WithdrawalDetailsPage() {
 
   return (
     <div className="w-full flex flex-col gap-6">
-      <ToastContainer />
       <Breadcrumbs items={items} />
 
       <div className="flex items-center gap-3">
