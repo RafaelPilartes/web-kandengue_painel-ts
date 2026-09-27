@@ -21,10 +21,10 @@ import { db, auth, storage } from '@/config/firebase.config'
  * contrário: escreve-se em dados reais. Por isso liga-se sozinho em DEV,
  * e quem quiser produção tem de o dizer explicitamente.
  */
-const querProducao = import.meta.env.VITE_USE_EMULATOR === 'false'
-const ligar = import.meta.env.DEV && !querProducao
+const wantsProduction = import.meta.env.VITE_USE_EMULATOR === 'false'
+const useEmulator = import.meta.env.DEV && !wantsProduction
 
-if (ligar) {
+if (useEmulator) {
   connectFirestoreEmulator(db, 'localhost', 8080)
   connectAuthEmulator(auth, 'http://localhost:9099', { disableWarnings: true })
   connectStorageEmulator(storage, 'localhost', 9199)

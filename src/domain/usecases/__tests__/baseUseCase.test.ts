@@ -64,24 +64,24 @@ describe('BaseUseCase.offsetToCursor', () => {
 // o `code` do Firebase intacto. Um `catch` intermédio que re-lance com
 // `new Error(err.message)` descarta-o, e tudo passa a "erro inesperado".
 describe('run() preserva o código do erro', () => {
-  class Falhador extends BaseUseCase {
+  class Failing extends BaseUseCase {
     protected readonly context = 'Teste'
-    comCodigo(code: string) {
+    withCode(code: string) {
       return this.run('op', async () => {
         throw Object.assign(new Error('mensagem crua do Firebase'), { code })
       })
     }
-    semCodigo() {
+    withoutCode() {
       return this.run('op', async () => {
         // O anti-padrão: embrulhar e perder o `code`.
         throw new Error('mensagem crua do Firebase')
       })
     }
   }
-  const uc = new Falhador()
+  const uc = new Failing()
 
   it('um erro de auth chega com a mensagem própria, sem o contexto lá dentro', async () => {
-    await expect(uc.comCodigo('auth/invalid-credential')).rejects.toMatchObject({
+    await expect(uc.withCode('auth/invalid-credential')).rejects.toMatchObject({
       code: 'invalid-credential',
       message: 'E-mail ou senha incorretos.',
       context: '[Teste.op]'
@@ -89,7 +89,7 @@ describe('run() preserva o código do erro', () => {
   })
 
   it('um erro sem código continua a ser genérico — é o que se quer evitar', async () => {
-    await expect(uc.semCodigo()).rejects.toMatchObject({
+    await expect(uc.withoutCode()).rejects.toMatchObject({
       code: 'unknown',
       message: 'Ocorreu um erro inesperado.'
     })

@@ -11,17 +11,17 @@ import { AppError, toAppError } from '@/domain/errors/AppError'
 // — a mensagem certa, embrulhada duas vezes e com o contexto interno à vista.
 describe('mapFirebaseError não re-traduz o que já vem traduzido', () => {
   it('deixa passar um AppError intacto', () => {
-    const erro = toAppError({ code: 'auth/invalid-credential' }, '[AuthUseCase.login]')
+    const error = toAppError({ code: 'auth/invalid-credential' }, '[AuthUseCase.login]')
 
-    expect(mapFirebaseError(erro)).toBe('E-mail ou senha incorretos.')
+    expect(mapFirebaseError(error)).toBe('E-mail ou senha incorretos.')
   })
 
   it('não deixa escapar o contexto para o ecrã', () => {
-    const erro = toAppError({ code: 'auth/invalid-credential' }, '[AuthUseCase.login]')
-    const mostrado = mapFirebaseError(erro)
+    const error = toAppError({ code: 'auth/invalid-credential' }, '[AuthUseCase.login]')
+    const shown = mapFirebaseError(error)
 
-    expect(mostrado).not.toContain('AuthUseCase')
-    expect(mostrado).not.toContain('Erro mapeado')
+    expect(shown).not.toContain('AuthUseCase')
+    expect(shown).not.toContain('Erro mapeado')
   })
 
   it('uma string já é uma mensagem — devolve-a tal e qual', () => {

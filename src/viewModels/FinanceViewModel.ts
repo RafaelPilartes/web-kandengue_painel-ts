@@ -158,15 +158,15 @@ export function useFinanceViewModel(filters: FinanceFilters) {
     // --- 2. FOLHA: EXTRATO GERAL ---
     const ledgerSheet = workbook.addWorksheet('Extrato Geral')
     const ledgerCols = [
-      { header: 'Data', key: 'data' },
-      { header: 'Hora', key: 'hora' },
-      { header: 'Tipo', key: 'fonte' },
+      { header: 'Data', key: 'date' },
+      { header: 'Hora', key: 'time' },
+      { header: 'Tipo', key: 'source' },
       { header: 'Referência', key: 'ref' },
       { header: 'Descrição', key: 'desc' },
-      { header: 'Bruto', key: 'bruto' },
-      { header: 'Empresa', key: 'empresa' },
+      { header: 'Bruto', key: 'gross' },
+      { header: 'Empresa', key: 'company' },
       { header: 'Estafeta', key: 'driver' },
-      { header: 'Líquido', key: 'liquido' },
+      { header: 'Líquido', key: 'net' },
       { header: 'Status', key: 'status' },
       { header: 'Motorista', key: 'driver_name' }
     ]
@@ -175,15 +175,15 @@ export function useFinanceViewModel(filters: FinanceFilters) {
     ledger.forEach(entry => {
       const dt = formatDateTimeFromFirestore(entry.date)
       ledgerSheet.addRow({
-        data: dt.date,
-        hora: dt.time,
-        fonte: entry.source_type === 'ride' ? 'Corrida' : 'Topup',
+        date: dt.date,
+        time: dt.time,
+        source: entry.source_type === 'ride' ? 'Corrida' : 'Topup',
         ref: entry.reference,
         desc: entry.description,
-        bruto: entry.gross_value,
-        empresa: entry.company_value,
+        gross: entry.gross_value,
+        company: entry.company_value,
         driver: entry.driver_value,
-        liquido: entry.net_value,
+        net: entry.net_value,
         status: entry.status,
         driver_name: entry.driver_name || 'N/A'
       })

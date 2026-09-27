@@ -278,7 +278,7 @@ export function PromotionDetailsPage() {
         </h3>
         {usages.length === 0 ? (
           <div className="p-8 text-center text-gray-500">
-            Sem usos ainda.
+            Sem usages ainda.
           </div>
         ) : (
           <div className="overflow-x-auto">

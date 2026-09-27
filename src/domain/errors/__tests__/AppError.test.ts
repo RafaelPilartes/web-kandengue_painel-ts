@@ -52,7 +52,7 @@ describe('toAppError', () => {
 // "Ocorreu um erro inesperado.", e o utilizador não sabia se tinha errado a
 // senha, se a conta estava desactivada, ou se a internet tinha caído.
 describe('toAppError — erros de autenticação', () => {
-  const casos: Array<[string, string]> = [
+  const cases: Array<[string, string]> = [
     ['auth/invalid-credential', 'E-mail ou senha incorretos.'],
     ['auth/wrong-password', 'E-mail ou senha incorretos.'],
     ['auth/user-not-found', 'E-mail ou senha incorretos.'],
@@ -65,19 +65,19 @@ describe('toAppError — erros de autenticação', () => {
     ['auth/requires-recent-login', 'Por segurança, inicie sessão novamente antes de repetir.']
   ]
 
-  it.each(casos)('%s → mensagem própria', (code, esperado) => {
-    const erro = toAppError({ code })
-    expect(erro.message).toBe(esperado)
-    expect(erro.code).not.toBe('unknown')
+  it.each(cases)('%s → mensagem própria', (code, expected) => {
+    const error = toAppError({ code })
+    expect(error.message).toBe(expected)
+    expect(error.code).not.toBe('unknown')
   })
 
   it('o contexto fica fora da mensagem que o utilizador lê', () => {
-    const erro = toAppError({ code: 'auth/invalid-credential' }, '[AuthUseCase.login]')
+    const error = toAppError({ code: 'auth/invalid-credential' }, '[AuthUseCase.login]')
 
     // O que aparece no ecrã: limpo.
-    expect(erro.message).toBe('E-mail ou senha incorretos.')
+    expect(error.message).toBe('E-mail ou senha incorretos.')
     // O que serve para diagnosticar: à parte.
-    expect(erro.context).toBe('[AuthUseCase.login]')
+    expect(error.context).toBe('[AuthUseCase.login]')
   })
 
   it('um código de auth desconhecido continua a cair em unknown', () => {

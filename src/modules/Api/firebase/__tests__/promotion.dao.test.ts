@@ -18,7 +18,7 @@ const NUM_SHARDS = 10
 const d = (iso: string) => new Date(iso)
 
 /** Uma promoção mínima e válida, para não repetir o objecto em cada teste. */
-function novaPromocao(over: Record<string, unknown> = {}) {
+function newPromotion(over: Record<string, unknown> = {}) {
   return {
     code: 'verao10',
     type: 'percent',
@@ -59,17 +59,17 @@ describe('FirebasePromotionDAO', () => {
   // ── O id é o código, não um id gerado ──
 
   it('create usa o código normalizado como id do documento', async () => {
-    const criada = await dao.create(novaPromocao({ code: '  verao10 ' }))
+    const created = await dao.create(newPromotion({ code: '  verao10 ' }))
 
-    expect(criada.id).toBe('VERAO10')
-    expect(criada.code).toBe('VERAO10')
+    expect(created.id).toBe('VERAO10')
+    expect(created.code).toBe('VERAO10')
     expect((await getDoc(doc(testDb, `${COLLECTION}/VERAO10`))).exists()).toBe(
       true
     )
   })
 
   it('getByCode normaliza antes de procurar', async () => {
-    await dao.create(novaPromocao())
+    await dao.create(newPromotion())
 
     expect((await dao.getByCode(' verao10 '))?.id).toBe('VERAO10')
     expect(await dao.getByCode('NAO-EXISTE')).toBeNull()
@@ -78,7 +78,7 @@ describe('FirebasePromotionDAO', () => {
   // ── A razão de este create não poder ser o do motor ──
 
   it('create inicializa os 10 shards de contagem a zero', async () => {
-    await dao.create(novaPromocao())
+    await dao.create(newPromotion())
 
     const shards = await getDocs(
       collection(testDb, `${COLLECTION}/VERAO10/counters`)
@@ -92,24 +92,24 @@ describe('FirebasePromotionDAO', () => {
   })
 
   it('create ignora contadores enviados pelo caller e começa a zero', async () => {
-    const criada = await dao.create(
-      novaPromocao({ used_count_approx: 999, reserved_count_approx: 42 })
+    const created = await dao.create(
+      newPromotion({ used_count_approx: 999, reserved_count_approx: 42 })
     )
 
-    expect(criada.used_count_approx).toBe(0)
-    expect(criada.reserved_count_approx).toBe(0)
+    expect(created.used_count_approx).toBe(0)
+    expect(created.reserved_count_approx).toBe(0)
   })
 
   // ── A razão de este update não poder ser o do motor ──
 
   it('update apaga de facto um campo que o admin limpou', async () => {
-    await dao.create(novaPromocao({ max_discount: 500 }))
+    await dao.create(newPromotion({ max_discount: 500 }))
 
-    const atualizada = await dao.update('verao10', {
+    const updated = await dao.update('verao10', {
       max_discount: undefined
     })
 
-    expect(atualizada.max_discount).toBeUndefined()
+    expect(updated.max_discount).toBeUndefined()
     // Não basta o objecto vir sem a chave: tem de ter saído do documento.
     expect(
       'max_discount' in (await getDoc(doc(testDb, `${COLLECTION}/VERAO10`))).data()!
@@ -120,9 +120,9 @@ describe('FirebasePromotionDAO', () => {
     // `create` carimba sempre `created_at` com a hora do servidor e ignora o
     // que o caller enviou — por isso a referência é o que o create devolveu,
     // não a data do objecto de entrada.
-    const criada = await dao.create(novaPromocao())
+    const created = await dao.create(newPromotion())
 
-    const atualizada = await dao.update('verao10', {
+    const updated = await dao.update('verao10', {
       code: 'OUTRO',
       used_count_approx: 999,
       reserved_count_approx: 999,
@@ -130,30 +130,30 @@ describe('FirebasePromotionDAO', () => {
       created_at: d('2020-01-01')
     } as never)
 
-    expect(atualizada.code).toBe('VERAO10')
-    expect(atualizada.used_count_approx).toBe(0)
-    expect(atualizada.reserved_count_approx).toBe(0)
-    expect(atualizada.created_by).toBe('adm-1')
-    expect(atualizada.created_at).toEqual(criada.created_at)
+    expect(updated.code).toBe('VERAO10')
+    expect(updated.used_count_approx).toBe(0)
+    expect(updated.reserved_count_approx).toBe(0)
+    expect(updated.created_by).toBe('adm-1')
+    expect(updated.created_at).toEqual(created.created_at)
   })
 
   it('update sem rules deixa as rules existentes intactas', async () => {
-    await dao.create(novaPromocao())
+    await dao.create(newPromotion())
 
-    const atualizada = await dao.update('verao10', { value: 20 })
+    const updated = await dao.update('verao10', { value: 20 })
 
-    expect(atualizada.value).toBe(20)
-    expect(atualizada.rules).toEqual({ first_ride_only: true })
+    expect(updated.value).toBe(20)
+    expect(updated.rules).toEqual({ first_ride_only: true })
   })
 
   it('update com rules substitui-as por inteiro', async () => {
-    await dao.create(novaPromocao())
+    await dao.create(newPromotion())
 
-    const atualizada = await dao.update('verao10', {
+    const updated = await dao.update('verao10', {
       rules: { min_account_age_days: 7 } as never
     })
 
-    expect(atualizada.rules).toEqual({ min_account_age_days: 7 })
+    expect(updated.rules).toEqual({ min_account_age_days: 7 })
   })
 
   // ── O que passou a vir do motor ──
@@ -161,14 +161,14 @@ describe('FirebasePromotionDAO', () => {
   it('getAll ordena por created_at desc', async () => {
     // `create` carimba `created_at` com Timestamp.now() e ignora o valor
     // enviado, por isso a ordem observável é a de criação: B depois de A.
-    await dao.create(novaPromocao({ code: 'A' }))
-    await dao.create(novaPromocao({ code: 'B' }))
+    await dao.create(newPromotion({ code: 'A' }))
+    await dao.create(newPromotion({ code: 'B' }))
 
     expect((await dao.getAll()).data.map(p => p.id)).toEqual(['B', 'A'])
   })
 
   it('setActive alterna sem tocar no resto', async () => {
-    await dao.create(novaPromocao())
+    await dao.create(newPromotion())
 
     await dao.setActive('verao10', false)
 
@@ -180,7 +180,7 @@ describe('FirebasePromotionDAO', () => {
   // ── Subcolecção de utilizadores permitidos ──
 
   it('addAllowedUsersBulk e listAllowedUsers percorrem a subcolecção', async () => {
-    await dao.create(novaPromocao())
+    await dao.create(newPromotion())
 
     await dao.addAllowedUsersBulk('verao10', ['us-1', 'us-2'], 'adm-1')
 
@@ -195,7 +195,7 @@ describe('FirebasePromotionDAO', () => {
   })
 
   it('addAllowedUsersBulk com lista vazia não escreve nada', async () => {
-    await dao.create(novaPromocao())
+    await dao.create(newPromotion())
 
     await dao.addAllowedUsersBulk('verao10', [], 'adm-1')
 
@@ -232,9 +232,9 @@ describe('FirebasePromotionDAO', () => {
       updated_at: Timestamp.fromDate(d('2026-03-01'))
     })
 
-    const usos = await dao.listUsages(' verao10 ')
+    const usages = await dao.listUsages(' verao10 ')
 
-    expect(usos.map(u => u.id)).toEqual(['u-1'])
-    expect(usos[0].created_at).toEqual(d('2026-02-01'))
+    expect(usages.map(u => u.id)).toEqual(['u-1'])
+    expect(usages[0].created_at).toEqual(d('2026-02-01'))
   })
 })

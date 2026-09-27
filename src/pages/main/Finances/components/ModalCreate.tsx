@@ -26,12 +26,12 @@ import { showToast } from '@/utils/toasts'
 import { mapArrayToOptions } from '@/utils/arrays'
 import { mapFirebaseError } from '@/helpers/mapFirebaseError'
 
-const statusCarteiraOptions = [
+const walletStatusOptions = [
   { value: 'active', label: 'Ativa' },
   { value: 'inactive', label: 'Inativa' }
 ]
 
-const moedaOptions = [
+const currencyOptions = [
   { value: 'AOA', label: 'AOA — Kwanza' },
   { value: 'USD', label: 'USD — Dólar' }
 ]
@@ -122,9 +122,9 @@ export function ModalCreateWallet({
     setIsSending(true)
 
     try {
-      const existente = await fetchAllWalletsByField('user.email', driver.email)
+      const existing = await fetchAllWalletsByField('user.email', driver.email)
 
-      if (existente?.data[0]) {
+      if (existing?.data[0]) {
         showToast('error', 'O motorista selecionado já tem uma carteira criada!')
         return
       }
@@ -222,7 +222,7 @@ export function ModalCreateWallet({
           label="Estado"
           control={control}
           error={errors.status}
-          options={statusCarteiraOptions}
+          options={walletStatusOptions}
           defaultValue="active"
           onOptionChange={() => {}}
         />
@@ -232,7 +232,7 @@ export function ModalCreateWallet({
           label="Moeda"
           control={control}
           error={errors.currency}
-          options={moedaOptions}
+          options={currencyOptions}
           defaultValue="AOA"
           onOptionChange={() => {}}
         />

@@ -28,7 +28,7 @@ export type ApplicationInterface = {
   updated_at?: Date
   firebase_uid?: string
 }
-export type ApplicationCredencialInterface = {
+export type ApplicationCredentialInterface = {
   email: string
   password: string
 }
