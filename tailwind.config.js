@@ -1,9 +1,19 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: [
-    './src/**/*.{js,ts,jsx,tsx}',
-    'node_modules/flowbite-react/**/*.{js,jsx,ts,tsx}'
-  ],
+  /*
+   * Por omissao o Tailwind usa `media`, e entao todos os utilitarios `dark:`
+   * seguem o `prefers-color-scheme` do sistema. Este painel tem um
+   * alternador de tema (`useColorMode`) que liga a classe `dark` ao `body` —
+   * e essa classe nao afectava nenhum dos 173 utilitarios `dark:` compilados.
+   * Carregar no interruptor mudava o fundo do body e os widgets do flowbite,
+   * e mais nada; e quem tivesse o sistema em escuro via a aplicacao escura
+   * mesmo com o interruptor em claro.
+   */
+  darkMode: 'class',
+  // O `flowbite-react` saiu: nao era usado em `src`, e este glob punha o
+  // Tailwind a varrer o pacote inteiro dentro de node_modules a cada build.
+  // O plugin `flowbite` (mais abaixo) continua, e esse e usado.
+  content: ['./src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     screens: {
       xs: '574px',

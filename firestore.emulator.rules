@@ -1,0 +1,29 @@
+rules_version = '2';
+
+// =============================================================================
+//  REGRAS EXCLUSIVAS DO EMULADOR — NUNCA IMPLANTAR
+// =============================================================================
+//
+//  Isto abre a base de dados inteira. Existe para os testes do painel
+//  poderem semear e limpar colecções sem lutar contra as regras.
+//
+//  Estas regras NÃO podem chegar a produção. Duas salvaguardas:
+//
+//    1. Este ficheiro só é referido pelo `firebase.emulator.json`, e não
+//       pelo `firebase.json` — que nem sequer existe neste repositório.
+//       Um `firebase deploy` corrido a partir daqui não tem o que implantar.
+//    2. As regras a sério do projecto vivem noutro sítio:
+//       `node-fastify-kandengue_atrevido-ts/firestore.rules`. É esse o
+//       ficheiro que vai para produção.
+//
+//  Se alguma vez precisares de testar as regras de produção, importa-as
+//  explicitamente em vez de relaxar estas.
+// =============================================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
