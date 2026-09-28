@@ -209,7 +209,7 @@ export class AuditService {
           admin_id: 'unknown',
           admin_name: email,
           admin_email: email,
-          admin_role: 'direcao_geral', // placeholder
+          admin_role: 'general_management', // placeholder
 
           action: partial.action,
           module: partial.module,

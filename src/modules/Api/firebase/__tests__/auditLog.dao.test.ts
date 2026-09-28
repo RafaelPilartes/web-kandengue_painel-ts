@@ -19,7 +19,7 @@ const baseLog = {
   admin_id: 'adm-1',
   admin_name: 'Rafael',
   admin_email: 'rafael@kandengue.ao',
-  admin_role: 'direcao_geral' as const,
+  admin_role: 'general_management' as const,
   action: 'login' as const,
   module: 'auth' as const,
   description: 'Login bem-sucedido',

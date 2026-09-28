@@ -56,15 +56,15 @@ const formSchema = z.object({
   }),
   role: z.enum(
     [
-      'direcao_geral',
-      'operacoes_qualidade',
-      'administracao_financas',
-      'tecnologia_inovacao',
-      'seguranca_qualidade_operacional',
-      'negocios_imagem_institucional',
-      'capital_humano',
-      'contabilidade_financas',
-      'tecnologia_inovacao_tecnica'
+      'general_management',
+      'operations_quality',
+      'finance_administration',
+      'technology_innovation',
+      'operational_safety_quality',
+      'business_institutional_image',
+      'human_capital',
+      'finance_accounting',
+      'technology_innovation_technical'
     ],
     {
       error: () => ({

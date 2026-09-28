@@ -18,7 +18,7 @@ const base = {
   name: 'Maria Admin',
   phone: '+244900000000',
   status: 'active' as const,
-  role: 'operacoes_qualidade' as const,
+  role: 'operations_quality' as const,
   permissions: []
 }
 

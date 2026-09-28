@@ -135,17 +135,17 @@ export function getNotificationCategoryLabel(
 
 export function getAdminRoleLabel(role: AdminRole): string {
   const labels: Record<AdminRole, string> = {
-    direcao_geral: 'Direcção Geral',
-    operacoes_qualidade: 'Departamento de Operações e Qualidade',
-    administracao_financas: 'Departamento de Administração e Finanças',
-    tecnologia_inovacao: 'Departamento de Tecnologia e Inovação',
-    seguranca_qualidade_operacional:
+    general_management: 'Direcção Geral',
+    operations_quality: 'Departamento de Operações e Qualidade',
+    finance_administration: 'Departamento de Administração e Finanças',
+    technology_innovation: 'Departamento de Tecnologia e Inovação',
+    operational_safety_quality:
       'Departamento de Segurança e Qualidade Operacional',
-    negocios_imagem_institucional:
+    business_institutional_image:
       'Departamento de Negócios e Imagem Institucional',
-    capital_humano: 'Departamento de Capital Humano',
-    contabilidade_financas: 'Departamento de Contabilidade e Finanças',
-    tecnologia_inovacao_tecnica: 'Departamento de Tecnologia e Inovação (Técnico)'
+    human_capital: 'Departamento de Capital Humano',
+    finance_accounting: 'Departamento de Contabilidade e Finanças',
+    technology_innovation_technical: 'Departamento de Tecnologia e Inovação (Técnico)'
   }
   return labels[role]
 }

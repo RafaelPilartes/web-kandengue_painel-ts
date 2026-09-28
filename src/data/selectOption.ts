@@ -173,37 +173,37 @@ export const rideTypeOptions: OptionType[] = [
 
 // ==============================================
 export const adminRoleOptions: OptionType[] = [
-  { value: 'direcao_geral', label: 'Direcção Geral' },
+  { value: 'general_management', label: 'Direcção Geral' },
   {
-    value: 'operacoes_qualidade',
+    value: 'operations_quality',
     label: 'Departamento de Operações e Qualidade'
   },
   {
-    value: 'administracao_financas',
+    value: 'finance_administration',
     label: 'Departamento de Administração e Finanças'
   },
   {
-    value: 'tecnologia_inovacao',
+    value: 'technology_innovation',
     label: 'Departamento de Tecnologia e Inovação'
   },
   {
-    value: 'seguranca_qualidade_operacional',
+    value: 'operational_safety_quality',
     label: 'Departamento de Segurança e Qualidade Operacional'
   },
   {
-    value: 'negocios_imagem_institucional',
+    value: 'business_institutional_image',
     label: 'Departamento de Negócios e Imagem Institucional'
   },
   {
-    value: 'capital_humano',
+    value: 'human_capital',
     label: 'Departamento de Capital Humano'
   },
   {
-    value: 'contabilidade_financas',
+    value: 'finance_accounting',
     label: 'Departamento de Contabilidade e Finanças'
   },
   {
-    value: 'tecnologia_inovacao_tecnica',
+    value: 'technology_innovation_technical',
     label: 'Departamento de Tecnologia e Inovação (Técnico)'
   }
 ]
@@ -226,9 +226,9 @@ const sidebarPermissions: OptionType[] = [
 ]
 
 export const adminRolePermissionsMap: Record<string, OptionType[]> = {
-  direcao_geral: [...sidebarPermissions], // Acesso total
+  general_management: [...sidebarPermissions], // Acesso total
 
-  operacoes_qualidade: [
+  operations_quality: [
     { value: 'view_dashboard', label: 'Ver Dashboard' },
     { value: 'manage_drivers', label: 'Gerenciar Motoristas' },
     { value: 'manage_applications', label: 'Gerenciar Candidaturas' },
@@ -238,7 +238,7 @@ export const adminRolePermissionsMap: Record<string, OptionType[]> = {
     { value: 'view_metrics', label: 'Ver Métricas' }
   ],
 
-  administracao_financas: [
+  finance_administration: [
     { value: 'view_dashboard', label: 'Ver Dashboard' },
     { value: 'manage_wallet', label: 'Carteira & Transações' },
     { value: 'manage_topup_requests', label: 'Solicitação de Recarga' },
@@ -247,7 +247,7 @@ export const adminRolePermissionsMap: Record<string, OptionType[]> = {
     { value: 'manage_settings', label: 'Configurações do Sistema' }
   ],
 
-  tecnologia_inovacao: [
+  technology_innovation: [
     { value: 'view_dashboard', label: 'Ver Dashboard' },
     { value: 'manage_admins', label: 'Gerenciar Admins & Operadores' },
     { value: 'manage_notifications', label: 'Gerenciar Notificações' },
@@ -255,7 +255,7 @@ export const adminRolePermissionsMap: Record<string, OptionType[]> = {
     { value: 'manage_settings', label: 'Configurações do Sistema' }
   ],
 
-  seguranca_qualidade_operacional: [
+  operational_safety_quality: [
     { value: 'view_dashboard', label: 'Ver Dashboard' },
     { value: 'manage_drivers', label: 'Gerenciar Motoristas' },
     { value: 'manage_applications', label: 'Gerenciar Candidaturas' },
@@ -263,26 +263,26 @@ export const adminRolePermissionsMap: Record<string, OptionType[]> = {
     { value: 'view_realtime_map', label: 'Monitoramento em Tempo Real' }
   ],
 
-  negocios_imagem_institucional: [
+  business_institutional_image: [
     { value: 'view_dashboard', label: 'Ver Dashboard' },
     { value: 'manage_notifications', label: 'Gerenciar Notificações' },
     { value: 'view_metrics', label: 'Ver Métricas' },
     { value: 'manage_settings', label: 'Configurações do Sistema' }
   ],
 
-  capital_humano: [
+  human_capital: [
     { value: 'view_dashboard', label: 'Ver Dashboard' },
     { value: 'manage_admins', label: 'Gerenciar Admins & Operadores' }
   ],
 
-  contabilidade_financas: [
+  finance_accounting: [
     { value: 'view_dashboard', label: 'Ver Dashboard' },
     { value: 'manage_wallet', label: 'Carteira & Transações' },
     { value: 'manage_topup_requests', label: 'Solicitação de Recarga' },
     { value: 'view_metrics', label: 'Ver Métricas' }
   ],
 
-  tecnologia_inovacao_tecnica: [
+  technology_innovation_technical: [
     { value: 'view_dashboard', label: 'Ver Dashboard' },
     { value: 'manage_notifications', label: 'Gerenciar Notificações' },
     { value: 'manage_settings', label: 'Configurações do Sistema' }
