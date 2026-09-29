@@ -28,6 +28,8 @@ import { useVehiclesViewModel } from '@/viewModels/VehicleViewModel'
 import { useDocumentsViewModel } from '@/viewModels/DocumentViewModel'
 import type { WalletInterface } from '@/interfaces/IWallet'
 import type { VehicleInterface } from '@/interfaces/IVehicle'
+import { RIDE_TYPES, type RideType } from '@rafaelpilartes/kandengue-shared/enums'
+import { RIDE_TYPE_LABELS } from '@rafaelpilartes/kandengue-shared/constants'
 import type { DocumentInterface } from '@/interfaces/IDocument'
 import type { DriverInterface } from '@/interfaces/IDriver'
 import { useRidesViewModel } from '@/viewModels/RideViewModel'
@@ -95,6 +97,7 @@ export function DriverViewPage() {
   >(null)
 
   const [isUpdatingStatus, setUpdatingStatus] = useState<boolean>(false)
+  const [isUpdatingServices, setUpdatingServices] = useState<boolean>(false)
 
   const [docDriverLicense, setDocDriverLicense] =
     useState<DocumentInterface | null>(null)
@@ -113,6 +116,34 @@ export function DriverViewPage() {
   }
 
   // Handler
+
+  // Os serviços que o motorista está aprovado a fazer. É o que o dispatch
+  // filtra — nunca o veículo — e só o admin os escreve (as regras negam-no
+  // ao motorista). É aqui que o Moto Táxi será aprovado.
+  const handleToggleService = async (service: RideType) => {
+    if (!rowDataDriver) return
+    const current = rowDataDriver.services ?? []
+    const services = current.includes(service)
+      ? current.filter(s => s !== service)
+      : [...current, service]
+    try {
+      setUpdatingServices(true)
+      await updateDriver.mutateAsync({
+        id: rowDataDriver.id as string,
+        driver: { services }
+      })
+      setRowDataDriver({ ...rowDataDriver, services })
+      showToast(
+        'success',
+        `Serviços aprovados: ${services.map(s => RIDE_TYPE_LABELS[s]).join(', ') || 'nenhum'}`
+      )
+    } catch (error) {
+      console.error(error)
+      showToast('error', 'Erro ao actualizar os serviços do motorista')
+    } finally {
+      setUpdatingServices(false)
+    }
+  }
   const handleDefaultVehicle = async (vehicle: VehicleInterface) => {
     if (!rowDataDriver) {
       return
@@ -588,6 +619,37 @@ export function DriverViewPage() {
           onChange={handleStatusChange}
           isLoading={isUpdatingStatus}
         />
+      </div>
+
+      {/* Serviços aprovados — só o admin escreve; o dispatch filtra por aqui */}
+      <div className="w-full flex flex-col gap-2 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg p-4">
+        <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">
+          Serviços aprovados
+        </span>
+        <div className="flex flex-wrap gap-2">
+          {RIDE_TYPES.map(service => {
+            const approved = (rowDataDriver?.services ?? []).includes(service)
+            return (
+              <button
+                key={service}
+                type="button"
+                disabled={isUpdatingServices}
+                onClick={() => handleToggleService(service)}
+                className={`px-3 py-1.5 rounded-xl text-sm border transition-colors disabled:opacity-50 ${
+                  approved
+                    ? 'bg-green-50 border-green-200 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                    : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300'
+                }`}
+              >
+                {RIDE_TYPE_LABELS[service]}
+              </button>
+            )
+          })}
+        </div>
+        <p className="text-xs text-gray-500 dark:text-gray-400">
+          O motorista só recebe corridas dos serviços aprovados. A viatura
+          validada (separador Veículos, lida da colecção vehicles) é exigida à parte.
+        </p>
       </div>
 
       {/* Summary Cards */}

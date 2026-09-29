@@ -14,7 +14,9 @@ import {
   FileInput,
   Trophy,
   Tag,
-  Banknote
+  Banknote,
+  Calculator,
+  SlidersHorizontal
 } from 'lucide-react'
 import { routsNameMain } from './routsName'
 
@@ -134,6 +136,27 @@ const dashItem = [
         label: 'Saques de referência',
         icon: <Banknote size={16} />,
         to: routsNameMain.referral.withdrawals.index,
+        notification: 0
+      }
+    ],
+    notification: 0,
+    accordion: true
+  },
+  {
+    label: 'Preços',
+    icon: <Calculator size={16} />,
+    to: '/',
+    subMenus: [
+      {
+        label: 'Perfis de preço',
+        icon: <Calculator size={16} />,
+        to: routsNameMain.pricing.profiles,
+        notification: 0
+      },
+      {
+        label: 'Regras de acréscimo',
+        icon: <SlidersHorizontal size={16} />,
+        to: routsNameMain.pricing.rules,
         notification: 0
       }
     ],

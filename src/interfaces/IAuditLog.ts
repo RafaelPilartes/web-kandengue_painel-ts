@@ -24,6 +24,7 @@ export type AuditModule =
   | 'transactions'
   | 'promotions'
   | 'withdrawals'
+  | 'pricing'
   | 'system'
 
 export interface AuditLocation {

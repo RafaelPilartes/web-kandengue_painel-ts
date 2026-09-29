@@ -103,7 +103,7 @@ export const vehicles: VehicleInterface[] = [
   {
     id: 'v3',
     user_id: 'u5',
-    type: 'truck',
+    type: 'car',
     brand: 'Volvo',
     model: 'FH',
     color: 'Branco',
@@ -113,7 +113,7 @@ export const vehicles: VehicleInterface[] = [
   {
     id: 'v4',
     user_id: 'u6',
-    type: 'bicycle',
+    type: 'motorcycle',
     brand: 'Caloi',
     model: 'Elite',
     color: 'Azul',
@@ -326,7 +326,8 @@ export const rides: RideInterface[] = [
     },
     distance: 15,
     duration: 30,
-    type: 'car'
+    type: 'car',
+    vehicle_type: 'car'
   },
   {
     id: 'r2',
@@ -364,7 +365,8 @@ export const rides: RideInterface[] = [
     },
     distance: 10,
     duration: 20,
-    type: 'motorcycle'
+    type: 'moto_taxi',
+    vehicle_type: 'motorcycle'
   },
   {
     id: 'r3',
@@ -403,6 +405,7 @@ export const rides: RideInterface[] = [
     distance: 8,
     duration: 15,
     type: 'car',
+    vehicle_type: 'car',
     created_at: new Date()
   },
   {
@@ -441,7 +444,8 @@ export const rides: RideInterface[] = [
     },
     distance: 12,
     duration: 25,
-    type: 'motorcycle',
+    type: 'moto_taxi',
+    vehicle_type: 'motorcycle',
     created_at: new Date()
   }
 ]

@@ -1,4 +1,6 @@
 import type { RideInterface } from '@/interfaces/IRide'
+import { RIDE_TYPES, type RideType } from '@rafaelpilartes/kandengue-shared/enums'
+import { RIDE_TYPE_LABELS } from '@rafaelpilartes/kandengue-shared/constants'
 import { Timestamp } from 'firebase/firestore'
 
 const months = [
@@ -81,26 +83,21 @@ export const rideCalculation = {
   },
 
   getRidesByType: (rides: RideInterface[]) => {
-    const types: Record<string, number> = {
-      deliveries: 0,
-      car: 0,
-      motorcycle: 0
-    }
+    // Um contador por serviço (RideType), na ordem do enum, com as etiquetas da lib.
+    const counts = Object.fromEntries(RIDE_TYPES.map(t => [t, 0])) as Record<RideType, number>
 
     rides.forEach(ride => {
-      if (ride.status === 'completed') {
-        if (ride.type === 'car') types.car += 1
-        else if (ride.type === 'motorcycle') types.motorcycle += 1
-        else types.deliveries += 1
+      if (ride.status === 'completed' && ride.type in counts) {
+        counts[ride.type] += 1
       }
     })
 
     return {
-      labels: ['Entregas', 'Corridas de carro', 'Corridas de moto'],
+      labels: RIDE_TYPES.map(t => RIDE_TYPE_LABELS[t]),
       datasets: [
         {
           label: 'Tipos de Corridas',
-          data: [types.deliveries, types.car, types.motorcycle],
+          data: RIDE_TYPES.map(t => counts[t]),
           backgroundColor: ['#2563EB', '#F59E0B', '#EF4444']
         }
       ]

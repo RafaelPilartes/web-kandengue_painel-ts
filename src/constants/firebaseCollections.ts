@@ -168,5 +168,28 @@ export const firebaseCollections = {
     root: 'app_config',
     single: (id: string) => `app_config/${id}`,
     referralSettings: 'app_config/referral_settings'
+  },
+
+  // ============================================
+  // MOTOR DE PREÇOS — escritos pela API (Admin SDK), aqui só leitura.
+  pricingProfiles: {
+    root: 'pricingProfiles',
+    single: (profileId: string) => `pricingProfiles/${profileId}`
+  },
+  pricingRules: {
+    root: 'pricingRules',
+    single: (ruleId: string) => `pricingRules/${ruleId}`
+  },
+  weatherStates: {
+    root: 'weatherStates',
+    single: (region: string) => `weatherStates/${region}`
+  },
+  fareQuotes: {
+    root: 'fareQuotes',
+    single: (quoteId: string) => `fareQuotes/${quoteId}`
+  },
+  pricingAuditLogs: {
+    root: 'pricingAuditLogs',
+    single: (logId: string) => `pricingAuditLogs/${logId}`
   }
 }

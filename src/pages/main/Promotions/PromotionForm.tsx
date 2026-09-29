@@ -5,14 +5,15 @@ import { Spinner } from 'phosphor-react'
 import { Breadcrumbs } from '@/components/Breadcrumbs'
 import { routsNameMain } from '@/constants/routsName'
 import { PromotionEntity } from '@/core/entities/Promotion'
-import type { PromotionType, RideKind, RidePaymentMethod } from '@rafaelpilartes/kandengue-shared/types'
+import type { PromotionType, RidePaymentMethod } from '@rafaelpilartes/kandengue-shared/types'
+import { RIDE_TYPES, type RideType } from '@rafaelpilartes/kandengue-shared/enums'
+import { RIDE_TYPE_LABELS } from '@rafaelpilartes/kandengue-shared/constants'
 import {
   usePromotionDetailViewModel,
   usePromotionsViewModel
 } from '@/viewModels/PromotionViewModel'
 import { showToast } from '@/utils/toasts'
 
-const RIDE_TYPES: RideKind[] = ['car', 'motorcycle', 'bicycle', 'delivery']
 const PAYMENT_METHODS: RidePaymentMethod[] = ['cash', 'card', 'wallet']
 
 interface FormState {
@@ -30,7 +31,7 @@ interface FormState {
   new_users_only: boolean
   inactive_days: string
   has_specific_users: boolean
-  ride_types: RideKind[]
+  ride_types: RideType[]
   payment_methods: RidePaymentMethod[]
   origin_cities: string
   destination_cities: string
@@ -563,7 +564,7 @@ export function PromotionFormPage() {
 
               <div className="flex flex-col gap-3">
                 <label className="text-sm font-semibold text-gray-900 dark:text-gray-200">
-                  Tipos de veículo permitidos
+                  Tipos de corrida permitidos
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {RIDE_TYPES.map(t => {
@@ -586,7 +587,7 @@ export function PromotionFormPage() {
                             : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-900 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:hover:text-gray-200'
                         }`}
                       >
-                        {t.charAt(0).toUpperCase() + t.slice(1)}
+                        {RIDE_TYPE_LABELS[t]}
                       </button>
                     )
                   })}

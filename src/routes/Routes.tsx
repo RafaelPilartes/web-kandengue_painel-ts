@@ -36,6 +36,10 @@ import { PromotionFormPage } from '@/pages/main/Promotions/PromotionForm'
 import { PromotionDetailsPage } from '@/pages/main/Promotions/PromotionDetails'
 import { WithdrawalsPage } from '@/pages/main/Referral/Withdrawals'
 import { WithdrawalDetailsPage } from '@/pages/main/Referral/WithdrawalDetails'
+import { PricingProfilesPage } from '@/pages/main/Pricing'
+import { PricingProfileFormPage } from '@/pages/main/Pricing/ProfileForm'
+import { PricingRulesPage } from '@/pages/main/Pricing/RulesPage'
+import { PricingRuleFormPage } from '@/pages/main/Pricing/RuleForm'
 
 // Page
 
@@ -239,6 +243,25 @@ export function Router() {
               </React.Suspense>
             }
           />
+          {/* Preços: perfis por corrida × veículo e regras de acréscimo */}
+          {[
+            { path: routsNameMain.pricing.profiles, element: <PricingProfilesPage /> },
+            { path: routsNameMain.pricing.profileCreate, element: <PricingProfileFormPage /> },
+            { path: routsNameMain.pricing.profileEdit, element: <PricingProfileFormPage /> },
+            { path: routsNameMain.pricing.rules, element: <PricingRulesPage /> },
+            { path: routsNameMain.pricing.ruleCreate, element: <PricingRuleFormPage /> },
+            { path: routsNameMain.pricing.ruleEdit, element: <PricingRuleFormPage /> }
+          ].map(({ path, element }) => (
+            <Route
+              key={path}
+              path={path}
+              element={
+                <React.Suspense fallback={<Loading />}>
+                  <Private>{element}</Private>
+                </React.Suspense>
+              }
+            />
+          ))}
           {/* Settings */}
           <Route
             path={routsNameMain.settings.index}

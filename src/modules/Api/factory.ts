@@ -40,6 +40,8 @@ import type { IPushNotificationRepository } from '@/core/interfaces/IPushNotific
 import { PushNotificationDAO } from './rest/pushNotification.dao'
 import type { IAdminMoneyRepository } from '@/core/interfaces/IAdminMoneyRepository'
 import { AdminMoneyDAO } from './rest/adminMoney.dao'
+import type { IPricingRepository } from '@/core/interfaces/IPricingRepository'
+import { PricingDAO } from './rest/pricing.dao'
 
 /**
  * Getters lazy e memoizados. Vive fora de `index.ts` de propósito: aquele
@@ -72,6 +74,7 @@ class ApiFactory {
   private _withdrawals?: IWithdrawalRepository
   private _pushNotifications?: IPushNotificationRepository
   private _adminMoney?: IAdminMoneyRepository
+  private _pricing?: IPricingRepository
 
   get vehicles(): IVehicleRepository {
     return (this._vehicles ??= new FirebaseVehicleDAO())
@@ -155,6 +158,10 @@ class ApiFactory {
 
   get adminMoney(): IAdminMoneyRepository {
     return (this._adminMoney ??= new AdminMoneyDAO())
+  }
+
+  get pricing(): IPricingRepository {
+    return (this._pricing ??= new PricingDAO())
   }
 }
 

@@ -1,4 +1,6 @@
 import type { OptionType } from '../types/option'
+import { RIDE_TYPES, VEHICLE_TYPES } from '@rafaelpilartes/kandengue-shared/enums'
+import { RIDE_TYPE_LABELS, VEHICLE_TYPE_LABELS } from '@rafaelpilartes/kandengue-shared/constants'
 
 export const genderOptions: OptionType[] = [
   { value: 'male', label: 'Masculino' },
@@ -81,13 +83,11 @@ export const documentStatusOptions: OptionType[] = [
   { value: 'rejected', label: 'Rejeitado' }
 ]
 
-export const vehicleTypeOptions: OptionType[] = [
-  { value: 'car', label: 'Carro' },
-  { value: 'motorcycle', label: 'Motorizada' },
-  { value: 'bicycle', label: 'Bicicleta' },
-  { value: 'truck', label: 'Caminhão' },
-  { value: 'scooter', label: 'Scooter' }
-]
+// Tipo de veículo e tipo de corrida vêm da lib: valores e etiquetas.
+export const vehicleTypeOptions: OptionType[] = VEHICLE_TYPES.map(value => ({
+  value,
+  label: VEHICLE_TYPE_LABELS[value]
+}))
 
 export const vehicleStatusOptions: OptionType[] = [
   { value: 'under_analysis', label: 'Em análise' },
@@ -164,12 +164,10 @@ export const rideStatusOptions: OptionType[] = [
   { value: 'completed', label: 'Completo' },
   { value: 'canceled', label: 'Cancelado' }
 ]
-export const rideTypeOptions: OptionType[] = [
-  { value: 'car', label: 'Carro' },
-  { value: 'motorcycle', label: 'Moto' },
-  { value: 'bicycle', label: 'Bicicleta' },
-  { value: 'delivery', label: 'Entrega' }
-]
+export const rideTypeOptions: OptionType[] = RIDE_TYPES.map(value => ({
+  value,
+  label: RIDE_TYPE_LABELS[value]
+}))
 
 // ==============================================
 export const adminRoleOptions: OptionType[] = [

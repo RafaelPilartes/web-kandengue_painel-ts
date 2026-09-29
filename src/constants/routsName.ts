@@ -67,6 +67,19 @@ export const routsNameMain = {
   },
 
   // ============================================
+  // PREÇOS — perfis por corrida × veículo e regras de acréscimo
+  pricing: {
+    profiles: '/pricing/profiles',
+    profileCreate: '/pricing/profiles/new',
+    profileEdit: '/pricing/profiles/edit/:profileId',
+    profileEditStr: '/pricing/profiles/edit/',
+    rules: '/pricing/rules',
+    ruleCreate: '/pricing/rules/new',
+    ruleEdit: '/pricing/rules/edit/:ruleId',
+    ruleEditStr: '/pricing/rules/edit/'
+  },
+
+  // ============================================
   // CONFIGURAÇÕES
   settings: {
     index: '/settings/general',
