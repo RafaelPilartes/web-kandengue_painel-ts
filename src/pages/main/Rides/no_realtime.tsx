@@ -462,7 +462,7 @@ export function RealtimePage() {
 
                     <div className="text-left">
                       <div className="text-sm font-medium">
-                        AOA {formatMoney(selectedRide.fare.total || 0)}
+                        AOA {formatMoney(selectedRide.fare?.total || 0)}
                       </div>
                       <div className="text-xs text-gray-500 dark:text-gray-400">
                         Total

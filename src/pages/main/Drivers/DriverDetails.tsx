@@ -785,7 +785,7 @@ export function DriverViewPage() {
                               {ride.dropoff.name ?? '-'}
                             </td>
                             <td className="px-3 py-2">
-                              {formatMoney(ride.fare.total)}
+                              {formatMoney(ride.fare?.total ?? 0)}
                             </td>
                             <td className="px-3 py-2">
                               {getRideStatusLabel(ride.status)}

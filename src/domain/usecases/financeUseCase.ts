@@ -109,7 +109,8 @@ export class FinanceUseCase extends BaseUseCase {
         )
           continue
 
-        const fare = ride.fare || {}
+        // `fare` só existe depois de o servidor fechar a tarifa (v2.7.4).
+        const fare: Partial<NonNullable<typeof ride.fare>> = ride.fare ?? {}
         const gross = Number(fare.total || 0)
         const company = Number(fare.payouts?.company_earnings || 0)
         const driverEarn = Number(fare.payouts?.driver_earnings || 0)

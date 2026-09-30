@@ -94,7 +94,7 @@ const TableRow: React.FC<TableRowProps> = ({
       </td>
 
       <td className="px-3 py-3 min-w-[6rem]">
-        <p>{formatMoney(rowItem.fare.total)} AOA</p>
+        <p>{formatMoney(rowItem.fare?.total ?? 0)} AOA</p>
       </td>
 
       <td className="px-3 py-3 min-w-[6rem]">

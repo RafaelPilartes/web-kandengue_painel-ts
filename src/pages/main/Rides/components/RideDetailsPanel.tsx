@@ -50,7 +50,7 @@ export function RideDetailsPanel({
               <StatusBadge status={ride.status} />
               <div className="text-right">
                 <div className="text-sm font-bold text-gray-900 dark:text-white">
-                  AOA {formatMoney(ride.fare.total || 0)}
+                  AOA {formatMoney(ride.fare?.total || 0)}
                 </div>
               </div>
             </div>
@@ -88,7 +88,7 @@ export function RideDetailsPanel({
             <StatusBadge status={ride.status} />
             <div className="text-right">
               <div className="text-lg font-bold text-gray-900 dark:text-white">
-                AOA {formatMoney(ride.fare.total || 0)}
+                AOA {formatMoney(ride.fare?.total || 0)}
               </div>
               <div className="text-xs text-gray-500 uppercase tracking-wide">
                 Valor Total
