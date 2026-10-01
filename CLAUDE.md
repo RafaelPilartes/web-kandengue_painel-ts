@@ -32,6 +32,15 @@ npm run build     # tsc -b && vite build
 npm run preview   # preview da build
 ```
 
+## Versão
+
+Semver no `package.json`: **patch** corrige, **minor** acrescenta ecrãs ou
+campos sem partir nada, **major** muda o que o admin espera (fluxos, dados).
+Sobe no commit que fecha a fase, com tag `vX.Y.Z`. A versão vai no
+`<meta name="app-version">` do `index.html` gerado (plugin em
+`vite.config.ts`): depois de um upload, `curl -s <url> | grep app-version`
+diz o que está em produção. Regra comum: `CLAUDE.md` da raiz do ecossistema.
+
 ## Deploy (cPanel, manual)
 
 Alojamento cPanel (Apache), no mesmo alojamento do site; sem deploy
