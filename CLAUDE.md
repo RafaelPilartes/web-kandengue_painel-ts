@@ -32,6 +32,17 @@ npm run build     # tsc -b && vite build
 npm run preview   # preview da build
 ```
 
+## Deploy (cPanel, manual)
+
+Alojamento cPanel (Apache), no mesmo alojamento do site; sem deploy
+automático. `npm run build` gera `dist/`; sobe o **conteúdo** de `dist/`
+para o `public_html` do domínio do painel, incluindo o `.htaccess` (oculto),
+que faz o redirect das rotas da SPA para o `index.html`. O
+`.env.production` (versionado, sem segredos) fixa `VITE_API_URL` no Railway
+— o `.env` local aponta ao Fastify de desenvolvimento e, sem ele, o bundle
+levava `localhost:3000`. As variáveis `VITE_FIREBASE_*` continuam a vir do
+`.env` local.
+
 ---
 
 ## Variáveis de Ambiente
