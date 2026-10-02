@@ -24,6 +24,10 @@ export interface VehicleDoc {
   color?: string
   plate?: string
   status?: VehicleStatusEnumType
+  rejection_reason?: string
+  reviewed_by?: string | null
+  reviewed_at?: Timestamp | Date | null
+  isDefault?: boolean
   image?: string
   created_at?: Timestamp | null
   updated_at?: Timestamp | null

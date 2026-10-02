@@ -23,6 +23,25 @@ describe('AdminMoneyDAO', () => {
     expect(result).toEqual({ credited: true, balance: 6000 })
   })
 
+  it('rejectTopup envia o motivo no body', async () => {
+    post.mockResolvedValue({ changed: true })
+
+    const result = await dao.rejectTopup('top-1', 'Comprovativo ilegível')
+
+    expect(post).toHaveBeenCalledWith('/api/v1/admin/topups/top-1/reject', {
+      reason: 'Comprovativo ilegível'
+    })
+    expect(result).toEqual({ changed: true })
+  })
+
+  it('rejectTopup não envia adminId — a API tira-o do token', async () => {
+    post.mockResolvedValue({ changed: true })
+
+    await dao.rejectTopup('top-1', 'motivo')
+
+    expect(JSON.stringify(post.mock.calls[0])).not.toContain('adminId')
+  })
+
   it('approveWithdrawal chama a rota certa', async () => {
     post.mockResolvedValue({ changed: true })
 

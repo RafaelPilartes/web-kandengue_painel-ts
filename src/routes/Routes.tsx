@@ -40,6 +40,8 @@ import { PricingProfilesPage } from '@/pages/main/Pricing'
 import { PricingProfileFormPage } from '@/pages/main/Pricing/ProfileForm'
 import { PricingRulesPage } from '@/pages/main/Pricing/RulesPage'
 import { PricingRuleFormPage } from '@/pages/main/Pricing/RuleForm'
+import { VehiclesPage } from '@/pages/main/Vehicles'
+import { FareReviewPage } from '@/pages/main/Rides/FareReview'
 
 // Page
 
@@ -99,6 +101,28 @@ export function Router() {
               <React.Suspense fallback={<Loading />}>
                 <Private>
                   <DriverPage />
+                </Private>
+              </React.Suspense>
+            }
+          />
+          {/* Revisão de tarifas */}
+          <Route
+            path={routsNameMain.rides.fareReview}
+            element={
+              <React.Suspense fallback={<Loading />}>
+                <Private>
+                  <FareReviewPage />
+                </Private>
+              </React.Suspense>
+            }
+          />
+          {/* Viaturas — fila de validação */}
+          <Route
+            path={routsNameMain.vehicles.index}
+            element={
+              <React.Suspense fallback={<Loading />}>
+                <Private>
+                  <VehiclesPage />
                 </Private>
               </React.Suspense>
             }

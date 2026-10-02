@@ -344,7 +344,22 @@ export function useRidesViewModel(
     }
   }, [])
 
+  /**
+   * Marca a tarifa como revista, pela API. **Não altera a tarifa.** Sem
+   * `withAudit`: a API escreve em `auditLogs` dentro da própria transacção.
+   */
+  const markFareReviewed = useMutation({
+    mutationFn: ({ id, note }: { id: string; note?: string }) =>
+      rideUseCase.executeMarkFareReviewed(id, note),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [firebaseCollections.rides.root]
+      })
+    }
+  })
+
   return {
+    markFareReviewed,
     rides: ridesResponse?.data ?? [],
     pagination: ridesResponse?.pagination,
     isLoadingRides: loading,

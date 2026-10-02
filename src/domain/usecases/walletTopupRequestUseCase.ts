@@ -105,6 +105,22 @@ export class WalletTopupRequestUseCase extends BaseUseCase {
     // do servidor, e a página mostra-a.
     return this.adminMoneyRepository.approveTopup(id)
   }
+
+  /**
+   * Rejeita no servidor, com o motivo e o admin a ficarem em
+   * `walletAuditLogs`. O painel escrevia isto directamente em
+   * `topupRequests`: o pedido fechava sem registo no servidor, e nada
+   * impedia rejeitar um pedido já aprovado e creditado.
+   *
+   * Fora do `run()` pela mesma razão que o `executeApproveTopup`: a
+   * mensagem da API é a que o admin precisa de ler.
+   */
+  executeRejectTopup(
+    id: string,
+    reason: string
+  ): Promise<{ changed: boolean }> {
+    return this.adminMoneyRepository.rejectTopup(id, reason)
+  }
 }
 
 export const walletTopupRequestUseCase = new WalletTopupRequestUseCase()

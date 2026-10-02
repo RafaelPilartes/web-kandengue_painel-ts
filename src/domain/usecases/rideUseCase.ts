@@ -92,6 +92,20 @@ export class RideUseCase extends BaseUseCase {
     })
   }
 
+  /**
+   * Marca a tarifa como revista, pela API. **Não altera a tarifa.**
+   *
+   * Fora do `run()`, como as outras acções de admin: a mensagem da API é a
+   * que diz ao admin porque é que não passou (por exemplo, uma corrida que
+   * não está sinalizada para revisão).
+   */
+  executeMarkFareReviewed(
+    id: string,
+    note?: string
+  ): Promise<{ changed: boolean }> {
+    return ApiRepository.adminRide.markFareReviewed(id, note)
+  }
+
   executeDelete(id: string): Promise<void> {
     return this.run('delete', () => this.repository.delete(id))
   }
