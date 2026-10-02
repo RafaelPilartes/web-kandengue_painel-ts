@@ -5,11 +5,15 @@ import type { VehicleStatusEnumType, VehicleType } from '@/types/enum'
 import { toDate } from '@/helpers/firestore'
 
 export type VehicleEntityParams = Partial<
-  Omit<VehicleInterface, 'id' | 'created_at' | 'updated_at'>
+  Omit<VehicleInterface, 'id' | 'created_at' | 'updated_at' | 'reviewed_at'>
 > & {
   id: string
+  // As três datas aceitam `null` porque é o que o `toDate` do converter
+  // devolve quando o campo não existe no documento. A `VehicleInterface`
+  // declara-as como `Date`, e por isso saem do `Omit` e entram aqui.
   created_at?: Date | null
   updated_at?: Date | null
+  reviewed_at?: Date | null
 }
 
 export class VehicleEntity implements VehicleInterface {
@@ -21,6 +25,19 @@ export class VehicleEntity implements VehicleInterface {
   color: string
   plate: string
   status: VehicleStatusEnumType
+  /**
+   * O que o admin escreveu ao recusar. Só existe em `rejected`: validar
+   * apaga-o no servidor, para não ficar um motivo velho colado a uma
+   * viatura aprovada.
+   *
+   * Declarado aqui e não só herdado: `implements` com campos opcionais não
+   * obriga a classe a nada, e sem a declaração um `Partial<VehicleEntity>`
+   * não conhecia o campo. Entra na `VehicleInterface` da lib na 2.8.0.
+   */
+  rejection_reason?: string
+  reviewed_by?: string | null
+  reviewed_at?: Date
+  isDefault?: boolean
   image?: string
   created_at: Date
   updated_at?: Date
@@ -34,6 +51,10 @@ export class VehicleEntity implements VehicleInterface {
     this.color = params.color ?? ''
     this.plate = params.plate ?? ''
     this.status = params.status ?? 'under_analysis'
+    this.rejection_reason = params.rejection_reason
+    this.reviewed_by = params.reviewed_by
+    this.reviewed_at = params.reviewed_at ?? undefined
+    this.isDefault = params.isDefault
     this.image = params.image
     this.created_at = params.created_at ?? new Date()
     // Fronteira de ausência: o Firestore guarda `null`, a aplicação usa
@@ -53,7 +74,8 @@ export const vehicleConverter: FirestoreDataConverter<VehicleEntity> = {
       ...d,
       id: snapshot.id,
       created_at: toDate(d.created_at),
-      updated_at: toDate(d.updated_at)
+      updated_at: toDate(d.updated_at),
+      reviewed_at: toDate(d.reviewed_at)
     })
   }
 }

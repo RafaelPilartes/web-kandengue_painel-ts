@@ -17,16 +17,19 @@ import TableRow from '../../../components/table/TableRowWalletTopupRequest'
 import { useWalletTopupRequestsViewModel } from '@/viewModels/WalletTopupRequestViewModel'
 import type { WalletTopupStatus } from '@/types/enum'
 import type { WalletTopupRequestInterface } from '@/interfaces/IWalletTopupRequest'
-import { useAdminStore } from '@/stores/userStore'
 import { SelectCustom } from '@/components/selects/SelectCustom'
 import { rowPerPageOptions } from '@/data/selectOption'
-import { mapFirebaseError } from '@/helpers/mapFirebaseError'
 import { ModalViewTopupRequest } from './components/ModalViewTopupRequest'
+import { useDriversByIds } from '@/hooks/useDriversByIds'
 
 export function WalletTopupRequestsPage() {
   // Filtros
   const [termForSearch, setTermForSearch] = useState<string>('')
-  const [filters, setFilters] = useState<Partial<WalletTopupRequestInterface>>()
+  // A fila é a dos pedidos por decidir. Ver os já decididos é um clique no
+  // filtro; abrir o ecrã na lista toda escondia o trabalho que falta fazer.
+  const [filters, setFilters] = useState<Partial<WalletTopupRequestInterface>>({
+    status: 'pending'
+  })
 
   // Paginação
   const [currentPage, setCurrentPage] = useState(0)
@@ -38,14 +41,12 @@ export function WalletTopupRequestsPage() {
   const [modalViewTopupRequestIsOpen, setModalViewTopupRequestIsOpen] =
     useState<boolean>(false)
 
-  const { currentAdminData } = useAdminStore()
-
   const {
     walletTopupRequests,
     pagination,
     isLoadingWalletTopupRequests,
-    updateWalletTopupRequest,
     approveTopup,
+    rejectTopup,
     dataToExport
   } = useWalletTopupRequestsViewModel(
     docsPerPage,
@@ -54,8 +55,14 @@ export function WalletTopupRequestsPage() {
     filters
   )
 
+  // Nome e telefone do motorista de cada linha. A lista só guarda o
+  // `user_id`, e era por isso que a fila mostrava o id da carteira.
+  const { driversById } = useDriversByIds(
+    walletTopupRequests?.map(item => item.user_id) ?? []
+  )
+
   // Consts
-  const namePageUppercase = 'Solicitação de Recarga'
+  const namePageUppercase = 'Carregamentos'
   const namePageLowercase = 'solicitações'
 
   const itemsBreadcrumbs = [
@@ -111,8 +118,8 @@ export function WalletTopupRequestsPage() {
         buttons: ['Cancelar', 'Confirmar'],
         icon: 'warning',
         dangerMode: true
-      }).then(async willApprove => {
-        if (willApprove) {
+      }).then(async willReject => {
+        if (willReject) {
           // Capturar o valor do textarea manualmente
           const textarea = document.getElementById(
             'rejection-reason'
@@ -125,26 +132,28 @@ export function WalletTopupRequestsPage() {
             return
           }
 
-          // alert(`Motivo: ${rejectionReason}`)
-
           try {
-            await updateWalletTopupRequest.mutateAsync({
+            // Pela API: o motivo, o admin e o momento ficam em
+            // `walletAuditLogs` dentro da mesma transacção. O painel não
+            // escreve `topupRequests`. `adminId` não vai no corpo — a API
+            // tira-o do token verificado.
+            const result = await rejectTopup.mutateAsync({
               id: docId,
-              walletTopupRequest: {
-                status: 'rejected',
-                rejected_reason: rejectionReason,
-                reviewed_by: currentAdminData?.id ?? null
-              }
+              reason: rejectionReason
             })
 
-            swal('Rejeitado com sucesso', {
-              icon: 'success'
-            })
+            if (result.changed) {
+              swal('Rejeitado com sucesso', { icon: 'success' })
+            } else {
+              // A API é idempotente: o primeiro motivo é o que fica.
+              swal('Este carregamento já tinha sido rejeitado', { icon: 'info' })
+            }
           } catch (error) {
-            const message = mapFirebaseError(error)
-
             swal('Erro ao rejeitar', {
-              text: `Houve algum erro durante a rejeição, ${String(message)}`,
+              text:
+                error instanceof Error
+                  ? error.message
+                  : 'Houve algum erro durante a rejeição...',
               icon: 'error'
             })
           }
@@ -162,12 +171,13 @@ export function WalletTopupRequestsPage() {
         <TableRow
           key={item.id}
           rowItem={item}
+          driver={driversById.get(item.user_id)}
           openPageViewRow={openModalViewTopupRequestRow}
           handleApprove={handleAction}
           handleReject={handleAction}
         />
       )),
-    [walletTopupRequests]
+    [walletTopupRequests, driversById]
   )
 
   // Change rows per page
@@ -199,18 +209,22 @@ export function WalletTopupRequestsPage() {
         <SelectSearchableCustom
           name="status"
           label="Status"
+          defaultValue="pending"
           options={[
             { value: '', label: 'Todos' },
             { value: 'pending', label: 'Pendente' },
             { value: 'approved', label: 'Aprovado' },
             { value: 'rejected', label: 'Rejeitado' }
           ]}
-          onOptionChange={e =>
+          onOptionChange={e => {
+            // `''` é "Todos": tem de limpar o filtro, não filtrar por
+            // `status: ''`, que não devolve documento nenhum.
+            setCurrentPage(0)
             setFilters(prev => ({
               ...prev,
-              status: e as WalletTopupRequestInterface['status']
+              status: (e || undefined) as WalletTopupRequestInterface['status']
             }))
-          }
+          }}
         />
       </div>
 
@@ -246,11 +260,12 @@ export function WalletTopupRequestsPage() {
           <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
             <thead className="text-sm font-thin bg-gray-300/40 dark:bg-gray-500/40">
               <tr>
-                <th className="px-3 py-3">ID</th>
-                <th className="px-3 py-3">Carteira</th>
+                <th className="px-3 py-3 min-w-[12rem]">Motorista</th>
                 <th className="px-3 py-3">Valor</th>
+                <th className="px-3 py-3">Comprovativo</th>
+                <th className="px-3 py-3">Data</th>
                 <th className="px-3 py-3">Status</th>
-                <th className="px-3 py-3">Metodo</th>
+                <th className="px-3 py-3">Método</th>
                 <th className="px-3 py-3">Ações</th>
               </tr>
             </thead>

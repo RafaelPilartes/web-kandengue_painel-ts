@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import swal from 'sweetalert'
 import {
   useParams
   // useNavigate
@@ -38,6 +39,8 @@ import { formatDateTimeFromFirestore } from '@/utils/date'
 import { formatMoney } from '@/utils/number'
 import { Card } from '@/components/ui/card'
 import { useTransactionsViewModel } from '@/viewModels/TransactionViewModel'
+import { useWalletTopupRequestsViewModel } from '@/viewModels/WalletTopupRequestViewModel'
+import type { WalletTopupRequestInterface } from '@/interfaces/IWalletTopupRequest'
 import { showToast, showToastLoading, updateToast } from '@/utils/toasts'
 import type { TransactionInterface } from '@/interfaces/ITransaction'
 import {
@@ -46,7 +49,9 @@ import {
   getRideStatusLabel,
   getTransactionTypeLabel,
   getUserStatusLabel,
-  getVehicleStatusLabel
+  getVehicleStatusLabel,
+  getWalletTopupMethodTypeLabel,
+  getWalletTopupStatusLabel
 } from '@/utils/gettersLabels'
 import { ActionsMenu } from '@/components/ActionsMenu'
 import { IoColorPaletteSharp } from 'react-icons/io5'
@@ -67,9 +72,11 @@ export function DriverViewPage() {
   const { fetchOneWalletByField } = useWalletsViewModel()
   const { fetchAllTransactionsByField } = useTransactionsViewModel()
   const { fetchAllRidesByField, calculateDriverEarnings } = useRidesViewModel()
-  const { fetchAllVehiclesByField, updateVehicle } = useVehiclesViewModel()
+  const { fetchAllVehiclesByField, reviewVehicle } = useVehiclesViewModel()
   const { fetchAllDocumentsByField, filterDocsBy, updateDocument } =
     useDocumentsViewModel()
+  const { fetchAllWalletTopupRequestsByField } =
+    useWalletTopupRequestsViewModel()
 
   // Data
   const [rowDataDriver, setRowDataDriver] = useState<DriverInterface | null>(
@@ -89,6 +96,9 @@ export function DriverViewPage() {
   >(null)
   const [rowsDataDocuments, setRowsDataDocuments] = useState<
     DocumentInterface[] | null
+  >(null)
+  const [rowsDataTopups, setRowsDataTopups] = useState<
+    WalletTopupRequestInterface[] | null
   >(null)
 
   const [driverEarnings, setDriverEarnings] = useState<number>(0)
@@ -186,36 +196,83 @@ export function DriverViewPage() {
     }
   }
 
+  /**
+   * Validar ou recusar pela API, nunca pelo Firestore.
+   *
+   * `status == 'validated'` é um dos filtros do dispatch: é o que põe o
+   * motorista a receber corridas. O painel escrevia-o directamente e sem
+   * motivo; as regras passaram a negar `status` ao cliente, admin incluído,
+   * e quem decide é `POST /api/v1/admin/vehicles/:id/review`.
+   *
+   * A recusa pede o motivo aqui mesmo — é o que o motorista vai ler na app.
+   */
   const handleValidateVehicle = async (
     vehicle: VehicleInterface,
     type: 'validated' | 'rejected'
   ) => {
-    try {
-      const dataToUpdate: Partial<VehicleInterface> = {
-        status: type
-      }
+    let reason: string | undefined
 
-      const vehicleUpdated = await updateVehicle.mutateAsync({
-        id: vehicle.id as string,
-        vehicle: dataToUpdate
+    if (type === 'rejected') {
+      const willReject = await swal({
+        title: `Recusar a viatura ${vehicle.plate}?`,
+        text: 'O motivo fica visível ao motorista na app.',
+        content: {
+          element: 'textarea',
+          attributes: {
+            placeholder: 'Motivo da recusa — o que o motorista tem de corrigir',
+            rows: 4,
+            id: 'driver-vehicle-rejection-reason'
+          }
+        },
+        buttons: ['Cancelar', 'Recusar'],
+        icon: 'warning',
+        dangerMode: true
       })
 
+      if (!willReject) return
+
+      const textarea = document.getElementById(
+        'driver-vehicle-rejection-reason'
+      ) as HTMLTextAreaElement | null
+      reason = textarea?.value.trim()
+
+      if (!reason) {
+        showToast('error', 'É obrigatório indicar o motivo da recusa')
+        return
+      }
+    }
+
+    try {
+      const result = await reviewVehicle.mutateAsync({
+        id: vehicle.id as string,
+        decision: type,
+        reason
+      })
+
+      // O estado de cada viatura lê-se sempre de `vehicles` — não da cópia
+      // desnormalizada em `drivers.vehicle`, que pode estar atrasada.
       const resultVehicle = await fetchAllVehiclesByField('user_id', driverId)
 
       if (resultVehicle?.data) {
         setRowsDataVehicles(resultVehicle?.data)
       }
 
+      if (!result.changed) {
+        showToast('info', `Esta viatura já estava ${result.status === 'validated' ? 'validada' : 'recusada'}`)
+        return
+      }
+
       showToast(
         'success',
-        `Veiculo ${vehicleUpdated.brand}, foi ${
-          type === 'validated' ? 'aprovado' : 'rejeitado'
-        }`
+        `Viatura ${vehicle.plate} ${type === 'validated' ? 'validada' : 'recusada'}`
       )
     } catch (err) {
-      const message = mapFirebaseError(err)
-
-      showToast('error', message)
+      // A mensagem da API é a que explica porque é que não passou (por
+      // exemplo: retirar uma viatura já validada não se faz por aqui).
+      showToast(
+        'error',
+        err instanceof Error ? err.message : mapFirebaseError(err)
+      )
     }
   }
 
@@ -345,14 +402,23 @@ export function DriverViewPage() {
 
       try {
         // Executa ambas as requisições em paralelo
-        const [dataDriver, dataWallet, dataRides, dataVehicles, dataDocuments] =
-          await Promise.all([
-            fetchDriverById(driverId),
-            fetchOneWalletByField('user.id' as any, driverId),
-            fetchAllRidesByField('driver.id', driverId),
-            fetchAllVehiclesByField('user_id', driverId),
-            fetchAllDocumentsByField('user.id', driverId)
-          ])
+        const [
+          dataDriver,
+          dataWallet,
+          dataRides,
+          dataVehicles,
+          dataDocuments,
+          dataTopups
+        ] = await Promise.all([
+          fetchDriverById(driverId),
+          fetchOneWalletByField('user.id' as any, driverId),
+          fetchAllRidesByField('driver.id', driverId),
+          fetchAllVehiclesByField('user_id', driverId),
+          fetchAllDocumentsByField('user.id', driverId),
+          // `topupRequests.user_id` guarda o ID DO DOCUMENTO do motorista
+          // (a app escreve `driver.id`), não o uid do Auth.
+          fetchAllWalletTopupRequestsByField('user_id', driverId, 100)
+        ])
 
         // Lida com Driver
         if (!dataDriver) {
@@ -383,6 +449,12 @@ export function DriverViewPage() {
           console.error('Erro ao buscar documentos')
         } else {
           setRowsDataDocuments(dataDocuments.data)
+        }
+        // Lida com os carregamentos da carteira
+        if (!dataTopups) {
+          console.error('Erro ao buscar carregamentos')
+        } else {
+          setRowsDataTopups(dataTopups.data)
         }
       } catch (error) {
         console.error('Erro ao buscar dados:', error)
@@ -689,6 +761,7 @@ export function DriverViewPage() {
             <Tabs defaultValue="wallet">
               <TabsList>
                 <TabsTrigger value="wallet">Carteira</TabsTrigger>
+                <TabsTrigger value="topups">Carregamentos</TabsTrigger>
                 <TabsTrigger value="rides">Corridas</TabsTrigger>
                 <TabsTrigger value="vehicles">Veículos</TabsTrigger>
                 <TabsTrigger value="docs">Documentos</TabsTrigger>
@@ -743,6 +816,111 @@ export function DriverViewPage() {
                               className="text-center py-6 text-sm text-gray-500 dark:text-gray-400"
                             >
                               Nenhuma transação
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </TabsContent>
+
+              {/* Carregamentos da carteira */}
+              <TabsContent value="topups">
+                <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-md dark:border-gray-700">
+                  <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-100">
+                    Carregamentos da Carteira
+                  </h4>
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Os dois fluxos na mesma lista: as transferências que o
+                    painel confirma e os carregamentos por Unitel Money, que
+                    fecham pelo callback da operadora.
+                  </p>
+                  <div className="mt-4 overflow-x-auto">
+                    <table className="w-full text-sm text-left">
+                      <thead className="text-xs text-gray-500 dark:text-gray-400">
+                        <tr>
+                          <th className="px-3 py-2">Data</th>
+                          <th className="px-3 py-2">Valor</th>
+                          <th className="px-3 py-2">Método</th>
+                          <th className="px-3 py-2">Estado</th>
+                          <th className="px-3 py-2">Comprovativo</th>
+                          <th className="px-3 py-2">Motivo</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {rowsDataTopups?.length ? (
+                          rowsDataTopups.map(topup => {
+                            const createdAt = formatDateTimeFromFirestore(
+                              topup.created_at
+                            )
+                            return (
+                              <tr
+                                key={topup.id}
+                                className="border-b border-gray-100 dark:border-gray-700"
+                              >
+                                <td className="px-3 py-2 text-gray-700 dark:text-gray-200 whitespace-nowrap">
+                                  {createdAt.date}
+                                  <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
+                                    {createdAt.time}
+                                  </span>
+                                </td>
+                                <td className="px-3 py-2 font-semibold">
+                                  {formatMoney(topup.amount)}
+                                </td>
+                                <td className="px-3 py-2 text-sm">
+                                  {getWalletTopupMethodTypeLabel(topup.method)}
+                                </td>
+                                <td className="px-3 py-2 text-sm">
+                                  <BadgeSimple
+                                    label={getWalletTopupStatusLabel(
+                                      topup.status
+                                    )}
+                                    color={
+                                      topup.status === 'approved' ||
+                                      topup.status === 'success'
+                                        ? 'green'
+                                        : topup.status === 'pending' ||
+                                          topup.status === 'processing'
+                                        ? 'yellow'
+                                        : 'red'
+                                    }
+                                  />
+                                </td>
+                                <td className="px-3 py-2">
+                                  {topup.proof_url ? (
+                                    <a
+                                      href={topup.proof_url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-blue-500 hover:text-blue-400 text-xs"
+                                    >
+                                      Abrir
+                                    </a>
+                                  ) : (
+                                    <span className="text-xs text-gray-400">
+                                      —
+                                    </span>
+                                  )}
+                                </td>
+                                {/* Para um rejeitado é o motivo que o admin
+                                    escreveu; para um falhado, o que a Unitel
+                                    devolveu. */}
+                                <td className="px-3 py-2 text-xs text-gray-600 dark:text-gray-300">
+                                  {topup.rejected_reason ??
+                                    topup.failure_message ??
+                                    '—'}
+                                </td>
+                              </tr>
+                            )
+                          })
+                        ) : (
+                          <tr>
+                            <td
+                              colSpan={6}
+                              className="text-center py-6 text-sm text-gray-500 dark:text-gray-400"
+                            >
+                              Nenhum carregamento
                             </td>
                           </tr>
                         )}

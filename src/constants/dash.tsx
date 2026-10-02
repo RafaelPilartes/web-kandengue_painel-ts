@@ -56,6 +56,12 @@ const dashItem = [
         icon: <FileInput size={16} />,
         to: routsNameMain.users.applications.index,
         notification: 0
+      },
+      {
+        label: 'Validação de Viaturas',
+        icon: <CarFront size={16} />,
+        to: routsNameMain.vehicles.index,
+        notification: 0
       }
     ],
     notification: 0,
@@ -76,6 +82,12 @@ const dashItem = [
         label: 'Monitoramento em Tempo Real',
         icon: <Map size={16} />,
         to: routsNameMain.rides.realtime,
+        notification: 0
+      },
+      {
+        label: 'Revisão de tarifas',
+        icon: <Calculator size={16} />,
+        to: routsNameMain.rides.fareReview,
         notification: 0
       }
     ],
@@ -100,7 +112,7 @@ const dashItem = [
         notification: 0
       },
       {
-        label: 'Solicitação de Recarga',
+        label: 'Carregamentos',
         icon: <CreditCard size={16} />,
         to: routsNameMain.finance.walletTopupRequest,
         notification: 0

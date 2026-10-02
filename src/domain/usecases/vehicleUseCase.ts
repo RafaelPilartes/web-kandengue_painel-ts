@@ -14,6 +14,10 @@ export class VehicleUseCase extends BaseUseCase {
     return ApiRepository.vehicles
   }
 
+  private get adminVehicleRepository() {
+    return ApiRepository.adminVehicle
+  }
+
   executeGetAll(
     options?: QueryOptions<VehicleEntity>
   ): Promise<ListResponseType<VehicleEntity[]>> {
@@ -64,6 +68,26 @@ export class VehicleUseCase extends BaseUseCase {
         : data
       return this.repository.update(id, patch)
     })
+  }
+
+  /**
+   * Valida ou recusa uma viatura no servidor, com auditoria.
+   *
+   * O painel escrevia `status` directamente no Firestore, sem motivo e sem
+   * registo de quem decidiu — e `status == 'validated'` é um dos filtros do
+   * dispatch, ou seja, é o que põe um motorista a receber corridas. As
+   * regras passaram a negar `status` e `type` ao cliente, admin incluído.
+   *
+   * Fora do `run()`, como o `executeApproveTopup`: o `toAppError`
+   * substituiria a mensagem da API por uma genérica, e é a da API que diz ao
+   * admin porque é que a decisão não passou.
+   */
+  executeReviewVehicle(
+    id: string,
+    decision: 'validated' | 'rejected',
+    reason?: string
+  ): Promise<{ changed: boolean; status: 'validated' | 'rejected' }> {
+    return this.adminVehicleRepository.reviewVehicle(id, decision, reason)
   }
 
   executeDelete(id: string): Promise<void> {

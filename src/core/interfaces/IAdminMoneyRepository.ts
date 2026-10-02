@@ -9,6 +9,14 @@ export interface IAdminMoneyRepository {
   /** `credited: false` quando o pedido já estava aprovado — não é erro. */
   approveTopup(topupId: string): Promise<{ credited: boolean; balance: number }>
 
+  /**
+   * Rejeita um carregamento manual com o motivo que o motorista vai ler.
+   * Não move dinheiro. `changed: false` quando já estava rejeitado — não é
+   * erro. Rejeitar um pedido já aprovado é recusado pela API: isso é um
+   * estorno, com movimento próprio.
+   */
+  rejectTopup(topupId: string, reason: string): Promise<{ changed: boolean }>
+
   approveWithdrawal(withdrawalId: string): Promise<{ changed: boolean }>
 
   rejectWithdrawal(

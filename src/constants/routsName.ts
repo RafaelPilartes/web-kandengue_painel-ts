@@ -42,6 +42,12 @@ export const routsNameMain = {
   },
 
   // ============================================
+  // VIATURAS — fila de validação
+  vehicles: {
+    index: '/vehicles'
+  },
+
+  // ============================================
   // CORRIDAS
   rides: {
     index: '/rides',
@@ -51,7 +57,9 @@ export const routsNameMain = {
     view: '/rides/view/:deliveryId',
     viewStr: '/rides/view/',
 
-    realtime: '/rides/realtime'
+    realtime: '/rides/realtime',
+    // Corridas em que o servidor marcou o fecho da tarifa para confirmação.
+    fareReview: '/rides/fare-review'
   },
 
   // ============================================

@@ -144,6 +144,24 @@ export function useVehiclesViewModel(
     }
   }
 
+  /**
+   * Valida ou recusa no servidor. Sem `withAudit`: a API escreve em
+   * `auditLogs` dentro da própria transacção, e esse registo não pode
+   * existir sem a mudança de estado.
+   */
+  const reviewVehicle = useMutation({
+    mutationFn: ({
+      id,
+      decision,
+      reason
+    }: {
+      id: string
+      decision: 'validated' | 'rejected'
+      reason?: string
+    }) => vehicleUseCase.executeReviewVehicle(id, decision, reason),
+    onSuccess: invalidate
+  })
+
   return {
     vehicles: vehiclesResponse?.data ?? [],
     pagination: vehiclesResponse?.pagination,
@@ -157,6 +175,7 @@ export function useVehiclesViewModel(
     createVehicle,
     updateVehicle,
     deleteVehicle,
+    reviewVehicle,
     fetchVehicleById
   }
 }

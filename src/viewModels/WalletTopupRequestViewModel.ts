@@ -156,6 +156,22 @@ export function useWalletTopupRequestsViewModel(
     }
   })
 
+  /**
+   * Rejeita no servidor, com motivo. Sem `withAudit`, pela mesma razão do
+   * `approveTopup`: a API escreve em `walletAuditLogs` e esse registo é o
+   * único que conta. A versão anterior escrevia o estado em `topupRequests`
+   * pelo cliente e auditava-o do cliente.
+   */
+  const rejectTopup = useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
+      walletTopupRequestUseCase.executeRejectTopup(id, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [firebaseCollections.requests.root]
+      })
+    }
+  })
+
   /** Buscar carteira único (on-demand) */
   const fetchWalletTopupRequestById = async (id: string) => {
     try {
@@ -194,6 +210,7 @@ export function useWalletTopupRequestsViewModel(
     deleteWalletTopupRequest,
     fetchWalletTopupRequestById,
     approveTopup,
+    rejectTopup,
 
     dataToExport
   }

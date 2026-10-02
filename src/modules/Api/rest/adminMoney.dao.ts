@@ -8,6 +8,13 @@ export class AdminMoneyDAO implements IAdminMoneyRepository {
     return ApiDAO.post(`/api/v1/admin/topups/${topupId}/approve`, {})
   }
 
+  async rejectTopup(
+    topupId: string,
+    reason: string
+  ): Promise<{ changed: boolean }> {
+    return ApiDAO.post(`/api/v1/admin/topups/${topupId}/reject`, { reason })
+  }
+
   async approveWithdrawal(
     withdrawalId: string
   ): Promise<{ changed: boolean }> {

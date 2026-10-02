@@ -18,6 +18,9 @@ import { formatDateTimeFromFirestore } from '@/utils/date'
 import type { WalletTopupRequestInterface } from '@/interfaces/IWalletTopupRequest'
 import type { RequestStatus } from '@/types/enum'
 import { useWalletsViewModel } from '@/viewModels/WalletViewModel'
+import { useQuery } from '@tanstack/react-query'
+import { adminUseCase } from '@/domain/usecases/adminUseCase'
+import { firebaseCollections } from '@/constants/firebaseCollections'
 import { useEffect, useState } from 'react'
 import type { WalletInterface } from '@/interfaces/IWallet'
 
@@ -32,6 +35,36 @@ export function ModalViewTopupRequest({
 
   const [wallet, setWallet] = useState<WalletInterface | null>(null)
   const [isLoadingWallet, setIsLoadingWallet] = useState(true)
+
+  /*
+   * `reviewed_by` guarda o ID DO DOCUMENTO do admin (`adm-…`), que é o que a
+   * API escreve nas duas rotas de revisão. Este modal lia `reviewed_by.name`
+   * e `reviewed_by.email` como se fosse o objecto do admin: numa string
+   * ambos dão `undefined` e o campo mostrava sempre "N/A". Compilava porque
+   * o `modalViewType<T>` declara `baseInfo: T | any`, e o `any` ganha.
+   *
+   * Resolve-se o nome por uma leitura de um documento, e não pelo
+   * `useAdminsViewModel`, que puxaria a colecção `admins` inteira para
+   * mostrar um nome. Não se desnormaliza para o pedido: é escrito pelo
+   * servidor e não deve guardar dados que envelhecem.
+   */
+  const reviewerId: string | null =
+    typeof baseInfo?.reviewed_by === 'string' && baseInfo.reviewed_by
+      ? baseInfo.reviewed_by
+      : null
+
+  const { data: reviewer, isLoading: isLoadingReviewer } = useQuery({
+    queryKey: [firebaseCollections.admins.root, 'by-id', reviewerId],
+    queryFn: () => adminUseCase.executeGetById(reviewerId as string),
+    enabled: modalViewRowIsOpen && !!reviewerId,
+    staleTime: 1000 * 60 * 5
+  })
+
+  // Sem o documento do admin (apagado, por exemplo) mostra-se o id: é
+  // sempre melhor do que "N/A" — ainda dá para o procurar.
+  const reviewerLabel = reviewerId
+    ? (reviewer?.name ?? reviewer?.email ?? (isLoadingReviewer ? 'A carregar…' : reviewerId))
+    : '—'
 
   // Função para carregar o wallet
   async function loadWallet() {
@@ -227,11 +260,7 @@ export function ModalViewTopupRequest({
                       </label>
                       <div className="flex items-center gap-2">
                         <User size={16} className="text-gray-400" />
-                        <p className="text-light">
-                          {baseInfo.reviewed_by.name ||
-                            baseInfo.reviewed_by.email ||
-                            'N/A'}
-                        </p>
+                        <p className="text-light">{reviewerLabel}</p>
                       </div>
                     </div>
 
