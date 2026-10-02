@@ -16,6 +16,8 @@ import {
   Tag,
   Banknote,
   Calculator,
+  CloudRain,
+  AlertTriangle,
   SlidersHorizontal
 } from 'lucide-react'
 import { routsNameMain } from './routsName'
@@ -118,6 +120,12 @@ const dashItem = [
         notification: 0
       },
       {
+        label: 'Saldos abaixo do mínimo',
+        icon: <AlertTriangle size={16} />,
+        to: routsNameMain.finance.balances,
+        notification: 0
+      },
+      {
         label: 'Missões',
         icon: <Trophy size={16} />,
         to: routsNameMain.missions.index,
@@ -163,6 +171,18 @@ const dashItem = [
         label: 'Perfis de preço',
         icon: <Calculator size={16} />,
         to: routsNameMain.pricing.profiles,
+        notification: 0
+      },
+      {
+        label: 'Chuva manual',
+        icon: <CloudRain size={16} />,
+        to: routsNameMain.pricing.weather,
+        notification: 0
+      },
+      {
+        label: 'Simulador de tarifas',
+        icon: <Calculator size={16} />,
+        to: routsNameMain.pricing.simulator,
         notification: 0
       },
       {

@@ -68,6 +68,8 @@ export const routsNameMain = {
     index: '/finance',
     wallet: '/wallet',
     walletTopupRequest: '/wallet/topup/request',
+    // Motoristas abaixo do mínimo de dispatch.
+    balances: '/finance/balances',
 
     reports: {
       index: '/finance/reports'
@@ -82,6 +84,10 @@ export const routsNameMain = {
     profileEdit: '/pricing/profiles/edit/:profileId',
     profileEditStr: '/pricing/profiles/edit/',
     rules: '/pricing/rules',
+    // Estado do clima e a chuva manual.
+    weather: '/pricing/weather',
+    // Simulador de tarifas: só leitura, não grava nada.
+    simulator: '/pricing/simulator',
     ruleCreate: '/pricing/rules/new',
     ruleEdit: '/pricing/rules/edit/:ruleId',
     ruleEditStr: '/pricing/rules/edit/'

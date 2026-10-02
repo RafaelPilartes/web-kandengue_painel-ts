@@ -4,10 +4,12 @@ import {
   CreditCard,
   Settings,
   ChevronRight,
-  Banknote
+  Banknote,
+  Landmark,
+  Smartphone
 } from 'lucide-react'
 
-type SettingsOption = 'tariffs' | 'payouts' | 'general' | 'referral'
+import type { SettingsOption } from '../settingsOptions'
 
 interface SidebarProps {
   selectedOption: SettingsOption
@@ -39,6 +41,18 @@ export function Sidebar({ selectedOption, setSelectedOption }: SidebarProps) {
       label: 'Referência',
       icon: Banknote,
       description: 'Mínimo de saque'
+    },
+    {
+      key: 'appVersions',
+      label: 'Versões das apps',
+      icon: Smartphone,
+      description: 'Mínimo e mais recente'
+    },
+    {
+      key: 'walletTopup',
+      label: 'Dados bancários',
+      icon: Landmark,
+      description: 'IBAN dos carregamentos'
     }
   ] as const
 
