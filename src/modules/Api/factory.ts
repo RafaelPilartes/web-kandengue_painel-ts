@@ -38,9 +38,11 @@ import type { IWithdrawalRepository } from '@/core/interfaces/IWithdrawalReposit
 import { FirebaseWithdrawalDAO } from './firebase/withdrawal.dao'
 import type { IPushNotificationRepository } from '@/core/interfaces/IPushNotificationRepository'
 import { PushNotificationDAO } from './rest/pushNotification.dao'
+import type { IAdminConfigRepository } from '@/core/interfaces/IAdminConfigRepository'
 import type { IAdminMoneyRepository } from '@/core/interfaces/IAdminMoneyRepository'
 import type { IAdminRideRepository } from '@/core/interfaces/IAdminRideRepository'
 import type { IAdminVehicleRepository } from '@/core/interfaces/IAdminVehicleRepository'
+import { AdminConfigDAO } from './rest/adminConfig.dao'
 import { AdminMoneyDAO } from './rest/adminMoney.dao'
 import { AdminRideDAO } from './rest/adminRide.dao'
 import { AdminVehicleDAO } from './rest/adminVehicle.dao'
@@ -80,6 +82,7 @@ class ApiFactory {
   private _adminMoney?: IAdminMoneyRepository
   private _adminVehicle?: IAdminVehicleRepository
   private _adminRide?: IAdminRideRepository
+  private _adminConfig?: IAdminConfigRepository
   private _pricing?: IPricingRepository
 
   get vehicles(): IVehicleRepository {
@@ -172,6 +175,10 @@ class ApiFactory {
 
   get adminRide(): IAdminRideRepository {
     return (this._adminRide ??= new AdminRideDAO())
+  }
+
+  get adminConfig(): IAdminConfigRepository {
+    return (this._adminConfig ??= new AdminConfigDAO())
   }
 
   get pricing(): IPricingRepository {

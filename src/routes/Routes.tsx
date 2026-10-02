@@ -42,6 +42,9 @@ import { PricingRulesPage } from '@/pages/main/Pricing/RulesPage'
 import { PricingRuleFormPage } from '@/pages/main/Pricing/RuleForm'
 import { VehiclesPage } from '@/pages/main/Vehicles'
 import { FareReviewPage } from '@/pages/main/Rides/FareReview'
+import { WeatherPage } from '@/pages/main/Pricing/Weather'
+import { BalancesPage } from '@/pages/main/Finances/Balances'
+import { SimulatorPage } from '@/pages/main/Pricing/Simulator'
 
 // Page
 
@@ -101,6 +104,39 @@ export function Router() {
               <React.Suspense fallback={<Loading />}>
                 <Private>
                   <DriverPage />
+                </Private>
+              </React.Suspense>
+            }
+          />
+          {/* Simulador de tarifas */}
+          <Route
+            path={routsNameMain.pricing.simulator}
+            element={
+              <React.Suspense fallback={<Loading />}>
+                <Private>
+                  <SimulatorPage />
+                </Private>
+              </React.Suspense>
+            }
+          />
+          {/* Saldos abaixo do mínimo */}
+          <Route
+            path={routsNameMain.finance.balances}
+            element={
+              <React.Suspense fallback={<Loading />}>
+                <Private>
+                  <BalancesPage />
+                </Private>
+              </React.Suspense>
+            }
+          />
+          {/* Chuva manual */}
+          <Route
+            path={routsNameMain.pricing.weather}
+            element={
+              <React.Suspense fallback={<Loading />}>
+                <Private>
+                  <WeatherPage />
                 </Private>
               </React.Suspense>
             }

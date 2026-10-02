@@ -47,7 +47,6 @@ import {
   getDocumentStatusLabel,
   getDocumentTypeLabel,
   getRideStatusLabel,
-  getTransactionTypeLabel,
   getUserStatusLabel,
   getVehicleStatusLabel,
   getWalletTopupMethodTypeLabel,
@@ -61,6 +60,7 @@ import type { DocumentStatus } from '@/types/enum'
 import { userStatusOptions } from '@/data/selectOption'
 import { SelectCustom } from '@/components/selects/SelectCustom'
 import { DriverProgressTracker } from '@/components/drivers/DriverProgressTracker'
+import { WalletStatement } from '@/components/wallet/WalletStatement'
 
 export function DriverViewPage() {
   const { driverId } = useParams<{ driverId: string }>()
@@ -770,57 +770,20 @@ export function DriverViewPage() {
 
               {/* Carteira */}
               <TabsContent value="wallet">
-                <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-md  dark:border-gray-700">
+                <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-md dark:border-gray-700">
                   <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-100">
                     Movimentos na Carteira
                   </h4>
-                  <div className="mt-4 overflow-x-auto">
-                    <table className="w-full text-sm text-left">
-                      <thead className="text-xs text-gray-500 dark:text-gray-400">
-                        <tr>
-                          <th className="px-3 py-2">Data</th>
-                          <th className="px-3 py-2">Tipo</th>
-                          <th className="px-3 py-2">Descrição</th>
-                          <th className="px-3 py-2">Valor</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {rowsDataTransactions?.length ? (
-                          rowsDataTransactions.map(trans => (
-                            <tr
-                              key={trans.id}
-                              className="border-b border-gray-100 dark:border-gray-700"
-                            >
-                              <td className="px-3 py-2 text-gray-700 dark:text-gray-200">
-                                {
-                                  formatDateTimeFromFirestore(
-                                    trans.created_at as any
-                                  ).date
-                                }
-                              </td>
-                              <td className="px-3 py-2 text-sm">
-                                {getTransactionTypeLabel(trans.type)}
-                              </td>
-                              <td className="px-3 py-2 text-sm text-gray-600 dark:text-gray-300">
-                                {trans.description ?? '-'}
-                              </td>
-                              <td className="px-3 py-2">
-                                {formatMoney(trans.amount)}
-                              </td>
-                            </tr>
-                          ))
-                        ) : (
-                          <tr>
-                            <td
-                              colSpan={5}
-                              className="text-center py-6 text-sm text-gray-500 dark:text-gray-400"
-                            >
-                              Nenhuma transação
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Os débitos de comissão mostram as três parcelas — empresa,
+                    fundo de pensões e seguro —, que é o que explica o valor.
+                    O saldo corrido é reconstruído a partir do saldo actual.
+                  </p>
+                  <div className="mt-4">
+                    <WalletStatement
+                      transactions={rowsDataTransactions}
+                      balance={rowDataWallet?.balance}
+                    />
                   </div>
                 </div>
               </TabsContent>

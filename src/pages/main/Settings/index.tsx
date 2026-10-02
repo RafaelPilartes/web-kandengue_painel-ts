@@ -6,14 +6,15 @@ import { TariffSettings } from './components/TariffSettings'
 import { PayoutSettings } from './components/PayoutSettings'
 import { GeneralSettings } from './components/GeneralSettings'
 import { ReferralSettings } from './components/ReferralSettings'
+import { AppVersionsSettings } from './components/AppVersionsSettings'
+import { WalletTopupSettings } from './components/WalletTopupSettings'
+import type { SettingsOption } from './settingsOptions'
 import { useRideRatesViewModel } from '@/viewModels/RideRateViewModel'
 import { useRideRatesStore } from '@/stores/rideRatesStore'
 import { defaultRates } from '@/utils/rideRatesDefaults'
 import { isEqual } from 'lodash' // 👈 para comparar objetos
 import { routsNameMain } from '@/constants/routsName'
 import { Breadcrumbs } from '@/components/Breadcrumbs'
-
-type SettingsOption = 'tariffs' | 'payouts' | 'general' | 'referral'
 
 export function SettingsPage() {
   const { rideRates, isLoadingRideRates, updateRideRate } =
@@ -91,6 +92,13 @@ export function SettingsPage() {
         return <GeneralSettings />
       case 'referral':
         return <ReferralSettings />
+      // Estas duas gravam pela API e têm o seu próprio botão: o "Salvar
+      // Alterações" do cabeçalho escreve `rideRates`, que não tem nada que
+      // ver com elas.
+      case 'appVersions':
+        return <AppVersionsSettings />
+      case 'walletTopup':
+        return <WalletTopupSettings />
       default:
         return null
     }
@@ -126,7 +134,7 @@ export function SettingsPage() {
 
             {/* Ações */}
             <div className="flex items-center gap-4">
-              {hasChanges && (
+              {hasChanges && selectedOption !== 'appVersions' && selectedOption !== 'walletTopup' && (
                 <div className="flex items-center gap-3 animate-in fade-in slide-in-from-right-4 duration-300">
                   <span className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-orange-50 text-orange-700 border border-orange-100 text-xs font-medium dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-800/30">
                     <span className="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
