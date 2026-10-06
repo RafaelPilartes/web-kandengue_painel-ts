@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Spinner } from 'phosphor-react'
 import swal from 'sweetalert'
-import { CheckCircle2, Info } from 'lucide-react'
+import { CheckCircle2, Info, TicketPercent } from 'lucide-react'
 
 import { Breadcrumbs } from '@/components/Breadcrumbs'
 import { BadgeSimple } from '@/components/badge/BadgeSimple'
@@ -9,7 +9,13 @@ import { FareReviewMap } from './FareReviewMap'
 
 import { useRidesViewModel } from '@/viewModels/RideViewModel'
 import type { RideEntity } from '@/core/entities/Ride'
-import { fareDistance, signedDeviationPercent } from '@/helpers/fareReview'
+import {
+  compareQuotedToCharged,
+  failedReservation,
+  fareDistance,
+  signedDeviationPercent
+} from '@/helpers/fareReview'
+import type { FareComparison } from '@/helpers/fareReview'
 import { formatDateTimeFromFirestore } from '@/utils/date'
 import { formatMoney } from '@/utils/number'
 import {
@@ -31,13 +37,37 @@ import { RIDE_TYPE_LABELS, VEHICLE_TYPE_LABELS } from '@rafaelpilartes/kandengue
  * olhou e quando — as regras negam ao cliente, admin incluído, tocar no
  * `fare`.
  */
+/**
+ * Os motivos por que uma corrida cai neste ecrã, e o filtro que os separa.
+ *
+ * Dois motivos, escritos em momentos diferentes: a **distância** no fecho da
+ * tarifa (`fare.distance.review_required`), e a **reserva falhada** na criação
+ * (`review_flags`). Uma corrida pode ter os dois.
+ */
+type ReviewReasonFilter = 'all' | 'distance' | 'reservation'
+
+const REASON_FILTERS: Array<{ key: ReviewReasonFilter; label: string }> = [
+  { key: 'all', label: 'Todos os motivos' },
+  { key: 'distance', label: 'Desvio de distância' },
+  { key: 'reservation', label: 'Reservas falhadas' }
+]
+
 export function FareReviewPage() {
   const [onlyPending, setOnlyPending] = useState(true)
+  const [reason, setReason] = useState<ReviewReasonFilter>('all')
 
-  // O Firestore não indexa `fare.distance.review_required` hoje, e criar o
-  // índice composto é um deploy à parte. Filtra-se em memória sobre as
-  // corridas concluídas — são dezenas, não milhares, e é o mesmo que o
-  // `expireStalePresence` faz pela mesma razão.
+  /*
+   * Uma query só, e os dois motivos peneirados em memória.
+   *
+   * Nem `fare.distance.review_required` nem `review_flags` estão indexados, e
+   * **nenhum precisa de estar**: a query é a mesma de sempre
+   * (`status == 'completed'` ordenado por `created_at`, índice que já existe)
+   * e os dois filtros correm sobre as 500 corridas que ela traz. São dezenas,
+   * não milhares — é o mesmo que o `expireStalePresence` faz pela mesma razão.
+   *
+   * Acrescentar o filtro das reservas falhadas **não acrescentou índice
+   * nenhum**, e é por isto.
+   */
   const { rides, isLoadingRides, markFareReviewed } = useRidesViewModel(
     500,
     0,
@@ -47,8 +77,12 @@ export function FareReviewPage() {
 
   const flagged = useMemo(() => {
     const withReview = rides.filter(ride => {
-      const distance = fareDistance(ride)
-      return distance?.review_required === true
+      const byDistance = fareDistance(ride)?.review_required === true
+      const byReservation = failedReservation(ride)
+
+      if (reason === 'distance') return byDistance
+      if (reason === 'reservation') return byReservation
+      return byDistance || byReservation
     })
 
     const visible = onlyPending
@@ -61,6 +95,26 @@ export function FareReviewPage() {
       (a, b) =>
         (b.completed_at?.getTime() ?? 0) - (a.completed_at?.getTime() ?? 0)
     )
+  }, [rides, onlyPending, reason])
+
+  /** Quantas há de cada motivo, para os botões do filtro não mentirem. */
+  const counts = useMemo(() => {
+    const pending = (ride: RideEntity) =>
+      !onlyPending || !ride.fare_reviewed_by
+
+    const distance = rides.filter(
+      r => pending(r) && fareDistance(r)?.review_required === true
+    ).length
+    const reservation = rides.filter(
+      r => pending(r) && failedReservation(r)
+    ).length
+    const all = rides.filter(
+      r =>
+        pending(r) &&
+        (fareDistance(r)?.review_required === true || failedReservation(r))
+    ).length
+
+    return { all, distance, reservation }
   }, [rides, onlyPending])
 
   const itemsBreadcrumbs = [
@@ -122,10 +176,38 @@ export function FareReviewPage() {
           <Breadcrumbs items={itemsBreadcrumbs} />
         </div>
         <p className="text-sm text-gray-600 dark:text-gray-300">
-          Corridas em que o servidor marcou o fecho da tarifa para
-          confirmação. <strong>Marcar como revista não altera a tarifa</strong>
-          {' '}— registra apenas quem reviu e quando.
+          Corridas que o servidor marcou para confirmação humana, por dois
+          motivos: o <strong>desvio de distância</strong> no fecho da tarifa, e
+          a <strong>reserva de promoção que falhou</strong> na criação — em que
+          o cliente viu um preço e pagou outro.{' '}
+          <strong>Marcar como revista não altera a tarifa</strong> — registra
+          apenas quem reviu e quando.
         </p>
+        <div className="flex flex-row flex-wrap gap-2">
+          {REASON_FILTERS.map(f => {
+            const active = reason === f.key
+            return (
+              <button
+                key={f.key}
+                type="button"
+                onClick={() => setReason(f.key)}
+                className={`px-4 py-2 rounded-md text-sm font-semibold border transition-colors ${
+                  active
+                    ? 'bg-primary-500 text-white border-primary-500'
+                    : 'bg-transparent text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'
+                }`}
+              >
+                {f.label}
+                <span
+                  className={`ml-2 text-xs ${active ? 'text-white/80' : 'text-gray-400'}`}
+                >
+                  {counts[f.key === 'all' ? 'all' : f.key]}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+
         <label className="flex flex-row items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
           <input
             type="checkbox"
@@ -148,14 +230,28 @@ export function FareReviewPage() {
       ) : (
         <div className="w-full flex flex-col gap-6">
           {flagged.map(ride => {
+            /*
+             * ⚠️ A distância pode faltar, e a linha aparece na mesma.
+             *
+             * Era `if (!distance) return null` — razoável quando o único
+             * motivo era o desvio de distância. Com as reservas falhadas, uma
+             * corrida pode estar aqui sem nada de errado na distância (ou com
+             * uma tarifa V1, que não tem o bloco). Devolver `null` fazia o
+             * filtro contar a corrida e não a mostrar: uma lista com um número
+             * que não bate com as linhas.
+             */
             const distance = fareDistance(ride)
-            if (!distance) return null
-
-            const signed = signedDeviationPercent(distance)
+            const signed = distance ? signedDeviationPercent(distance) : null
             const completedAt = formatDateTimeFromFirestore(ride.completed_at)
-            const quoted = ride.estimated_fare?.total ?? null
-            const charged = ride.fare?.total ?? 0
+            const comparison = compareQuotedToCharged(ride)
             const reviewed = !!ride.fare_reviewed_by
+
+            const porDistancia = distance?.review_required === true
+            // A marca do `onRideCreated`, o recuo para as corridas de antes
+            // dela, ou o que os números dizem (cotação com desconto, fecho
+            // sem nenhum).
+            const reservaFalhada =
+              failedReservation(ride) || !!comparison?.discountNotApplied
 
             return (
               <div
@@ -187,79 +283,79 @@ export function FareReviewPage() {
                   )}
                 </div>
 
-                {/* O motivo, traduzido, com o que procurar */}
-                <div className="p-4 rounded-md bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50">
-                  <div className="flex flex-row items-start gap-2">
-                    <Info
-                      size={16}
-                      className="mt-0.5 text-amber-600 dark:text-amber-400 shrink-0"
-                    />
-                    <div className="flex flex-col gap-1">
-                      <span className="text-sm font-semibold text-dark dark:text-light">
-                        {distance.reason
-                          ? TRACK_UNRELIABLE_REASON_LABELS[distance.reason]
-                          : `Desvio de distância acima do limite (${distance.deviation_percent} %)`}
-                      </span>
-                      <span className="text-xs text-gray-600 dark:text-gray-300">
-                        {distance.reason
-                          ? TRACK_UNRELIABLE_REASON_HINTS[distance.reason]
-                          : 'A distância do percurso gravado afastou-se muito da estimada na cotação. Cobrou-se a real.'}
-                      </span>
+                {/* O motivo da distância, traduzido, com o que procurar */}
+                {porDistancia && distance && (
+                  <div className="p-4 rounded-md bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50">
+                    <div className="flex flex-row items-start gap-2">
+                      <Info
+                        size={16}
+                        className="mt-0.5 text-amber-600 dark:text-amber-400 shrink-0"
+                      />
+                      <div className="flex flex-col gap-1">
+                        <span className="text-sm font-semibold text-dark dark:text-light">
+                          {distance.reason
+                            ? TRACK_UNRELIABLE_REASON_LABELS[distance.reason]
+                            : `Desvio de distância acima do limite (${distance.deviation_percent} %)`}
+                        </span>
+                        <span className="text-xs text-gray-600 dark:text-gray-300">
+                          {distance.reason
+                            ? TRACK_UNRELIABLE_REASON_HINTS[distance.reason]
+                            : 'A distância do percurso gravado afastou-se muito da estimada na cotação. Cobrou-se a real.'}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
-                {/* Os números: estimada vs real, cotado vs cobrado */}
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  <Figure
-                    label="Distância estimada"
-                    value={`${distance.estimated_km.toFixed(1)} km`}
-                    hint="da cotação"
-                  />
-                  <Figure
-                    label="Distância real"
-                    value={
-                      distance.tracked_km === null
-                        ? '— sem percurso —'
-                        : `${distance.tracked_km.toFixed(1)} km`
-                    }
-                    hint={
-                      signed === null
-                        ? undefined
-                        : `${signed > 0 ? '+' : ''}${signed} % face à estimada`
-                    }
-                    emphasis={signed !== null && Math.abs(signed) >= 40}
-                  />
-                  <Figure
-                    label="Valor cotado"
-                    value={quoted === null ? '—' : `AOA ${formatMoney(quoted)}`}
-                    hint="estimativa mostrada ao passageiro"
-                  />
-                  <Figure
-                    label="Valor cobrado"
-                    value={`AOA ${formatMoney(charged)}`}
-                    hint={
-                      quoted === null
-                        ? undefined
-                        : `${charged > quoted ? '+' : ''}AOA ${formatMoney(charged - quoted)}`
-                    }
-                    emphasis={quoted !== null && charged !== quoted}
-                  />
-                </div>
+                {/* A promoção que não pegou — antes dos números, porque é
+                    ela que os explica */}
+                {reservaFalhada && (
+                  <ReservationFailedNotice comparison={comparison} />
+                )}
 
-                <div className="grid gap-2 sm:grid-cols-2 text-xs text-gray-600 dark:text-gray-300">
-                  <span>
-                    <strong>Cobrou-se:</strong>{' '}
-                    {FARE_DISTANCE_SOURCE_LABELS[distance.source]} (
-                    {distance.used_km.toFixed(1)} km)
-                  </span>
-                  {distance.end_reference && (
+                {/* As distâncias, quando a tarifa as traz */}
+                {distance && (
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Figure
+                      label="Distância estimada"
+                      value={`${distance.estimated_km.toFixed(1)} km`}
+                      hint="da cotação"
+                    />
+                    <Figure
+                      label="Distância real"
+                      value={
+                        distance.tracked_km === null
+                          ? '— sem percurso —'
+                          : `${distance.tracked_km.toFixed(1)} km`
+                      }
+                      hint={
+                        signed === null
+                          ? undefined
+                          : `${signed > 0 ? '+' : ''}${signed} % face à estimada`
+                      }
+                      emphasis={signed !== null && Math.abs(signed) >= 40}
+                    />
+                  </div>
+                )}
+
+                {/* Os três números de cada lado */}
+                {comparison && <FareBreakdown comparison={comparison} />}
+
+                {distance && (
+                  <div className="grid gap-2 sm:grid-cols-2 text-xs text-gray-600 dark:text-gray-300">
                     <span>
-                      <strong>Fim medido contra:</strong>{' '}
-                      {TRACK_END_REFERENCE_LABELS[distance.end_reference]}
+                      <strong>Cobrou-se:</strong>{' '}
+                      {FARE_DISTANCE_SOURCE_LABELS[distance.source]} (
+                      {distance.used_km.toFixed(1)} km)
                     </span>
-                  )}
-                </div>
+                    {distance.end_reference && (
+                      <span>
+                        <strong>Fim medido contra:</strong>{' '}
+                        {TRACK_END_REFERENCE_LABELS[distance.end_reference]}
+                      </span>
+                    )}
+                  </div>
+                )}
 
                 {/* O percurso, com os descartados a outra cor */}
                 <FareReviewMap ride={ride} />
@@ -296,6 +392,182 @@ export function FareReviewPage() {
           })}
         </div>
       )}
+    </div>
+  )
+}
+
+/**
+ * O cotado contra o cobrado, nos três números.
+ *
+ * O ecrã comparava só os totais. Desde as functions 1.4.0 os dois são
+ * depois do desconto e a comparação está certa — **excepto numa reserva
+ * falhada**, em que a cotação mostrou desconto e o fecho não aplicou nenhum:
+ * a diferença aparecia como desvio de tarifa sem o ser.
+ *
+ * O destaque está no **bruto**, que é o que o motor produziu e não se mexe
+ * com a promoção ter pegado: é essa a linha que diz se a tarifa se desviou.
+ */
+function FareBreakdown({ comparison }: { comparison: FareComparison }) {
+  const { quoted, charged, grossDelta, discountNotApplied } = comparison
+
+  return (
+    <div className="grid gap-4 sm:grid-cols-2">
+      <MoneyColumn
+        title="Valor cotado"
+        subtitle="estimativa mostrada ao passageiro"
+        side={quoted}
+      />
+      <MoneyColumn
+        title="Valor cobrado"
+        subtitle="fechado pelo servidor"
+        side={charged}
+        // Um desvio no bruto é um desvio de tarifa. Um desconto que não pegou
+        // não é, e tem o seu próprio aviso em cima.
+        grossDelta={grossDelta}
+        discountMissing={discountNotApplied}
+      />
+    </div>
+  )
+}
+
+function MoneyColumn({
+  title,
+  subtitle,
+  side,
+  grossDelta,
+  discountMissing
+}: {
+  title: string
+  subtitle: string
+  side: { gross: number; discount: number; total: number } | null
+  grossDelta?: number | null
+  discountMissing?: boolean
+}) {
+  if (!side) {
+    return (
+      <div className="flex flex-col gap-1 p-4 rounded-md bg-gray-50 dark:bg-gray-800">
+        <span className="text-xs text-gray-500 dark:text-gray-400">
+          {title}
+        </span>
+        <span className="text-lg font-bold text-dark dark:text-light">—</span>
+        <span className="text-xs text-gray-500 dark:text-gray-400">
+          sem estimativa gravada
+        </span>
+      </div>
+    )
+  }
+
+  const desvioBruto =
+    grossDelta === null || grossDelta === undefined || grossDelta === 0
+      ? null
+      : `${grossDelta > 0 ? '+' : '−'}AOA ${formatMoney(Math.abs(grossDelta))}`
+
+  return (
+    <div className="flex flex-col gap-2 p-4 rounded-md bg-gray-50 dark:bg-gray-800">
+      <div className="flex flex-col">
+        <span className="text-xs text-gray-500 dark:text-gray-400">
+          {title}
+        </span>
+        <span className="text-[10px] text-gray-400 dark:text-gray-500">
+          {subtitle}
+        </span>
+      </div>
+
+      <dl className="flex flex-col gap-1 text-sm">
+        <div className="flex flex-row justify-between">
+          <dt className="text-gray-600 dark:text-gray-300">Bruto</dt>
+          <dd
+            className={`font-mono ${
+              desvioBruto
+                ? 'font-bold text-amber-600 dark:text-amber-400'
+                : 'text-dark dark:text-light'
+            }`}
+          >
+            AOA {formatMoney(side.gross)}
+          </dd>
+        </div>
+
+        <div className="flex flex-row justify-between">
+          <dt className="text-gray-600 dark:text-gray-300">Desconto</dt>
+          <dd
+            className={`font-mono ${
+              discountMissing
+                ? 'font-bold text-amber-600 dark:text-amber-400'
+                : side.discount > 0
+                  ? 'text-green-700 dark:text-green-400'
+                  : 'text-gray-400 dark:text-gray-500'
+            }`}
+          >
+            {side.discount > 0 ? `−AOA ${formatMoney(side.discount)}` : '—'}
+          </dd>
+        </div>
+
+        <div className="flex flex-row justify-between pt-1 border-t border-gray-200 dark:border-gray-700">
+          <dt className="font-semibold text-dark dark:text-light">Total</dt>
+          <dd className="font-mono font-bold text-dark dark:text-light">
+            AOA {formatMoney(side.total)}
+          </dd>
+        </div>
+      </dl>
+
+      {desvioBruto && (
+        <span className="text-xs text-amber-700 dark:text-amber-400">
+          {desvioBruto} no bruto face ao cotado
+        </span>
+      )}
+    </div>
+  )
+}
+
+/**
+ * A reserva falhada, dita pelo nome.
+ *
+ * O desconto saiu entre cotar e criar a corrida: a promoção esgotou-se, o
+ * `apply` não reservou, e a corrida nasceu com o preço cheio. O cliente viu
+ * um número e pagou outro — e isto **não é um desvio de tarifa**, que era o
+ * que o ecrã dizia antes.
+ */
+function ReservationFailedNotice({
+  comparison
+}: {
+  comparison: FareComparison | null
+}) {
+  const perdido = comparison?.quoted?.discount ?? 0
+  // `=== 0` e não `!grossDelta`: `null` é "não há cotação para comparar", e
+  // isso não é o mesmo que "o bruto bate".
+  const brutoBate = comparison?.grossDelta === 0
+
+  return (
+    <div className="p-4 rounded-md bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800/50">
+      <div className="flex flex-row items-start gap-2">
+        <TicketPercent
+          size={16}
+          className="mt-0.5 text-purple-600 dark:text-purple-400 shrink-0"
+        />
+        <div className="flex flex-col gap-1">
+          <span className="text-sm font-semibold text-dark dark:text-light">
+            A promoção não pegou — reserva falhada
+          </span>
+          <span className="text-xs text-gray-600 dark:text-gray-300">
+            {perdido > 0 ? (
+              <>
+                A cotação mostrou <strong>AOA {formatMoney(perdido)}</strong> de
+                desconto e o fecho não aplicou nenhum: o código esgotou-se
+                entre a cotação e a criação da corrida.{' '}
+              </>
+            ) : (
+              <>
+                A corrida tem código promocional e não tem reserva
+                (`promotion_id` sem `promotion_usage_id`).{' '}
+              </>
+            )}
+            {brutoBate
+              ? 'Não é um desvio de tarifa — o bruto bate com o cotado.'
+              : 'Confirmar também o bruto: há diferença para além do desconto.'}{' '}
+            O <code>onRideCreated</code> avisa isto nos logs.
+          </span>
+        </div>
+      </div>
     </div>
   )
 }

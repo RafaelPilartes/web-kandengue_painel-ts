@@ -7,41 +7,30 @@ import type {
 } from '../entities/Promotion'
 
 /**
- * O id do documento é o código normalizado (uppercase + trim), não um id
- * gerado. Por isso `create` e `update` são redeclarados aqui com a forma
- * própria desta colecção, e o DAO sobrepõe-nos ao motor:
+ * **Só leitura.** As escritas saíram daqui para o `IAdminPromotionRepository`,
+ * que fala com `/api/v1/admin/promotions*`.
  *
- * - `create` tem de inicializar os shards (`counters/shard_0..N-1`) no mesmo
- *   batch do documento principal — sem isso a CAMADA 1 do `apply` falha.
- * - `update` tem de apagar campos de facto (`deleteField`) quando o admin os
- *   limpa, coisa que o update genérico do motor não faz, e tem de recusar
- *   alterações ao código, aos contadores e à auditoria de criação.
+ * As regras passaram `promotions` e tudo o que está por baixo a
+ * `allow write: if false`, admin incluído: o que este repositório tentasse
+ * escrever rebentava com `permission-denied`. A leitura fica
+ * (`allow read: if autenticado()`) — é o painel que lista as promoções, os
+ * permitidos e os usos.
+ *
+ * `create`, `update` e `delete` do motor são excluídos do contrato de
+ * propósito. A classe herda-os do `BaseFirebaseDAO`, mas quem a consome vê
+ * este tipo e não lhes chega.
  */
 export interface IPromotionRepository
-  extends Omit<IBaseRepository<PromotionEntity>, 'create' | 'update'> {
-  create(promotion: Omit<PromotionEntity, 'id'>): Promise<PromotionEntity>
-  update(
-    code: string,
-    promotion: Partial<PromotionEntity>
-  ): Promise<PromotionEntity>
-
+  extends Omit<
+    IBaseRepository<PromotionEntity>,
+    'create' | 'update' | 'delete'
+  > {
+  /** Atalho de leitura — o código normalizado é o id do documento. */
   getByCode(code: string): Promise<PromotionEntity | null>
-  setActive(code: string, active: boolean): Promise<void>
 
-  // Allowed users (subcolecção — evita o limite de 1MB de um array)
-  addAllowedUser(
-    code: string,
-    userId: string,
-    addedBy: string
-  ): Promise<void>
-  addAllowedUsersBulk(
-    code: string,
-    userIds: string[],
-    addedBy: string
-  ): Promise<void>
-  removeAllowedUser(code: string, userId: string): Promise<void>
+  /** Lista de permitidos (subcolecção — evita o limite de 1MB de um array). */
   listAllowedUsers(code: string): Promise<AllowedUser[]>
 
-  // Usages — leitura para o detalhe da promoção
+  /** Usos da promoção — leitura para o detalhe. */
   listUsages(code: string, limit?: number): Promise<PromotionUsageEntity[]>
 }

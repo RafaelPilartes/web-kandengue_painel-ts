@@ -105,15 +105,23 @@ export class NotificationUseCase extends BaseUseCase {
     })
   }
 
-  executeUpdate(
-    id: string,
-    notification: Partial<NotificationEntity>
-  ): Promise<NotificationEntity> {
-    return this.run('update', () => this.repository.update(id, notification))
-  }
+  /*
+   * ⚠️ **Não há `executeUpdate`.** As regras passaram `notifications` a
+   * `allow update: if false` — o `allow update: if autenticado()` que lá
+   * estava deixava qualquer sessão reescrever qualquer notificação. O método
+   * que aqui estava não era chamado por nenhum ecrã, e passaria a rebentar.
+   * Quando as apps precisarem de marcar como lida, é um `PATCH` na API.
+   */
 
-  executeDelete(id: string): Promise<void> {
-    return this.run('delete', () => this.repository.delete(id))
+  /**
+   * Apaga pela API, com o conteúdo anterior em `auditLogs`.
+   *
+   * As regras sempre negaram o `delete` ao cliente, por isso o botão do
+   * painel **nunca funcionou**: mostrava "Erro ao excluir notificação" e
+   * ninguém tinha percebido porquê.
+   */
+  executeDelete(id: string): Promise<{ id: string; deleted: boolean }> {
+    return ApiRepository.adminNotifications.deleteNotification(id)
   }
 }
 

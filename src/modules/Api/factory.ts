@@ -42,7 +42,13 @@ import type { IAdminConfigRepository } from '@/core/interfaces/IAdminConfigRepos
 import type { IAdminMoneyRepository } from '@/core/interfaces/IAdminMoneyRepository'
 import type { IAdminRideRepository } from '@/core/interfaces/IAdminRideRepository'
 import type { IAdminVehicleRepository } from '@/core/interfaces/IAdminVehicleRepository'
+import type { IAdminMissionRepository } from '@/core/interfaces/IAdminMissionRepository'
+import type { IAdminNotificationRepository } from '@/core/interfaces/IAdminNotificationRepository'
+import type { IAdminPromotionRepository } from '@/core/interfaces/IAdminPromotionRepository'
 import { AdminConfigDAO } from './rest/adminConfig.dao'
+import { AdminMissionDAO } from './rest/adminMission.dao'
+import { AdminNotificationDAO } from './rest/adminNotification.dao'
+import { AdminPromotionDAO } from './rest/adminPromotion.dao'
 import { AdminMoneyDAO } from './rest/adminMoney.dao'
 import { AdminRideDAO } from './rest/adminRide.dao'
 import { AdminVehicleDAO } from './rest/adminVehicle.dao'
@@ -83,6 +89,9 @@ class ApiFactory {
   private _adminVehicle?: IAdminVehicleRepository
   private _adminRide?: IAdminRideRepository
   private _adminConfig?: IAdminConfigRepository
+  private _adminPromotions?: IAdminPromotionRepository
+  private _adminMissions?: IAdminMissionRepository
+  private _adminNotifications?: IAdminNotificationRepository
   private _pricing?: IPricingRepository
 
   get vehicles(): IVehicleRepository {
@@ -179,6 +188,27 @@ class ApiFactory {
 
   get adminConfig(): IAdminConfigRepository {
     return (this._adminConfig ??= new AdminConfigDAO())
+  }
+
+  /**
+   * A escrita de promoções. A leitura é o `promotions` acima, que continua a
+   * ser Firestore directo — as regras só fecharam a escrita.
+   */
+  get adminPromotions(): IAdminPromotionRepository {
+    return (this._adminPromotions ??= new AdminPromotionDAO())
+  }
+
+  /**
+   * O recálculo do progresso das missões. A leitura é o `missionProgress`
+   * acima, que continua a ser Firestore directo.
+   */
+  get adminMissions(): IAdminMissionRepository {
+    return (this._adminMissions ??= new AdminMissionDAO())
+  }
+
+  /** Apagar notificações. Criar continua no `notifications` acima. */
+  get adminNotifications(): IAdminNotificationRepository {
+    return (this._adminNotifications ??= new AdminNotificationDAO())
   }
 
   get pricing(): IPricingRepository {

@@ -5,6 +5,7 @@ import { Spinner } from 'phosphor-react'
 import { Breadcrumbs } from '@/components/Breadcrumbs'
 import { routsNameMain } from '@/constants/routsName'
 import { PromotionEntity } from '@/core/entities/Promotion'
+import type { PromotionPayload } from '@/core/interfaces/IAdminPromotionRepository'
 import type { PromotionType, RidePaymentMethod } from '@rafaelpilartes/kandengue-shared/types'
 import { RIDE_TYPES, type RideType } from '@rafaelpilartes/kandengue-shared/enums'
 import { RIDE_TYPE_LABELS } from '@rafaelpilartes/kandengue-shared/constants'
@@ -130,14 +131,22 @@ export function PromotionFormPage() {
     try {
       const validFrom = new Date(form.valid_from)
       const validUntil = new Date(form.valid_until)
+      // A API recusa o mesmo (e mais: percentagem fora de 1–100, tecto num
+      // valor fixo, os dois interruptores de elegibilidade juntos). Fica aqui
+      // para o erro mais comum não custar uma ida ao servidor.
       if (validUntil <= validFrom) {
         showToast('error', 'A data de fim deve ser posterior à de início')
         setSubmitting(false)
         return
       }
 
-      const payload: Omit<PromotionEntity, 'id'> = {
-        code: form.code.trim().toUpperCase(),
+      /*
+       * Já não leva `used_count_approx`, `reserved_count_approx`,
+       * `created_by` nem `created_at`: são do servidor. O `code` só vai na
+       * criação — na edição é o id do documento e viaja no caminho.
+       */
+      const code = form.code.trim().toUpperCase()
+      const fields: PromotionPayload = {
         type: form.type,
         value: Number(form.value),
         max_discount: form.max_discount ? Number(form.max_discount) : undefined,
@@ -150,8 +159,6 @@ export function PromotionFormPage() {
         usage_limit_per_user: form.usage_limit_per_user
           ? Number(form.usage_limit_per_user)
           : undefined,
-        used_count_approx: 0,
-        reserved_count_approx: 0,
         valid_from: validFrom,
         valid_until: validUntil,
         active: form.active,
@@ -185,19 +192,25 @@ export function PromotionFormPage() {
               reward_type: form.referral_reward_type,
               reward_value: Number(form.referral_reward_value)
             }
-          : undefined,
-        created_by: '',
-        created_at: new Date()
+          : undefined
       }
 
       if (isEdit) {
-        await updatePromotion.mutateAsync({
-          code: payload.code,
-          patch: payload
+        const result = await updatePromotion.mutateAsync({
+          code: codeParam!,
+          payload: fields
         })
-        showToast('success', 'Promoção atualizada')
+        // A API diz quando o pedido não muda nada. Dizer "atualizada" a quem
+        // abriu e gravou o formulário sem tocar em nada é mentira pequena, e
+        // esconde que não há registo de auditoria para esta gravação.
+        showToast(
+          'success',
+          result.changed
+            ? `Promoção atualizada (${result.changed_fields.join(', ')})`
+            : 'Nada mudou nesta promoção'
+        )
       } else {
-        await createPromotion.mutateAsync(payload)
+        await createPromotion.mutateAsync({ code, ...fields })
         showToast('success', 'Promoção criada')
       }
 
@@ -205,11 +218,19 @@ export function PromotionFormPage() {
       if (form.has_specific_users && csvText.trim()) {
         const ids = parseCsvIds(csvText)
         if (ids.length > 0) {
-          await addAllowedUsersBulk.mutateAsync({
-            code: payload.code,
+          const result = await addAllowedUsersBulk.mutateAsync({
+            // Na edição o código é o do caminho; na criação é o do formulário.
+            code: isEdit ? codeParam! : code,
             userIds: ids
           })
-          showToast('success', `${ids.length} utilizadores adicionados`)
+          // `added` e não `ids.length`: colar o mesmo CSV outra vez não dá
+          // acesso a ninguém, e o ecrã não pode dizer que deu.
+          showToast(
+            'success',
+            result.already_present > 0
+              ? `${result.added} utilizadores adicionados (${result.already_present} já estavam)`
+              : `${result.added} utilizadores adicionados`
+          )
         }
       }
 

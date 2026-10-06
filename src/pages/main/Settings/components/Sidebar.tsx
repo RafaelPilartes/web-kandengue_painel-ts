@@ -1,7 +1,5 @@
 // src/components/settings/Sidebar.tsx
 import {
-  LayoutDashboard,
-  CreditCard,
   Settings,
   ChevronRight,
   Banknote,
@@ -17,19 +15,12 @@ interface SidebarProps {
 }
 
 export function Sidebar({ selectedOption, setSelectedOption }: SidebarProps) {
+  /*
+   * As abas Tarifas e Pagamentos saíram: editavam `rideRates`, que é legado.
+   * Os preços vivem em Preços → Perfis, e a nota no corpo do ecrã diz-o a
+   * quem vier aqui procurá-los.
+   */
   const items = [
-    {
-      key: 'tariffs',
-      label: 'Tarifas',
-      icon: LayoutDashboard,
-      description: 'Preços e horários'
-    },
-    {
-      key: 'payouts',
-      label: 'Pagamentos',
-      icon: CreditCard,
-      description: 'Taxas e repasses'
-    },
     {
       key: 'general',
       label: 'Geral',

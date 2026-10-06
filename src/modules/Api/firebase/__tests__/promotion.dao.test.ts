@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, beforeEach, vi } from 'vitest'
-import { doc, getDoc, getDocs, collection, setDoc, Timestamp } from 'firebase/firestore'
+import { doc, setDoc, Timestamp } from 'firebase/firestore'
 
 vi.mock('@/config/firebase.config', async () => {
   const { testDb } = await import('@/test/firebase.emulator')
@@ -13,29 +13,47 @@ const { FirebasePromotionDAO } =
 
 const COLLECTION = 'promotions'
 const USAGES = 'promotion_usages' // ver firebaseCollections: snake_case
-const NUM_SHARDS = 10
 
 const d = (iso: string) => new Date(iso)
 
-/** Uma promoção mínima e válida, para não repetir o objecto em cada teste. */
-function newPromotion(over: Record<string, unknown> = {}) {
-  return {
-    code: 'verao10',
-    type: 'percent',
+/*
+ * ⚠️ **Este DAO é só de leitura.** As escritas passaram para a API
+ * (`/api/v1/admin/promotions*`) e as regras fecharam `promotions` ao
+ * cliente, admin incluído — o que aqui se tentasse escrever rebentava com
+ * `permission-denied` em produção.
+ *
+ * Os testes que havia do `create` (id = código, os 10 shards, contadores
+ * ignorados), do `update` (`deleteField`, código e contadores protegidos,
+ * `rules` substituídas por inteiro), do `setActive` e dos permitidos estão
+ * agora no `promotion-admin.service.test.ts` da API, onde esse
+ * comportamento passou a viver. **Não os reintroduzir aqui**: um teste que
+ * escreve directamente neste DAO passa contra o emulador (que o teste corre
+ * sem regras) e descreve um caminho que produção nega.
+ *
+ * Por isso a semente é escrita com `setDoc`, não pelo DAO.
+ */
+async function seedPromotion(
+  code: string,
+  over: Record<string, unknown> = {}
+) {
+  await setDoc(doc(testDb, `${COLLECTION}/${code}`), {
+    id: code,
+    code,
+    type: 'percentage',
     value: 10,
     used_count_approx: 0,
     reserved_count_approx: 0,
-    valid_from: d('2026-01-01'),
-    valid_until: d('2026-12-31'),
+    valid_from: Timestamp.fromDate(d('2026-01-01')),
+    valid_until: Timestamp.fromDate(d('2026-12-31')),
     active: true,
-    rules: { first_ride_only: true },
+    rules: { has_specific_users: true },
     created_by: 'adm-1',
-    created_at: d('2026-01-01'),
+    created_at: Timestamp.fromDate(d('2026-01-01')),
     ...over
-  } as never
+  })
 }
 
-describe('FirebasePromotionDAO', () => {
+describe('FirebasePromotionDAO (leitura)', () => {
   let dao: InstanceType<typeof FirebasePromotionDAO>
 
   beforeAll(async () => {
@@ -56,150 +74,75 @@ describe('FirebasePromotionDAO', () => {
     dao = new FirebasePromotionDAO()
   })
 
-  // ── O id é o código, não um id gerado ──
-
-  it('create usa o código normalizado como id do documento', async () => {
-    const created = await dao.create(newPromotion({ code: '  verao10 ' }))
-
-    expect(created.id).toBe('VERAO10')
-    expect(created.code).toBe('VERAO10')
-    expect((await getDoc(doc(testDb, `${COLLECTION}/VERAO10`))).exists()).toBe(
-      true
-    )
-  })
+  // ── O id é o código, e é por aí que se lê ──
 
   it('getByCode normaliza antes de procurar', async () => {
-    await dao.create(newPromotion())
+    await seedPromotion('VERAO10')
 
     expect((await dao.getByCode(' verao10 '))?.id).toBe('VERAO10')
     expect(await dao.getByCode('NAO-EXISTE')).toBeNull()
   })
 
-  // ── A razão de este create não poder ser o do motor ──
+  it('getByCode converte as três datas do documento', async () => {
+    await seedPromotion('VERAO10')
 
-  it('create inicializa os 10 shards de contagem a zero', async () => {
-    await dao.create(newPromotion())
+    const p = await dao.getByCode('VERAO10')
 
-    const shards = await getDocs(
-      collection(testDb, `${COLLECTION}/VERAO10/counters`)
-    )
-
-    expect(shards.size).toBe(NUM_SHARDS)
-    expect(shards.docs.map(s => s.id).sort()).toContain('shard_0')
-    for (const s of shards.docs) {
-      expect(s.data()).toEqual({ used_count: 0, reserved_count: 0 })
-    }
+    expect(p?.valid_from).toEqual(d('2026-01-01'))
+    expect(p?.valid_until).toEqual(d('2026-12-31'))
+    expect(p?.created_at).toEqual(d('2026-01-01'))
   })
 
-  it('create ignora contadores enviados pelo caller e começa a zero', async () => {
-    const created = await dao.create(
-      newPromotion({ used_count_approx: 999, reserved_count_approx: 42 })
-    )
-
-    expect(created.used_count_approx).toBe(0)
-    expect(created.reserved_count_approx).toBe(0)
-  })
-
-  // ── A razão de este update não poder ser o do motor ──
-
-  it('update apaga de facto um campo que o admin limpou', async () => {
-    await dao.create(newPromotion({ max_discount: 500 }))
-
-    const updated = await dao.update('verao10', {
-      max_discount: undefined
-    })
-
-    expect(updated.max_discount).toBeUndefined()
-    // Não basta o objecto vir sem a chave: tem de ter saído do documento.
-    expect(
-      'max_discount' in (await getDoc(doc(testDb, `${COLLECTION}/VERAO10`))).data()!
-    ).toBe(false)
-  })
-
-  it('update recusa alterar o código, os contadores e a auditoria de criação', async () => {
-    // `create` carimba sempre `created_at` com a hora do servidor e ignora o
-    // que o caller enviou — por isso a referência é o que o create devolveu,
-    // não a data do objecto de entrada.
-    const created = await dao.create(newPromotion())
-
-    const updated = await dao.update('verao10', {
-      code: 'OUTRO',
-      used_count_approx: 999,
-      reserved_count_approx: 999,
-      created_by: 'intruso',
-      created_at: d('2020-01-01')
-    } as never)
-
-    expect(updated.code).toBe('VERAO10')
-    expect(updated.used_count_approx).toBe(0)
-    expect(updated.reserved_count_approx).toBe(0)
-    expect(updated.created_by).toBe('adm-1')
-    expect(updated.created_at).toEqual(created.created_at)
-  })
-
-  it('update sem rules deixa as rules existentes intactas', async () => {
-    await dao.create(newPromotion())
-
-    const updated = await dao.update('verao10', { value: 20 })
-
-    expect(updated.value).toBe(20)
-    expect(updated.rules).toEqual({ first_ride_only: true })
-  })
-
-  it('update com rules substitui-as por inteiro', async () => {
-    await dao.create(newPromotion())
-
-    const updated = await dao.update('verao10', {
-      rules: { min_account_age_days: 7 } as never
-    })
-
-    expect(updated.rules).toEqual({ min_account_age_days: 7 })
-  })
-
-  // ── O que passou a vir do motor ──
+  // ── O que vem do motor ──
 
   it('getAll ordena por created_at desc', async () => {
-    // `create` carimba `created_at` com Timestamp.now() e ignora o valor
-    // enviado, por isso a ordem observável é a de criação: B depois de A.
-    await dao.create(newPromotion({ code: 'A' }))
-    await dao.create(newPromotion({ code: 'B' }))
+    await seedPromotion('A', {
+      created_at: Timestamp.fromDate(d('2026-01-01'))
+    })
+    await seedPromotion('B', {
+      created_at: Timestamp.fromDate(d('2026-02-01'))
+    })
 
     expect((await dao.getAll()).data.map(p => p.id)).toEqual(['B', 'A'])
   })
 
-  it('setActive alterna sem tocar no resto', async () => {
-    await dao.create(newPromotion())
-
-    await dao.setActive('verao10', false)
-
-    const p = await dao.getByCode('verao10')
-    expect(p?.active).toBe(false)
-    expect(p?.value).toBe(10)
-  })
-
   // ── Subcolecção de utilizadores permitidos ──
 
-  it('addAllowedUsersBulk e listAllowedUsers percorrem a subcolecção', async () => {
-    await dao.create(newPromotion())
+  it('listAllowedUsers percorre a subcolecção', async () => {
+    await seedPromotion('VERAO10')
+    for (const uid of ['us-1', 'us-2']) {
+      await setDoc(doc(testDb, `${COLLECTION}/VERAO10/allowed_users/${uid}`), {
+        user_id: uid,
+        added_at: Timestamp.fromDate(d('2026-02-01')),
+        added_by: 'adm-1'
+      })
+    }
 
-    await dao.addAllowedUsersBulk('verao10', ['us-1', 'us-2'], 'adm-1')
+    const permitidos = await dao.listAllowedUsers(' verao10 ')
 
-    const permitidos = await dao.listAllowedUsers('verao10')
     expect(permitidos.map(u => u.user_id).sort()).toEqual(['us-1', 'us-2'])
     expect(permitidos[0].added_by).toBe('adm-1')
-
-    await dao.removeAllowedUser('verao10', 'us-1')
-    expect((await dao.listAllowedUsers('verao10')).map(u => u.user_id)).toEqual(
-      ['us-2']
-    )
+    expect(permitidos[0].added_at).toEqual(d('2026-02-01'))
   })
 
-  it('addAllowedUsersBulk com lista vazia não escreve nada', async () => {
-    await dao.create(newPromotion())
+  it('listAllowedUsers numa promoção sem lista devolve vazio', async () => {
+    await seedPromotion('VERAO10')
 
-    await dao.addAllowedUsersBulk('verao10', [], 'adm-1')
+    expect(await dao.listAllowedUsers('VERAO10')).toEqual([])
+  })
 
-    expect(await dao.listAllowedUsers('verao10')).toEqual([])
+  /**
+   * Documentos antigos da subcolecção podem não ter `user_id` nem `added_by`
+   * — o id do documento é a fonte fiável do primeiro.
+   */
+  it('listAllowedUsers recua para o id do documento e para "unknown"', async () => {
+    await seedPromotion('VERAO10')
+    await setDoc(doc(testDb, `${COLLECTION}/VERAO10/allowed_users/us-velho`), {})
+
+    const [permitido] = await dao.listAllowedUsers('VERAO10')
+
+    expect(permitido.user_id).toBe('us-velho')
+    expect(permitido.added_by).toBe('unknown')
   })
 
   // ── Usages, na colecção de raiz separada ──

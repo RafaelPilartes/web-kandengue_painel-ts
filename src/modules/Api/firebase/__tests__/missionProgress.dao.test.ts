@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeAll, beforeEach, vi } from 'vitest'
-import { collection, doc, getDocs, setDoc, Timestamp } from 'firebase/firestore'
-import { MissionProgressEntity } from '@/core/entities/MissionProgress'
+import { doc, setDoc, Timestamp } from 'firebase/firestore'
 
 vi.mock('@/config/firebase.config', async () => {
   const { testDb } = await import('@/test/firebase.emulator')
@@ -69,51 +68,18 @@ describe('FirebaseMissionProgressDAO', () => {
     expect(found?.completed_at).toBeInstanceOf(Date)
   })
 
-  // ─── O teste que justifica esta task: upsert por ID composto ───
-
-  it('updateProgress duas vezes com o mesmo par driver/missão actualiza o mesmo documento, não cria dois', async () => {
-    const progress = new MissionProgressEntity({
-      id: 'drv-1_miss-1',
-      driver_id: 'drv-1',
-      mission_id: 'miss-1',
-      current_count: 1,
-      completed_ride_ids: ['ride-1'],
-      is_completed: false,
-      is_paid: false
-    })
-
-    const first = await dao.updateProgress(progress)
-    expect(first.id).toBe('drv-1_miss-1')
-
-    const second = await dao.updateProgress({
-      ...progress,
-      current_count: 2,
-      completed_ride_ids: ['ride-1', 'ride-2']
-    } as MissionProgressEntity)
-    expect(second.id).toBe('drv-1_miss-1')
-    expect(second.current_count).toBe(2)
-
-    const snap = await getDocs(collection(testDb, COLLECTION))
-    expect(snap.docs).toHaveLength(1)
-    expect(snap.docs[0].id).toBe('drv-1_miss-1')
-    expect(snap.docs[0].data().current_count).toBe(2)
-  })
-
-  it('updateProgress calcula o ID composto quando a entidade não o traz', async () => {
-    const progress = new MissionProgressEntity({
-      id: '',
-      driver_id: 'drv-2',
-      mission_id: 'miss-2',
-      current_count: 0,
-      completed_ride_ids: [],
-      is_completed: false,
-      is_paid: false
-    })
-
-    const updated = await dao.updateProgress(progress)
-    expect(updated.id).toBe('drv-2_miss-2')
-    expect(await dao.getById('drv-2_miss-2')).not.toBeNull()
-  })
+  /*
+   * ⚠️ **As escritas saíram deste DAO.** O `updateProgress` (upsert por ID
+   * composto) passou para a API — `POST /api/v1/admin/drivers/:id/
+   * mission-progress/recalculate` —, e as regras fecharam ao cliente os
+   * campos que decidem pagamento, mais o `create` e o `delete`.
+   *
+   * Os testes que havia do upsert estão agora no
+   * `mission-progress-admin.service.test.ts` da API, com a convenção do id
+   * composto e a idempotência. **Não os reintroduzir aqui**: um teste que
+   * escreve por este DAO passa contra o emulador (que o corre sem regras) e
+   * descreve um caminho que produção nega.
+   */
 
   it('getAllProgressByDriver devolve todo o progresso de um motorista', async () => {
     await seed('drv-1_miss-1', {

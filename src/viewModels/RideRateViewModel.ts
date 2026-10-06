@@ -1,20 +1,28 @@
 // viewModels/RideRateViewModel.ts
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { rideRateUseCase } from '@/domain/usecases/rideRateUseCase'
 import { RideRateEntity } from '@/core/entities/RideRate'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { firebaseCollections } from '@/constants/firebaseCollections'
-import { withAudit } from '@/observability/audit'
 import type { FieldPath } from '@/core/interfaces/IBaseRepository'
 
+/**
+ * **Só leitura.** `rideRates` é legado e passou a `allow write: if false`.
+ *
+ * Quem fixa preços desde o motor de preços é `pricingProfiles`, em
+ * Preços → Perfis, escrito pela API. As abas Tarifas e Repartição saíram das
+ * Configurações, e com elas o `createRideRate`/`updateRideRate`/
+ * `deleteRideRate` que aqui estavam — escritas que hoje davam
+ * `permission-denied`.
+ *
+ * Os documentos ficam onde estão: são o histórico de como se cobrava antes.
+ */
 export function useRideRatesViewModel(
   limit?: number,
   offset?: number,
   searchTerm?: string,
   filters?: Partial<RideRateEntity>
 ) {
-  const queryClient = useQueryClient()
-
   const filtersKey = filters ? JSON.stringify(filters) : ''
 
   /** Buscar lista de taxa de viagem */
@@ -50,71 +58,6 @@ export function useRideRatesViewModel(
     }
   }
 
-  /** Criar ride */
-  const createRideRate = useMutation({
-    mutationFn: (rideRate: Omit<RideRateEntity, 'id'>) =>
-      withAudit(() => rideRateUseCase.executeCreate(rideRate), {
-        action: 'create',
-        module: 'system',
-        description: `Criou nova taxa de viagem`,
-        target_type: 'ride_rate',
-        new_data: rideRate
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [firebaseCollections.rideRates.root]
-      })
-    }
-  })
-
-  /** Atualizar ride */
-  const updateRideRate = useMutation({
-    mutationFn: async ({
-      id,
-      rideRate
-    }: {
-      id: string
-      rideRate: Partial<RideRateEntity>
-    }) => {
-      const previous_data = await rideRateUseCase.executeGetById(id).catch(() => null)
-      return withAudit(() => rideRateUseCase.executeUpdate(id, rideRate), {
-        action: 'update',
-        module: 'system',
-        description: `Atualizou taxa de viagem - ID: ${id}`,
-        target_id: id,
-        target_type: 'ride_rate',
-        previous_data: previous_data || undefined,
-        new_data: rideRate
-      })
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [firebaseCollections.rideRates.root]
-      })
-    }
-  })
-
-  /** Deletar ride */
-  const deleteRideRate = useMutation({
-    mutationFn: async (id: string) => {
-      const previous_data = await rideRateUseCase.executeGetById(id).catch(() => null)
-      return withAudit(() => rideRateUseCase.executeDelete(id), {
-        action: 'delete',
-        module: 'system',
-        description: `Excluiu taxa de viagem - ID: ${id}`,
-        target_id: id,
-        target_type: 'ride_rate',
-        previous_data: previous_data || undefined,
-        severity: 'critical'
-      })
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [firebaseCollections.rideRates.root]
-      })
-    }
-  })
-
   /** Buscar ride único (on-demand) */
   const fetchRideRateById = async (id: string) => {
     try {
@@ -147,10 +90,6 @@ export function useRideRatesViewModel(
 
     fetchAllRideRatesByField,
     fetchOneRideRateByField,
-
-    createRideRate,
-    updateRideRate,
-    deleteRideRate,
     fetchRideRateById
   }
 }

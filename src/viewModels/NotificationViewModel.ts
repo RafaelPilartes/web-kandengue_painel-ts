@@ -72,49 +72,19 @@ export function useNotificationsViewModel(
     }
   })
 
-  /** Atualizar notificação */
-  const updateNotification = useMutation({
-    mutationFn: async ({
-      id,
-      notification
-    }: {
-      id: string
-      notification: Partial<NotificationEntity>
-    }) => {
-      const previous_data = await notificationUseCase
-        .executeGetById(id)
-        .catch(() => null)
-      return withAudit(() => notificationUseCase.executeUpdate(id, notification), {
-        action: 'update',
-        module: 'notifications',
-        description: `Atualizou notificação - ID: ${id}`,
-        target_id: id,
-        target_type: 'notification',
-        previous_data: previous_data || undefined,
-        new_data: notification
-      })
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notifications'] })
-    }
-  })
+  /*
+   * Não há `updateNotification`: as regras passaram `notifications` a
+   * `allow update: if false`. O que aqui estava não era chamado por nenhum
+   * ecrã — e a regra antiga (`update: if autenticado()`) deixava qualquer
+   * sessão reescrever qualquer notificação.
+   */
 
-  /** Deletar notificação */
+  /**
+   * Apaga pela API. Sem `withAudit`: o servidor escreve em `auditLogs` com o
+   * conteúdo anterior, dentro da transacção que apaga.
+   */
   const deleteNotification = useMutation({
-    mutationFn: async (id: string) => {
-      const previous_data = await notificationUseCase
-        .executeGetById(id)
-        .catch(() => null)
-      return withAudit(() => notificationUseCase.executeDelete(id), {
-        action: 'delete',
-        module: 'notifications',
-        description: `Excluiu notificação - ID: ${id}`,
-        target_id: id,
-        target_type: 'notification',
-        previous_data: previous_data || undefined,
-        severity: 'critical'
-      })
-    },
+    mutationFn: (id: string) => notificationUseCase.executeDelete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] })
     }
@@ -154,7 +124,6 @@ export function useNotificationsViewModel(
     fetchOneNotificationByField,
 
     createNotification,
-    updateNotification,
     deleteNotification,
     fetchNotificationById
   }

@@ -1,23 +1,17 @@
 // modules/Api/firebase/missionProgress.dao.ts
-import {
-  doc,
-  getDocs,
-  limit as fbLimit,
-  query,
-  serverTimestamp,
-  setDoc,
-  where
-} from 'firebase/firestore'
+import { getDocs, limit as fbLimit, query, where } from 'firebase/firestore'
 import type { IMissionProgressRepository } from '@/core/interfaces/IMissionProgressRepository'
 import {
   MissionProgressEntity,
   missionProgressConverter
 } from '@/core/entities/MissionProgress'
 import { firebaseCollections } from '@/constants/firebaseCollections'
-import { AppError } from '@/domain/errors/AppError'
 import { BaseFirebaseDAO } from './BaseFirebaseDAO'
 
 /**
+ * **Só leitura.** O `updateProgress` saiu daqui para a API — ver
+ * `IMissionProgressRepository` para o porquê.
+ *
  * Ao contrário do resto das entidades deste projecto, esta colecção não tem
  * `created_at` — `getAll`/`listenAll` herdados (que ordenam por `created_at`
  * por omissão) devolveriam sempre vazio aqui. Usar os métodos próprios
@@ -42,11 +36,11 @@ export class FirebaseMissionProgressDAO
     )
   }
 
-  /** ID composto por convenção — a API usa a mesma em MissionProgressRepository. */
-  private compositeId(driverId: string, missionId: string): string {
-    return `${driverId}_${missionId}`
-  }
-
+  /**
+   * O par driver/mission, por query e não pelo id composto
+   * (`{driver_id}_{mission_id}`): há documentos em produção com id gerado,
+   * de antes da convenção. É o mesmo recuo que o `payMissionBonus` da API faz.
+   */
   async getProgress(
     driverId: string,
     missionId: string
@@ -63,36 +57,6 @@ export class FirebaseMissionProgressDAO
       return snap.empty ? null : this.toEntity(snap.docs[0])
     } catch (err) {
       this.fail('getProgress', err)
-    }
-  }
-
-  /**
-   * Upsert com ID composto — não é o `create` do motor, que geraria um ID
-   * com prefixo e partiria a convenção que a API espera.
-   */
-  async updateProgress(
-    progress: MissionProgressEntity
-  ): Promise<MissionProgressEntity> {
-    try {
-      const id =
-        progress.id || this.compositeId(progress.driver_id, progress.mission_id)
-
-      await setDoc(
-        doc(this.ref, id),
-        { ...progress, id, last_updated: serverTimestamp() },
-        { merge: true }
-      )
-
-      const updated = await this.getById(id)
-      if (!updated) {
-        this.fail(
-          'updateProgress',
-          new AppError('not-found', 'progresso não encontrado após upsert')
-        )
-      }
-      return updated
-    } catch (err) {
-      this.fail('updateProgress', err)
     }
   }
 

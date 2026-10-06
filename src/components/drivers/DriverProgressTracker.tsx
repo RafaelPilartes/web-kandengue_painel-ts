@@ -33,8 +33,31 @@ export const DriverProgressTracker: React.FC<DriverProgressTrackerProps> = ({
 
   const handleRecalculate = async () => {
     try {
-      await recalculateProgress.mutateAsync(driver_id)
-      showToast('success', 'Progresso recalculado com sucesso!')
+      const result = await recalculateProgress.mutateAsync(driver_id)
+
+      // A API diz o que mudou. "Recalculado com sucesso" a dizer o mesmo
+      // quando nada mudou escondia que o botão não tinha nada a corrigir —
+      // e escondia também que não há registo de auditoria desta passagem.
+      if (result.missions === 0) {
+        showToast('info', 'Não há missões activas para recalcular.')
+      } else if (result.changed === 0) {
+        showToast('info', 'O progresso já estava correcto — nada mudou.')
+      } else {
+        showToast(
+          'success',
+          `Progresso recalculado: ${result.changed} de ${result.missions} missão(ões) actualizada(s).`
+        )
+      }
+
+      // A contagem pode estar abaixo da real: diz-se, em vez de mostrar um
+      // número em que não se pode confiar.
+      if (result.truncated) {
+        showToast(
+          'error',
+          'Há demasiadas corridas no ciclo para as ler todas — a contagem pode estar incompleta.'
+        )
+      }
+
       refetchProgress()
     } catch (error: any) {
       console.error('Recalculate failure details:', error)
