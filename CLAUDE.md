@@ -108,18 +108,32 @@ publicar uma tag nova e subir a dependência nos cinco repositórios.
 O documento **`08 — Firestore Schema`** continua a ser a fonte de verdade do
 schema do Firestore; a lib é a fonte de verdade dos tipos.
 
-> A criação de promoções pré-cria os shards `counters/shard_0..9` no
-> `FirebasePromotionDAO.create()`. É conveniência idempotente, não um
-> invariante: todas as escritas em shards usam `set(..., { merge: true })`,
-> que cria o documento se faltar, e `used_count_approx` já nasce a `0` no
-> próprio documento da promoção. O risco real dos contadores está na janela
-> de reconciliação de 60s do `syncPromoCounters`, não na criação.
+> ⚠️ **As promoções escrevem-se pela API** (`/api/v1/admin/promotions*`), não
+> aqui. `promotions` e tudo o que está por baixo — o documento, os
+> `counters/shard_*` e os `allowed_users` — estão `allow write: if false` nas
+> regras, **admin incluído**. O `FirebasePromotionDAO` é só de leitura
+> (`getByCode`, `listAllowedUsers`, `listUsages` e o que o motor traz); as
+> escritas vivem no `AdminPromotionDAO` (`modules/Api/rest/`). A criação do
+> documento e dos 10 shards é uma transacção única no servidor, com o registo
+> de auditoria dentro dela.
+>
+> Não reintroduzir escritas em `promotions` no cliente: a razão de isto ter
+> mudado é que o `valid_until` da `RAFAEL11` passou de Junho para Outubro sem
+> uma linha em `auditLogs`. Promoções são dinheiro.
 
 > ⚠️ As operações de dinheiro do admin — aprovar carregamento, e aprovar /
 > rejeitar / marcar-pago um saque — vivem na API (`/api/v1/admin/...`), não
 > no painel. Correm numa transação única e idempotente, e registam em
 > `walletAuditLogs` dentro dessa transação. Não reintroduzir escritas de
 > saldo, transação ou estado de saque no cliente.
+
+> ⚠️ **Auditoria: nas escritas que vão pela API, não usar `withAudit`.** O
+> servidor escreve em `auditLogs` dentro da transacção da alteração — o
+> registo não pode existir sem a alteração. O `withAudit` do
+> `src/observability/audit.ts` corre no browser, depois da escrita, falha em
+> silêncio e não escreve nada sem `auditService.setAdmin`: somá-lo a uma
+> escrita da API dá duas linhas por alteração, uma delas pior. Continua a
+> valer para o que ainda escreve directamente no Firestore.
 
 ---
 

@@ -1,6 +1,5 @@
 import { ApiRepository } from '@/modules/Api/factory'
 import { BaseUseCase } from './BaseUseCase'
-import { missionUseCase } from './missionUseCase'
 import type { RideEntity } from '@/core/entities/Ride'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import type { FieldPath, ListenOptions } from '@/core/interfaces/IBaseRepository'
@@ -71,25 +70,19 @@ export class RideUseCase extends BaseUseCase {
     return this.run('create', () => this.repository.create(ride))
   }
 
+  /**
+   * ⚠️ **Já não recalcula o progresso das missões.**
+   *
+   * Chamava o recálculo quando a corrida passava a `completed`, por cima do
+   * que o trigger `onRideUpdated` já fazia no servidor. Era redundante — e
+   * agora seria uma escrita que as regras negam: os campos de pagamento do
+   * `missionProgress` são só do servidor.
+   *
+   * Quem conta as corridas para as missões é o trigger. Para forçar, há o
+   * botão "Recalcular progresso", que chama a API.
+   */
   executeUpdate(id: string, ride: Partial<RideEntity>): Promise<RideEntity> {
-    return this.run('update', async () => {
-      const updated = await this.repository.update(id, ride)
-
-      // Recalcula o progresso das missões quando a corrida conclui.
-      // O trigger `onRideUpdated` do servidor faz o mesmo — é redundante,
-      // mas o cálculo recomeça do zero (não incrementa), portanto correr
-      // duas vezes dá o mesmo resultado. O erro é engolido de propósito:
-      // a corrida actualiza-se na mesma se o progresso falhar.
-      if (ride.status === 'completed' && updated.driver?.id) {
-        missionUseCase
-          .executeUpdateDriverProgress(updated.driver.id)
-          .catch(err => {
-            console.error('Erro ao atualizar progresso de missões:', err)
-          })
-      }
-
-      return updated
-    })
+    return this.run('update', () => this.repository.update(id, ride))
   }
 
   /**

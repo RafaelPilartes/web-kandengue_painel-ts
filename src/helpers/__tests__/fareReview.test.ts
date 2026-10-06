@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
   closedFareV2,
+  compareQuotedToCharged,
+  failedReservation,
   fareDistance,
+  hasReviewFlag,
   needsFareReview,
+  promotionReservationMissing,
   signedDeviationPercent
 } from '@/helpers/fareReview'
 import type { RideEntity } from '@/core/entities/Ride'
@@ -115,5 +119,291 @@ describe('signedDeviationPercent', () => {
 
   it('devolve null quando a estimada é zero — não divide por zero', () => {
     expect(signedDeviationPercent({ ...distance, estimated_km: 0 })).toBeNull()
+  })
+})
+
+// ─────────────── O cotado contra o cobrado ───────────────
+
+/*
+ * Os números reais da verificação de produção de 2026-10-05: 14,1 km cotados
+ * em 3 752 Kz, com a RAFAEL11 (40%) a dar 1 501 de desconto e 2 251 a pagar.
+ */
+const COTADO_COM_DESCONTO = {
+  gross: 3752,
+  discount: 1501,
+  total: 2251,
+  breakdown: fareV2.breakdown,
+  pricing: {} as never
+}
+
+/** Uma estimativa anterior à lib 2.10.0: só `total`, sem `gross` nem `discount`. */
+const COTADO_LEGADO = {
+  total: 3752,
+  breakdown: fareV2.breakdown,
+  pricing: {} as never
+}
+
+const cobrado = (over: Record<string, number> = {}) => ({
+  ...fareV2,
+  total: 2251,
+  breakdown: { ...fareV2.breakdown, gross_amount: 3752, discount: 1501, ...over }
+})
+
+const corrida = (fare?: unknown, estimated_fare?: unknown) =>
+  ({ fare, estimated_fare }) as Pick<RideEntity, 'fare' | 'estimated_fare'>
+
+describe('compareQuotedToCharged', () => {
+  it('sem tarifa V2 não há nada a comparar', () => {
+    expect(compareQuotedToCharged(corrida(undefined))).toBeNull()
+    expect(compareQuotedToCharged(corrida(fareV1))).toBeNull()
+  })
+
+  it('devolve os três números de cada lado', () => {
+    const c = compareQuotedToCharged(
+      corrida(cobrado(), COTADO_COM_DESCONTO)
+    )
+
+    expect(c?.quoted).toEqual({ gross: 3752, discount: 1501, total: 2251 })
+    expect(c?.charged).toEqual({ gross: 3752, discount: 1501, total: 2251 })
+    expect(c?.grossDelta).toBe(0)
+    expect(c?.totalDelta).toBe(0)
+    expect(c?.discountNotApplied).toBe(false)
+  })
+
+  /**
+   * ⚠️ **O caso que esta fase resolve.** A cotação mostrou 1 501 de desconto
+   * e o fecho não aplicou nenhum: o cliente pagou 3 752 em vez de 2 251. A
+   * diferença aparecia como desvio de tarifa, e não é — o bruto bate.
+   */
+  it('reconhece a reserva falhada, e o bruto bate', () => {
+    const c = compareQuotedToCharged(
+      corrida(
+        cobrado({ discount: 0 }),
+        COTADO_COM_DESCONTO
+      )
+    )
+
+    expect(c?.discountNotApplied).toBe(true)
+    // O bruto é o mesmo: a tarifa não se desviou.
+    expect(c?.grossDelta).toBe(0)
+    // O que o cliente paga é que mudou.
+    expect(c?.charged.total).toBe(2251)
+  })
+
+  it('um fecho sem o campo `discount` conta como desconto zero', () => {
+    const semCampo = { ...cobrado().breakdown }
+    delete (semCampo as { discount?: number }).discount
+    const c = compareQuotedToCharged(
+      corrida({ ...fareV2, total: 3752, breakdown: semCampo }, COTADO_COM_DESCONTO)
+    )
+
+    expect(c?.charged.discount).toBe(0)
+    expect(c?.discountNotApplied).toBe(true)
+  })
+
+  it('sem desconto cotado não há reserva falhada nenhuma', () => {
+    const c = compareQuotedToCharged(
+      corrida(
+        { ...fareV2, total: 3752, breakdown: { ...fareV2.breakdown, gross_amount: 3752 } },
+        COTADO_LEGADO
+      )
+    )
+
+    expect(c?.discountNotApplied).toBe(false)
+    expect(c?.quoted).toEqual({ gross: 3752, discount: 0, total: 3752 })
+  })
+
+  /**
+   * As corridas criadas antes da lib 2.10.0 têm `estimated_fare` com `total`
+   * e mais nada. Nessas o total **é** o bruto — é o `resolveEstimatedFare`
+   * que o resolve, e ler o campo à mão dava um desconto que não existe.
+   */
+  it('uma estimativa legada resolve-se pelo total', () => {
+    const c = compareQuotedToCharged(
+      corrida(
+        { ...fareV2, total: 4000, breakdown: { ...fareV2.breakdown, gross_amount: 4000 } },
+        COTADO_LEGADO
+      )
+    )
+
+    expect(c?.quoted).toEqual({ gross: 3752, discount: 0, total: 3752 })
+    expect(c?.grossDelta).toBe(248)
+  })
+
+  it('um desvio de tarifa a sério aparece no bruto, com sinal', () => {
+    const c = compareQuotedToCharged(
+      corrida(
+        { ...fareV2, total: 5000, breakdown: { ...fareV2.breakdown, gross_amount: 5000 } },
+        COTADO_COM_DESCONTO
+      )
+    )
+
+    expect(c?.grossDelta).toBe(1248)
+    expect(c?.discountNotApplied).toBe(true)
+  })
+
+  it('cobrou-se menos: o desvio do bruto é negativo', () => {
+    const c = compareQuotedToCharged(
+      corrida(
+        { ...fareV2, total: 3000, breakdown: { ...fareV2.breakdown, gross_amount: 3000, discount: 1501 } },
+        COTADO_COM_DESCONTO
+      )
+    )
+
+    expect(c?.grossDelta).toBe(-752)
+    expect(c?.discountNotApplied).toBe(false)
+  })
+
+  it('sem estimativa gravada mostra só o cobrado', () => {
+    const c = compareQuotedToCharged(corrida(cobrado(), undefined))
+
+    expect(c?.quoted).toBeNull()
+    expect(c?.grossDelta).toBeNull()
+    expect(c?.totalDelta).toBeNull()
+    expect(c?.discountNotApplied).toBe(false)
+    expect(c?.charged.total).toBe(2251)
+  })
+
+  /*
+   * O recuo do `gross_amount`: é obrigatório na V2 e a app passageira
+   * escreve-o sempre, mas uma corrida antiga pode tê-lo perdido. Sem o
+   * recuo, o bruto saía `undefined` e atravessava o ecrã.
+   */
+  it('sem `gross_amount` o bruto é o total mais o desconto', () => {
+    const semBruto = { ...cobrado().breakdown }
+    delete (semBruto as { gross_amount?: number }).gross_amount
+    const c = compareQuotedToCharged(
+      corrida({ ...fareV2, total: 2251, breakdown: semBruto }, COTADO_COM_DESCONTO)
+    )
+
+    expect(c?.charged.gross).toBe(3752)
+  })
+})
+
+describe('promotionReservationMissing', () => {
+  const comPromo = (over: Record<string, string | undefined>) =>
+    over as Pick<RideEntity, 'promotion_id' | 'promotion_usage_id'>
+
+  it('é verdade com código e sem reserva', () => {
+    expect(
+      promotionReservationMissing(comPromo({ promotion_id: 'RAFAEL11' }))
+    ).toBe(true)
+  })
+
+  it('é falso quando a reserva existe', () => {
+    expect(
+      promotionReservationMissing(
+        comPromo({ promotion_id: 'RAFAEL11', promotion_usage_id: 'pu-1' })
+      )
+    ).toBe(false)
+  })
+
+  it('é falso numa corrida sem promoção', () => {
+    expect(promotionReservationMissing(comPromo({}))).toBe(false)
+  })
+
+  /**
+   * Cobre o caso que os números não apanham: uma promoção cujo desconto foi
+   * bloqueado pelo `min_ride_value` reserva sem descontar, e uma reserva
+   * falhada aí não deixa diferença nenhuma nos valores.
+   */
+  it('apanha a reserva falhada mesmo sem desconto nenhum em jogo', () => {
+    expect(
+      promotionReservationMissing(comPromo({ promotion_id: 'MINIMO' }))
+    ).toBe(true)
+  })
+})
+
+describe('hasReviewFlag', () => {
+  const comMarcas = (review_flags?: string[]) =>
+    ({ review_flags }) as Pick<RideEntity, 'review_flags'>
+
+  it('encontra a marca que lá está', () => {
+    expect(
+      hasReviewFlag(
+        comMarcas(['promotion_reservation_failed']),
+        'promotion_reservation_failed'
+      )
+    ).toBe(true)
+  })
+
+  it('é falso sem o campo, e com o campo vazio', () => {
+    expect(
+      hasReviewFlag(comMarcas(undefined), 'promotion_reservation_failed')
+    ).toBe(false)
+    expect(hasReviewFlag(comMarcas([]), 'promotion_reservation_failed')).toBe(
+      false
+    )
+  })
+
+  /*
+   * O array existe para acomodar outros motivos. Uma marca que este painel
+   * ainda não conhece não pode fazer as outras desaparecer.
+   */
+  it('convive com marcas que este código não conhece', () => {
+    expect(
+      hasReviewFlag(
+        comMarcas(['motivo_do_futuro', 'promotion_reservation_failed']),
+        'promotion_reservation_failed'
+      )
+    ).toBe(true)
+  })
+})
+
+describe('failedReservation', () => {
+  const corridaMarcada = (over: Record<string, unknown>) =>
+    over as Pick<
+      RideEntity,
+      'review_flags' | 'promotion_id' | 'promotion_usage_id'
+    >
+
+  it('é verdade pela marca do servidor', () => {
+    expect(
+      failedReservation(
+        corridaMarcada({ review_flags: ['promotion_reservation_failed'] })
+      )
+    ).toBe(true)
+  })
+
+  /**
+   * O recuo: as corridas criadas antes de a marca existir não a têm, e
+   * apanham-se pela mesma assinatura que o trigger usa — sem backfill.
+   */
+  it('é verdade pelo recuo, numa corrida anterior à marca', () => {
+    expect(
+      failedReservation(corridaMarcada({ promotion_id: 'RAFAEL11' }))
+    ).toBe(true)
+  })
+
+  it('é falso quando a reserva existe e não há marca', () => {
+    expect(
+      failedReservation(
+        corridaMarcada({
+          promotion_id: 'RAFAEL11',
+          promotion_usage_id: 'pu-1'
+        })
+      )
+    ).toBe(false)
+  })
+
+  it('é falso numa corrida sem promoção nenhuma', () => {
+    expect(failedReservation(corridaMarcada({}))).toBe(false)
+  })
+
+  /*
+   * A marca ganha ao recuo: uma corrida marcada pelo servidor conta mesmo que
+   * tenha uma `promotion_usage_id` (uma reserva que depois se cancelou, por
+   * exemplo). É o servidor que sabe porque a marcou.
+   */
+  it('a marca ganha mesmo com a reserva presente', () => {
+    expect(
+      failedReservation(
+        corridaMarcada({
+          review_flags: ['promotion_reservation_failed'],
+          promotion_id: 'RAFAEL11',
+          promotion_usage_id: 'pu-1'
+        })
+      )
+    ).toBe(true)
   })
 })

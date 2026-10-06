@@ -8,6 +8,10 @@ import type { FieldPath } from '@/core/interfaces/IBaseRepository'
 const LEGACY_PAGE_SIZE = 500
 const LEGACY_FIELD_PAGE_SIZE = 10
 
+/**
+ * **Só leitura.** `rideRates` é legado (`allow write: if false`): quem fixa
+ * preços é `pricingProfiles`, pela API. Ver `RideRateViewModel`.
+ */
 export class RideRateUseCase extends BaseUseCase {
   protected readonly context = 'RideRateUseCase'
 
@@ -64,21 +68,6 @@ export class RideRateUseCase extends BaseUseCase {
 
       return { data, pagination }
     })
-  }
-
-  executeCreate(rideRate: Omit<RideRateEntity, 'id'>): Promise<RideRateEntity> {
-    return this.run('create', () => this.repository.create(rideRate))
-  }
-
-  executeUpdate(
-    id: string,
-    rideRate: Partial<RideRateEntity>
-  ): Promise<RideRateEntity> {
-    return this.run('update', () => this.repository.update(id, rideRate))
-  }
-
-  executeDelete(id: string): Promise<void> {
-    return this.run('delete', () => this.repository.delete(id))
   }
 }
 

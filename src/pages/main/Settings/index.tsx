@@ -1,100 +1,37 @@
-import { useEffect, useState, useMemo } from 'react'
-import type { PayoutsType, RateType } from '@/types/ride'
-import type { RideRatesInterface } from '@/interfaces/IRideRates'
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
+import { ArrowRight, Info } from 'lucide-react'
 import { Sidebar } from './components/Sidebar'
-import { TariffSettings } from './components/TariffSettings'
-import { PayoutSettings } from './components/PayoutSettings'
 import { GeneralSettings } from './components/GeneralSettings'
 import { ReferralSettings } from './components/ReferralSettings'
 import { AppVersionsSettings } from './components/AppVersionsSettings'
 import { WalletTopupSettings } from './components/WalletTopupSettings'
 import type { SettingsOption } from './settingsOptions'
-import { useRideRatesViewModel } from '@/viewModels/RideRateViewModel'
-import { useRideRatesStore } from '@/stores/rideRatesStore'
-import { defaultRates } from '@/utils/rideRatesDefaults'
-import { isEqual } from 'lodash' // 👈 para comparar objetos
 import { routsNameMain } from '@/constants/routsName'
 import { Breadcrumbs } from '@/components/Breadcrumbs'
 
+/**
+ * ⚠️ **As abas Tarifas e Pagamentos saíram deste ecrã.**
+ *
+ * Editavam `rideRates`, que é legado: quem fixa preços desde o motor de
+ * preços é `pricingProfiles`, em Preços → Perfis, escrito pela API com
+ * `version` incrementada e um registo em `pricingAuditLogs`. Nenhuma das duas
+ * apps lê `rideRates`, e a regra passou-o a `allow write: if false` — as abas
+ * davam um ecrã que falha ao gravar.
+ *
+ * Com elas foi-se o "Salvar Alterações" do cabeçalho, que só servia para
+ * gravar `rideRates`: as quatro secções que ficam têm cada uma o seu botão.
+ */
 export function SettingsPage() {
-  const { rideRates, isLoadingRideRates, updateRideRate } =
-    useRideRatesViewModel()
-  const { addRideRatesData, currentRideRatesData } = useRideRatesStore()
-
   const [selectedOption, setSelectedOption] =
-    useState<SettingsOption>('tariffs')
-
-  const [rideRatesStage, setRideRates] = useState<RideRatesInterface>(
-    currentRideRatesData ?? defaultRates
-  )
-
-  // Atualiza quando `rideRates` mudar (ex: vindo da API)
-  useEffect(() => {
-    if (rideRates.length > 0) {
-      addRideRatesData(rideRates[0])
-      setRideRates(rideRates[0])
-    }
-  }, [rideRates, addRideRatesData])
-
-  // Detecta se houve mudanças
-  const hasChanges = useMemo(() => {
-    return !isEqual(rideRatesStage, currentRideRatesData)
-  }, [rideRatesStage, currentRideRatesData])
-
-  const handleRateChange = (
-    type: 'day_rates' | 'night_rates',
-    field: keyof RateType,
-    value: string | number
-  ) => {
-    setRideRates(prev => ({
-      ...prev,
-      [type]: { ...prev[type], [field]: value },
-      updated_at: new Date()
-    }))
-  }
-
-  const handlePayoutChange = (field: keyof PayoutsType, value: number) => {
-    setRideRates(prev => ({
-      ...prev,
-      payouts: { ...prev.payouts, [field]: value },
-      updated_at: new Date()
-    }))
-  }
-
-  const handleSave = () => {
-    addRideRatesData(rideRatesStage) // atualiza store
-    updateRideRate.mutate({ id: rideRatesStage.id, rideRate: rideRatesStage })
-    console.log('Dados salvos:', rideRatesStage)
-  }
+    useState<SettingsOption>('general')
 
   const renderContent = () => {
-    if (isLoadingRideRates) {
-      return <div>Carregando...</div>
-    }
-
     switch (selectedOption) {
-      case 'tariffs':
-        return (
-          <TariffSettings
-            rideRates={rideRatesStage}
-            onRateChange={handleRateChange}
-          />
-        )
-      case 'payouts':
-        return (
-          <PayoutSettings
-            rideRates={rideRatesStage}
-            onPayoutChange={handlePayoutChange}
-            setRideRates={setRideRates}
-          />
-        )
       case 'general':
         return <GeneralSettings />
       case 'referral':
         return <ReferralSettings />
-      // Estas duas gravam pela API e têm o seu próprio botão: o "Salvar
-      // Alterações" do cabeçalho escreve `rideRates`, que não tem nada que
-      // ver com elas.
       case 'appVersions':
         return <AppVersionsSettings />
       case 'walletTopup':
@@ -104,15 +41,9 @@ export function SettingsPage() {
     }
   }
 
-  const namePageRides = 'Corridas'
-  const namePageReports = 'Relatórios'
-  const namePageReportsDetails = 'Relatórios de Corridas'
-
   const itemsBreadcrumbs = [
     { label: 'Início', to: routsNameMain.home },
-    { label: namePageRides, to: routsNameMain.rides.index },
-    { label: namePageReports, to: routsNameMain.metrics.index },
-    { label: namePageReportsDetails }
+    { label: 'Configurações' }
   ]
 
   return (
@@ -128,26 +59,36 @@ export function SettingsPage() {
                 Configurações
               </h1>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                Gerencie as preferências e taxas do sistema
+                Gerencie as preferências do sistema
               </p>
             </div>
+          </div>
+        </div>
 
-            {/* Ações */}
-            <div className="flex items-center gap-4">
-              {hasChanges && selectedOption !== 'appVersions' && selectedOption !== 'walletTopup' && (
-                <div className="flex items-center gap-3 animate-in fade-in slide-in-from-right-4 duration-300">
-                  <span className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-orange-50 text-orange-700 border border-orange-100 text-xs font-medium dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-800/30">
-                    <span className="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
-                    Alterações pendentes
-                  </span>
-                  <button
-                    onClick={handleSave}
-                    className="px-6 py-2 bg-black text-white rounded-xl hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 transition-all font-medium text-sm shadow-sm hover:shadow-md active:scale-95"
-                  >
-                    Salvar Alterações
-                  </button>
-                </div>
-              )}
+        {/* Onde foram os preços — quem vier aqui procurá-los é aqui que olha */}
+        <div className="mb-6 p-4 rounded-md bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50">
+          <div className="flex flex-row items-start gap-2">
+            <Info
+              size={16}
+              className="mt-0.5 text-blue-600 dark:text-blue-400 shrink-0"
+            />
+            <div className="flex flex-col gap-1">
+              <span className="text-sm font-semibold text-dark dark:text-light">
+                As tarifas e a repartição mudaram de sítio
+              </span>
+              <span className="text-xs text-gray-600 dark:text-gray-300">
+                Os preços por corrida e veículo, a repartição do motorista, da
+                empresa e do fundo, e os acréscimos vivem agora em{' '}
+                <strong>Preços → Perfis</strong>. Cada alteração sobe a versão
+                do perfil e fica registada.
+              </span>
+              <Link
+                to={routsNameMain.pricing.profiles}
+                className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-blue-700 dark:text-blue-400 hover:underline"
+              >
+                Ir para Preços → Perfis
+                <ArrowRight size={13} />
+              </Link>
             </div>
           </div>
         </div>

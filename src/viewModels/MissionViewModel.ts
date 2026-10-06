@@ -110,15 +110,18 @@ export function useMissionViewModel() {
   }
 
   // Recalculate Driver Progress
+  /**
+   * Recalcula no servidor. Sem `withAudit`: a API escreve em `auditLogs`
+   * dentro da própria transacção, com o antes de cada progresso alterado —
+   * e não deixa registo quando nada muda.
+   *
+   * Era um recálculo no browser que escrevia o documento inteiro de
+   * `missionProgress`, `is_paid` incluído. Esses campos são os que dizem se e
+   * quanto de bónus se paga, e as regras passaram a negá-los ao cliente.
+   */
   const recalculateProgress = useMutation({
     mutationFn: (driver_id: string) =>
-      withAudit(() => missionUseCase.executeUpdateDriverProgress(driver_id), {
-        action: 'update',
-        module: 'drivers',
-        description: `Recalculou progresso das missões do motorista - ID: ${driver_id}`,
-        target_id: driver_id,
-        target_type: 'driver'
-      }),
+      missionUseCase.executeRecalculateDriverProgress(driver_id),
     onSuccess: (_, driver_id) => {
       queryClient.invalidateQueries({
         queryKey: [firebaseCollections.missionProgress.root, driver_id]

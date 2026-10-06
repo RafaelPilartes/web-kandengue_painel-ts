@@ -4,8 +4,23 @@ import { PromotionEntity } from '@/core/entities/Promotion'
 import { firebaseCollections } from '@/constants/firebaseCollections'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import { promotionUseCase } from '@/domain/usecases/promotionUseCase'
-import { useAdminStore } from '@/stores/userStore'
-import { withAudit } from '@/observability/audit'
+import type {
+  CreatePromotionPayload,
+  PromotionPayload
+} from '@/core/interfaces/IAdminPromotionRepository'
+
+/*
+ * ⚠️ **Sem `withAudit` nas escritas.** As cinco passam pela API, que escreve
+ * em `auditLogs` dentro da própria transacção da alteração — o registo não
+ * pode existir sem a alteração, nem a alteração sem o registo. É o mesmo que
+ * o `payMissionProgress` do `MissionViewModel` já faz, e pela mesma razão.
+ *
+ * O `withAudit` que aqui estava corria **no browser, depois da escrita**: um
+ * documento separado, a falhar em silêncio, a não escrever nada se o
+ * `auditService.setAdmin` não tivesse corrido, e a gravar os dois documentos
+ * inteiros em vez de campo a campo. Mantê-lo agora dava duas linhas por
+ * alteração, uma delas pior.
+ */
 
 export function usePromotionsViewModel(
   limit?: number,
@@ -14,10 +29,13 @@ export function usePromotionsViewModel(
   filters?: Partial<PromotionEntity>
 ) {
   const queryClient = useQueryClient()
-  const { currentAdminData } = useAdminStore()
-  const adminId = currentAdminData?.id ?? 'unknown'
 
   const filtersKey = filters ? JSON.stringify(filters) : ''
+
+  const invalidate = () =>
+    queryClient.invalidateQueries({
+      queryKey: [firebaseCollections.promotions.root]
+    })
 
   const {
     data,
@@ -38,80 +56,32 @@ export function usePromotionsViewModel(
   })
 
   const createPromotion = useMutation({
-    mutationFn: (input: Omit<PromotionEntity, 'id'>) =>
-      withAudit(
-        () =>
-          promotionUseCase.executeCreate({
-            ...input,
-            // `||` (não `??`) — o formulário envia sempre created_by como
-            // string vazia, que não é "nullish" e por isso nunca acionaria o
-            // fallback via ??.
-            created_by: input.created_by || adminId
-          }),
-        {
-          action: 'create',
-          module: 'promotions',
-          description: `Criou promoção - Código: ${input.code}`,
-          target_id: input.code,
-          target_type: 'promotion',
-          new_data: input
-        }
-      ),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [firebaseCollections.promotions.root]
-      })
-    }
+    mutationFn: (input: CreatePromotionPayload) =>
+      promotionUseCase.executeCreate(input),
+    onSuccess: invalidate
   })
 
   const updatePromotion = useMutation({
-    mutationFn: async ({
+    mutationFn: ({
       code,
-      patch
+      payload
     }: {
       code: string
-      patch: Partial<PromotionEntity>
-    }) => {
-      const previous_data = await promotionUseCase
-        .executeGetByCode(code)
-        .catch(() => null)
-      return withAudit(() => promotionUseCase.executeUpdate(code, patch), {
-        action: 'update',
-        module: 'promotions',
-        description: `Atualizou promoção - Código: ${code}`,
-        target_id: code,
-        target_type: 'promotion',
-        previous_data: previous_data || undefined,
-        new_data: patch
-      })
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [firebaseCollections.promotions.root]
-      })
-    }
+      payload: PromotionPayload
+    }) => promotionUseCase.executeUpdate(code, payload),
+    onSuccess: invalidate
   })
 
   const toggleActive = useMutation({
     mutationFn: ({ code, active }: { code: string; active: boolean }) =>
-      withAudit(() => promotionUseCase.executeSetActive(code, active), {
-        action: 'update',
-        module: 'promotions',
-        description: `${active ? 'Ativou' : 'Desativou'} promoção - Código: ${code}`,
-        target_id: code,
-        target_type: 'promotion',
-        new_data: { active }
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [firebaseCollections.promotions.root]
-      })
-    }
+      promotionUseCase.executeSetActive(code, active),
+    onSuccess: invalidate
   })
 
   const addAllowedUsersBulk = useMutation({
+    // O admin vem do token, no servidor: `added_by` já não se manda daqui.
     mutationFn: ({ code, userIds }: { code: string; userIds: string[] }) =>
-      promotionUseCase.executeAddAllowedUsersBulk(code, userIds, adminId)
+      promotionUseCase.executeAddAllowedUsersBulk(code, userIds)
   })
 
   return {
