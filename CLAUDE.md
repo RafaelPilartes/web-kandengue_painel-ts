@@ -43,6 +43,9 @@ diz o que está em produção. Regra comum: `CLAUDE.md` da raiz do ecossistema.
 
 ## Deploy (cPanel, manual)
 
+**Domínio: `https://painel.kandengueatrevido.ao`** — estava por escrever, e
+sem ele não se conseguia correr a verificação que esta secção manda fazer.
+
 Alojamento cPanel (Apache), no mesmo alojamento do site; sem deploy
 automático. `npm run build` gera `dist/`; sobe o **conteúdo** de `dist/`
 para o `public_html` do domínio do painel, incluindo o `.htaccess` (oculto),
@@ -51,6 +54,23 @@ que faz o redirect das rotas da SPA para o `index.html`. O
 — o `.env` local aponta ao Fastify de desenvolvimento e, sem ele, o bundle
 levava `localhost:3000`. As variáveis `VITE_FIREBASE_*` continuam a vir do
 `.env` local.
+
+> ⚠️ **O `index.html` é o ficheiro que se esquece.** A 2026-10-06 os
+> `assets/` subiram e o `index.html` ficou o da build anterior: o bundle novo
+> estava no servidor e o painel continuava a carregar o antigo, porque é o
+> `index.html` que diz qual carregar. Arrastar a pasta no gestor do cPanel
+> deixa de fora os dois ficheiros da raiz — o `index.html` e o `.htaccess`.
+>
+> **A verificação não é "o bundle existe"**, é:
+>
+> ```bash
+> curl -s https://painel.kandengueatrevido.ao | grep app-version
+> curl -s -D - -o /dev/null https://painel.kandengueatrevido.ao | grep -i last-modified
+> ```
+>
+> O `app-version` tem de ser o da build, e o `last-modified` tem de ser de
+> agora. Confirmar também que uma rota interna aberta directamente
+> (`/rides/fare-review`) dá 200 e não 404 — é o `.htaccess` a funcionar.
 
 ---
 
