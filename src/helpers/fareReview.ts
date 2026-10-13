@@ -188,3 +188,47 @@ export function failedReservation(
     promotionReservationMissing(ride)
   )
 }
+
+/**
+ * Esta corrida foi marcada pelo servidor, por qualquer motivo?
+ *
+ * ⚠️ **Qualquer marca conta, e nunca se enumeram.** Das cinco marcas que a lib
+ * tem, a fila lia **uma** (`promotion_reservation_failed`) — e as outras quatro
+ * (`driver_ended_early`, `force_completed`, `completed_location_mismatch`,
+ * `fare_estimated_fallback`) eram escritas pelo servidor e **não chegavam a
+ * ecrã nenhum**. Uma corrida forçada a concluída por um admin ficava invisível.
+ *
+ * A pergunta aqui é "o servidor marcou isto?", não "qual das marcas é" — e é
+ * por isso que é um teste de lista vazia e não uma lista de valores.
+ */
+export function hasAnyReviewFlag(
+  ride: Pick<RideEntity, 'review_flags'>
+): boolean {
+  return (ride.review_flags ?? []).length > 0
+}
+
+/**
+ * O que se mostra ao operador por cada marca.
+ *
+ * ⚠️ **Não é um `Record<RideReviewFlag, string>`, e é uma regra do painel.**
+ * Um `Record` exaustivo obriga o compilador a exigir uma entrada por marca — e
+ * com isso **acrescentar uma marca à lib passava a ser uma alteração major**,
+ * porque partia a compilação daqui. Com um mapa parcial e um valor por defeito,
+ * uma marca nova aparece no ecrã com o nome cru e ninguém fica bloqueado: a
+ * etiqueta escreve-se quando houver tempo, não quando a lib sobe.
+ *
+ * O nome cru não é bonito, e é melhor do que a alternativa: uma corrida
+ * marcada que não aparece, ou uma lib que não pode crescer.
+ */
+const REVIEW_FLAG_LABELS: Record<string, string> = {
+  promotion_reservation_failed: 'Promoção não reservada',
+  driver_ended_early: 'Terminada antes do destino',
+  force_completed: 'Fecho forçado por um admin',
+  completed_location_mismatch: 'Posição final em desacordo com o percurso',
+  fare_estimated_fallback: 'Cobrada pela distância estimada'
+}
+
+/** A etiqueta da marca, ou o próprio nome dela se for nova. */
+export function reviewFlagLabel(flag: string): string {
+  return REVIEW_FLAG_LABELS[flag] ?? flag
+}
