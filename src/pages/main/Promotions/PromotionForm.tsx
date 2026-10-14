@@ -15,7 +15,24 @@ import {
 } from '@/viewModels/PromotionViewModel'
 import { showToast } from '@/utils/toasts'
 
-const PAYMENT_METHODS: RidePaymentMethod[] = ['cash', 'card', 'wallet']
+/**
+ * Como a corrida se paga, nas regras de uma promoção.
+ *
+ * ⚠️ **O `'wallet'` saiu, e nunca devia ter estado aqui.** No modelo de
+ * negócio **o passageiro paga sempre ao motorista** — dinheiro ou cartão — e a
+ * carteira é **do motorista**, para as taxas e os bónus. O
+ * `PaymentMethodType` da corrida é só `'cash' | 'card'`, verificado contra
+ * produção (das 109 corridas, nenhuma com `wallet`).
+ *
+ * A consequência de o oferecer era uma promoção que **nunca aplicava**: o
+ * validador compara com o método da corrida, o passageiro só manda `'cash'`
+ * ou `'card'`, e dava sempre `INVALID_PAYMENT_METHOD` — uma promoção a falhar
+ * em silêncio, sem ninguém saber porquê.
+ *
+ * Este ecrã era o único consumidor do valor, e é por isso que a lib podia
+ * removê-lo (3.0.0) nesta fase: a rotura não viaja de carona numa melhoria.
+ */
+const PAYMENT_METHODS: RidePaymentMethod[] = ['cash', 'card']
 
 interface FormState {
   code: string
