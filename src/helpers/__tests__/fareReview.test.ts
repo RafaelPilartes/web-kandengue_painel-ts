@@ -7,7 +7,9 @@ import {
   hasReviewFlag,
   needsFareReview,
   promotionReservationMissing,
-  signedDeviationPercent
+  signedDeviationPercent,
+  hasAnyReviewFlag,
+  reviewFlagLabel
 } from '@/helpers/fareReview'
 import type { RideEntity } from '@/core/entities/Ride'
 
@@ -405,5 +407,67 @@ describe('failedReservation', () => {
         })
       )
     ).toBe(true)
+  })
+})
+
+/**
+ * As marcas do servidor na fila de revisão.
+ *
+ * ⚠️ **O que estes testes guardam é que acrescentar uma marca à lib nunca
+ * parte o painel.** Um `Record<RideReviewFlag, string>` exaustivo obrigava a
+ * uma entrada por marca, e com isso cada marca nova na lib passava a ser uma
+ * alteração **major** — partia a compilação daqui. Com um mapa parcial e um
+ * valor por defeito, a marca nova aparece com o nome cru e ninguém fica
+ * bloqueado.
+ */
+describe('as marcas do servidor', () => {
+  it('qualquer marca põe a corrida na fila', () => {
+    for (const flag of [
+      'promotion_reservation_failed',
+      'driver_ended_early',
+      'force_completed',
+      'completed_location_mismatch',
+      'fare_estimated_fallback'
+    ]) {
+      expect(hasAnyReviewFlag({ review_flags: [flag] } as never), flag).toBe(
+        true
+      )
+    }
+  })
+
+  it('sem marcas, ou com a lista vazia, não entra por aqui', () => {
+    expect(hasAnyReviewFlag({} as never)).toBe(false)
+    expect(hasAnyReviewFlag({ review_flags: [] } as never)).toBe(false)
+  })
+
+  it('as cinco marcas de hoje têm etiqueta em português', () => {
+    expect(reviewFlagLabel('force_completed')).toBe(
+      'Fecho forçado por um admin'
+    )
+    expect(reviewFlagLabel('fare_estimated_fallback')).toBe(
+      'Cobrada pela distância estimada'
+    )
+    expect(reviewFlagLabel('driver_ended_early')).toBe(
+      'Terminada antes do destino'
+    )
+    expect(reviewFlagLabel('completed_location_mismatch')).toBe(
+      'Posição final em desacordo com o percurso'
+    )
+    expect(reviewFlagLabel('promotion_reservation_failed')).toBe(
+      'Promoção não reservada'
+    )
+  })
+
+  /*
+   * **O teste que torna a regra verdadeira.** Uma marca que a lib acrescente
+   * amanhã, e que este painel nunca viu, mostra-se com o nome dela — não
+   * rebenta, não desaparece, e não obriga a subir o painel ao mesmo tempo que
+   * a lib.
+   */
+  it('uma marca desconhecida mostra-se com o nome cru', () => {
+    expect(reviewFlagLabel('uma_marca_que_ainda_nao_existe')).toBe(
+      'uma_marca_que_ainda_nao_existe'
+    )
+    expect(reviewFlagLabel('')).toBe('')
   })
 })

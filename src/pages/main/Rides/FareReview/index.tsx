@@ -12,6 +12,8 @@ import type { RideEntity } from '@/core/entities/Ride'
 import {
   compareQuotedToCharged,
   failedReservation,
+  hasAnyReviewFlag,
+  reviewFlagLabel,
   fareDistance,
   signedDeviationPercent
 } from '@/helpers/fareReview'
@@ -44,12 +46,19 @@ import { RIDE_TYPE_LABELS, VEHICLE_TYPE_LABELS } from '@rafaelpilartes/kandengue
  * tarifa (`fare.distance.review_required`), e a **reserva falhada** na criação
  * (`review_flags`). Uma corrida pode ter os dois.
  */
-type ReviewReasonFilter = 'all' | 'distance' | 'reservation'
+type ReviewReasonFilter = 'all' | 'distance' | 'reservation' | 'flags'
 
 const REASON_FILTERS: Array<{ key: ReviewReasonFilter; label: string }> = [
   { key: 'all', label: 'Todos os motivos' },
   { key: 'distance', label: 'Desvio de distância' },
-  { key: 'reservation', label: 'Reservas falhadas' }
+  { key: 'reservation', label: 'Reservas falhadas' },
+  /*
+   * ⚠️ **As marcas do servidor, que até aqui não apareciam.** Sem este botão o
+   * "Todas" contava corridas que nenhum dos outros filtros explicava — e o
+   * comentário deste ficheiro já avisava desse erro: uma lista com um número
+   * que não bate com as linhas.
+   */
+  { key: 'flags', label: 'Marcadas pelo servidor' }
 ]
 
 export function FareReviewPage() {
@@ -79,10 +88,18 @@ export function FareReviewPage() {
     const withReview = rides.filter(ride => {
       const byDistance = fareDistance(ride)?.review_required === true
       const byReservation = failedReservation(ride)
+      /*
+       * ⚠️ **Qualquer marca conta.** A fila lia o `review_required` e **uma**
+       * das cinco marcas da lib; as outras quatro eram escritas pelo servidor
+       * e não chegavam a ecrã nenhum — uma corrida forçada a concluída por um
+       * admin ficava invisível. Aqui a pergunta é "o servidor marcou isto?".
+       */
+      const byFlags = hasAnyReviewFlag(ride)
 
       if (reason === 'distance') return byDistance
       if (reason === 'reservation') return byReservation
-      return byDistance || byReservation
+      if (reason === 'flags') return byFlags
+      return byDistance || byReservation || byFlags
     })
 
     const visible = onlyPending
@@ -108,13 +125,16 @@ export function FareReviewPage() {
     const reservation = rides.filter(
       r => pending(r) && failedReservation(r)
     ).length
+    const flags = rides.filter(r => pending(r) && hasAnyReviewFlag(r)).length
     const all = rides.filter(
       r =>
         pending(r) &&
-        (fareDistance(r)?.review_required === true || failedReservation(r))
+        (fareDistance(r)?.review_required === true ||
+          failedReservation(r) ||
+          hasAnyReviewFlag(r))
     ).length
 
-    return { all, distance, reservation }
+    return { all, distance, reservation, flags }
   }, [rides, onlyPending])
 
   const itemsBreadcrumbs = [
@@ -304,6 +324,20 @@ export function FareReviewPage() {
                         </span>
                       </div>
                     </div>
+                  </div>
+                )}
+
+                {/* As marcas do servidor, com o nome cru quando a etiqueta
+                    ainda não existe: uma marca nova aparece, não desaparece */}
+                {(ride.review_flags ?? []).length > 0 && (
+                  <div className="flex flex-row flex-wrap gap-2">
+                    {(ride.review_flags ?? []).map(flag => (
+                      <BadgeSimple
+                        key={flag}
+                        label={reviewFlagLabel(flag)}
+                        color="orange"
+                      />
+                    ))}
                   </div>
                 )}
 
