@@ -8,6 +8,7 @@ import { firebaseCollections } from '@/constants/firebaseCollections'
 import { useMemo, useEffect, useState } from 'react'
 import { getUserStatusLabel } from '@/utils/gettersLabels'
 import { withAudit } from '@/observability/audit'
+import type { RideType } from '@/types/enum'
 
 export function useDriversViewModel(
   limit?: number,
@@ -111,6 +112,47 @@ export function useDriversViewModel(
     }
   })
 
+  /**
+   * Os serviços aprovados, **pela API** (3.7).
+   *
+   * ⚠️ **Sem `withAudit`, e é deliberado.** Estas duas rotas escrevem a sua
+   * própria linha em `auditLogs`, no servidor e dentro da transacção —
+   * incluindo **o que o admin confirmou à mão**, que o painel não tem como
+   * registar. Embrulhá-las no `withAudit` daqui dava **duas** entradas para a
+   * mesma decisão, e a segunda contava menos do que a primeira.
+   */
+  const addDriverService = useMutation({
+    mutationFn: ({
+      driverId,
+      service,
+      confirmations
+    }: {
+      driverId: string
+      service: RideType
+      confirmations?: string[]
+    }) => driverUseCase.executeAddService(driverId, service, confirmations ?? []),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [firebaseCollections.drivers.root]
+      })
+    }
+  })
+
+  const removeDriverService = useMutation({
+    mutationFn: ({
+      driverId,
+      service
+    }: {
+      driverId: string
+      service: RideType
+    }) => driverUseCase.executeRemoveService(driverId, service),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [firebaseCollections.drivers.root]
+      })
+    }
+  })
+
   /** Deletar motorista */
   const deleteDriver = useMutation({
     mutationFn: async (id: string) => {
@@ -194,6 +236,8 @@ export function useDriversViewModel(
 
     createDriver,
     updateDriver,
+    addDriverService,
+    removeDriverService,
     deleteDriver,
     softDeleteDriver,
     fetchDriverById,

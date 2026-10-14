@@ -4,6 +4,8 @@ import { AppError } from '@/domain/errors/AppError'
 import type { DriverEntity } from '@/core/entities/Driver'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import type { FieldPath } from '@/core/interfaces/IBaseRepository'
+import type { ServiceResult } from '@/core/interfaces/IAdminDriverRepository'
+import type { RideType } from '@/types/enum'
 
 // Defaults do DAO antigo — preservados aqui para o motor novo (que usa 50).
 const LEGACY_PAGE_SIZE = 500
@@ -100,6 +102,36 @@ export class DriverUseCase extends BaseUseCase {
     return this.run('softDelete', () =>
       this.repository.softDelete(id, firebaseUid)
     )
+  }
+
+  /**
+   * Os serviços que o motorista está aprovado a fazer — **pela API** (3.7).
+   *
+   * ⚠️ **Não é um `update` ao documento, e é essa a mudança.** O painel
+   * escrevia `drivers.services` pelo SDK cliente, com a verificação dos
+   * requisitos no ecrã: quem abrisse a consola do browser aprovava-se a si
+   * mesmo para `moto_taxi` sem seguro, sem capacete e sem carta. Agora quem
+   * verifica é o servidor, contra a `SERVICE_REQUIREMENTS` da lib, e cada
+   * decisão deixa uma linha em `auditLogs` — incluindo o que o admin
+   * confirmou à mão.
+   *
+   * Fora do `run()`, como as outras acções de admin: a mensagem da API é a
+   * que diz **o que falta**, e o `run()` genérico tapava-a.
+   */
+  executeAddService(
+    driverId: string,
+    service: RideType,
+    confirmations: string[] = []
+  ): Promise<ServiceResult> {
+    return ApiRepository.adminDriver.addService(driverId, service, confirmations)
+  }
+
+  /** Retirar nunca é bloqueado — só registado. */
+  executeRemoveService(
+    driverId: string,
+    service: RideType
+  ): Promise<ServiceResult> {
+    return ApiRepository.adminDriver.removeService(driverId, service)
   }
 
   /**

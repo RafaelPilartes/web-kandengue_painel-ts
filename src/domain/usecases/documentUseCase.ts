@@ -3,6 +3,7 @@ import { BaseUseCase } from './BaseUseCase'
 import type { DocumentEntity } from '@/core/entities/Document'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import type { FieldPath } from '@/core/interfaces/IBaseRepository'
+import type { DocumentDecisionResult } from '@/core/interfaces/IAdminDriverRepository'
 
 // Defaults do DAO antigo — preservados aqui para o motor novo (que usa 50).
 const LEGACY_PAGE_SIZE = 500
@@ -79,6 +80,32 @@ export class DocumentUseCase extends BaseUseCase {
 
   executeDelete(id: string): Promise<void> {
     return this.run('delete', () => this.repository.delete(id))
+  }
+
+  /**
+   * Aprova um documento **pela API** (3.7), com validade opcional.
+   *
+   * ⚠️ **A validade é o fim do dia escolhido, na hora de Luanda** — quem a
+   * converte é quem a recolhe (o ecrã), com o `fimDoDiaEmLuanda`. A lib
+   * compara instantes (`expires_at > now`): a meia-noite do dia 31 caduca a
+   * apólice no próprio dia 31, e o motorista perde o dia que ela cobre.
+   *
+   * Fora do `run()`: a mensagem da API é a que explica a recusa.
+   */
+  executeApprove(id: string, expiresAt?: Date): Promise<DocumentDecisionResult> {
+    return ApiRepository.adminDriver.approveDocument(id, expiresAt)
+  }
+
+  /**
+   * Recusa um documento, **com motivo obrigatório** — e o motivo vai para o
+   * `feedback`, que é o campo que o motorista vê.
+   *
+   * O painel escrevia `{status: 'rejected'}` e nunca `feedback`: o motorista
+   * recebia um "rejeitado" sem saber o que corrigir e voltava a submeter o
+   * mesmo documento.
+   */
+  executeReject(id: string, reason: string): Promise<DocumentDecisionResult> {
+    return ApiRepository.adminDriver.rejectDocument(id, reason)
   }
 }
 

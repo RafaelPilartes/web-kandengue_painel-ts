@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import swal from 'sweetalert'
 import {
   useParams
@@ -30,6 +30,14 @@ import { useDocumentsViewModel } from '@/viewModels/DocumentViewModel'
 import type { WalletInterface } from '@/interfaces/IWallet'
 import type { VehicleInterface } from '@/interfaces/IVehicle'
 import { RIDE_TYPES, type RideType } from '@rafaelpilartes/kandengue-shared/enums'
+import { mapApiError, missingRequirements } from '@/helpers/apiError'
+import type { MissingRequirement } from '@/core/interfaces/IAdminDriverRepository'
+import {
+  type DocumentoComValidade,
+  estaCaducado,
+  fimDoDiaEmLuanda,
+  rotuloValidade
+} from '@/helpers/documentValidity'
 import { RIDE_TYPE_LABELS } from '@rafaelpilartes/kandengue-shared/constants'
 import type { DocumentInterface } from '@/interfaces/IDocument'
 import type { DriverInterface } from '@/interfaces/IDriver'
@@ -56,7 +64,10 @@ import { ActionsMenu } from '@/components/ActionsMenu'
 import { IoColorPaletteSharp } from 'react-icons/io5'
 import { BadgeSimple } from '@/components/badge/BadgeSimple'
 import { mapFirebaseError } from '@/helpers/mapFirebaseError'
-import type { DocumentStatus } from '@/types/enum'
+import type { DocumentType } from '@/types/document'
+import type { UserInterface } from '@/interfaces/IUser'
+import type { DocumentEntity } from '@/core/entities/Document'
+import { useFileUploadViewModel } from '@/viewModels/FileUploadViewModel'
 import { userStatusOptions } from '@/data/selectOption'
 import { SelectCustom } from '@/components/selects/SelectCustom'
 import { DriverProgressTracker } from '@/components/drivers/DriverProgressTracker'
@@ -68,13 +79,24 @@ export function DriverViewPage() {
 
   const [isLoading, setIsLoading] = useState(true)
 
-  const { fetchDriverById, updateDriver } = useDriversViewModel()
+  const {
+    fetchDriverById,
+    updateDriver,
+    addDriverService,
+    removeDriverService
+  } = useDriversViewModel()
   const { fetchOneWalletByField } = useWalletsViewModel()
   const { fetchAllTransactionsByField } = useTransactionsViewModel()
   const { fetchAllRidesByField, calculateDriverEarnings } = useRidesViewModel()
   const { fetchAllVehiclesByField, reviewVehicle } = useVehiclesViewModel()
-  const { fetchAllDocumentsByField, filterDocsBy, updateDocument } =
-    useDocumentsViewModel()
+  const {
+    fetchAllDocumentsByField,
+    filterDocsBy,
+    createDocument,
+    approveDocument,
+    rejectDocument
+  } = useDocumentsViewModel()
+  const { uploadSimple } = useFileUploadViewModel()
   const { fetchAllWalletTopupRequestsByField } =
     useWalletTopupRequestsViewModel()
 
@@ -109,6 +131,32 @@ export function DriverViewPage() {
   const [isUpdatingStatus, setUpdatingStatus] = useState<boolean>(false)
   const [isUpdatingServices, setUpdatingServices] = useState<boolean>(false)
 
+  /*
+   * O que a API disse que falta para um serviço, e as confirmações manuais
+   * que o admin já deu. Vive aqui e não numa constante: a lista **vem do
+   * servidor** a cada recusa.
+   */
+  const [requisitosEmFalta, setRequisitosEmFalta] = useState<{
+    service: RideType
+    missing: MissingRequirement[]
+  } | null>(null)
+  const [confirmacoesDadas, setConfirmacoesDadas] = useState<string[]>([])
+
+  /*
+   * A decisão em curso sobre um documento. A folha pede o que o botão não
+   * tem: um motivo (na recusa, obrigatório) ou uma data (na aprovação,
+   * opcional).
+   */
+  const [decisaoDocumento, setDecisaoDocumento] = useState<{
+    document: DocumentInterface
+    decisao: 'approved' | 'rejected'
+  } | null>(null)
+  const [motivoRecusa, setMotivoRecusa] = useState('')
+  const [validadeEscolhida, setValidadeEscolhida] = useState('')
+  const [aDecidirDocumento, setADecidirDocumento] = useState(false)
+  const [aSubmeterSeguro, setASubmeterSeguro] = useState(false)
+  const inputSeguroRef = useRef<HTMLInputElement | null>(null)
+
   const [docDriverLicense, setDocDriverLicense] =
     useState<DocumentInterface | null>(null)
   const [docIdFront, setDocIdFront] = useState<DocumentInterface | null>(null)
@@ -127,33 +175,88 @@ export function DriverViewPage() {
 
   // Handler
 
-  // Os serviços que o motorista está aprovado a fazer. É o que o dispatch
-  // filtra — nunca o veículo — e só o admin os escreve (as regras negam-no
-  // ao motorista). É aqui que o Moto Táxi será aprovado.
-  const handleToggleService = async (service: RideType) => {
+  /**
+   * Os serviços que o motorista está aprovado a fazer — **pela API** (3.7).
+   *
+   * ⚠️ **Deixou de ser uma escrita a `drivers.services`.** Era-o, pelo SDK
+   * cliente, com a verificação dos requisitos neste ecrã — e um ecrã não é
+   * uma garantia: quem abrisse a consola do browser aprovava-se a si mesmo
+   * para `moto_taxi` sem seguro, sem capacete e sem carta. Agora quem
+   * verifica é o servidor, e cada decisão deixa uma linha em `auditLogs`.
+   *
+   * ⚠️ **E o painel não sabe quais são os requisitos — nem deve.** Quando a
+   * API recusa, ela diz **o que falta**; este ecrã mostra essa lista e, se o
+   * que falta for uma confirmação manual (o capacete extra), oferece a caixa
+   * para o admin a dar e repete o pedido. A tabela vive na lib e é avaliada
+   * no servidor: duplicá-la aqui era voltar a ter duas versões da mesma
+   * regra, que é o que esta sub-fase veio acabar.
+   */
+  const handleToggleService = async (
+    service: RideType,
+    confirmations: string[] = []
+  ) => {
     if (!rowDataDriver) return
-    const current = rowDataDriver.services ?? []
-    const services = current.includes(service)
-      ? current.filter(s => s !== service)
-      : [...current, service]
+    const id = rowDataDriver.id as string
+    const aRetirar = (rowDataDriver.services ?? []).includes(service)
+
     try {
       setUpdatingServices(true)
-      await updateDriver.mutateAsync({
-        id: rowDataDriver.id as string,
-        driver: { services }
-      })
-      setRowDataDriver({ ...rowDataDriver, services })
+      const result = aRetirar
+        ? await removeDriverService.mutateAsync({ driverId: id, service })
+        : await addDriverService.mutateAsync({
+            driverId: id,
+            service,
+            confirmations
+          })
+
+      setRowDataDriver({ ...rowDataDriver, services: result.services })
+      setRequisitosEmFalta(null)
+      setConfirmacoesDadas([])
       showToast(
         'success',
-        `Serviços aprovados: ${services.map(s => RIDE_TYPE_LABELS[s]).join(', ') || 'nenhum'}`
+        result.changed
+          ? `Serviços aprovados: ${
+              result.services
+                .map((s: RideType) => RIDE_TYPE_LABELS[s])
+                .join(', ') || 'nenhum'
+            }`
+          : 'Já estava assim — nada mudou.'
       )
     } catch (error) {
       console.error(error)
-      showToast('error', 'Erro ao actualizar os serviços do motorista')
+      const emFalta = missingRequirements(error)
+      if (emFalta.length > 0) {
+        /*
+         * A recusa é informação, não um erro a esconder: o admin precisa de
+         * saber **o que** falta para o ir resolver (ou confirmar).
+         */
+        setRequisitosEmFalta({ service, missing: emFalta })
+        setConfirmacoesDadas([])
+        showToast('info', `Faltam requisitos para ${RIDE_TYPE_LABELS[service]}.`)
+      } else {
+        showToast(
+          'error',
+          mapApiError(error, 'Erro ao actualizar os serviços do motorista')
+        )
+      }
     } finally {
       setUpdatingServices(false)
     }
   }
+
+  /** As chaves manuais que faltam — as únicas que se resolvem daqui. */
+  const manuaisEmFalta = (requisitosEmFalta?.missing ?? []).filter(
+    r => r.kind === 'manual'
+  )
+  /** O que o motorista tem de submeter: não se resolve com uma caixa. */
+  const naoManuaisEmFalta = (requisitosEmFalta?.missing ?? []).filter(
+    r => r.kind !== 'manual'
+  )
+  const podeConfirmarEAprovar =
+    requisitosEmFalta !== null &&
+    naoManuaisEmFalta.length === 0 &&
+    manuaisEmFalta.length > 0 &&
+    manuaisEmFalta.every(r => confirmacoesDadas.includes(r.key))
   const handleDefaultVehicle = async (vehicle: VehicleInterface) => {
     if (!rowDataDriver) {
       return
@@ -298,40 +401,79 @@ export function DriverViewPage() {
       console.error('Erro ao abrir o documento:', error)
     }
   }
-  const handleValidateDocument = async (
-    document: DocumentInterface,
-    type: DocumentStatus
-  ) => {
-    const toastId = showToastLoading(
-      `${type === 'approved' ? 'Aprovando' : 'Rejeitando'} documento`
-    )
+  /**
+   * Decidir um documento — **pela API** (3.7), e com duas mudanças de fundo.
+   *
+   * ⚠️ **A recusa exige motivo.** Este ecrã escrevia `{status: 'rejected'}` e
+   * **nunca** `feedback`: o motorista recebia um "rejeitado" sem saber o que
+   * corrigir, e voltava a submeter o mesmo documento. O motivo vai para o
+   * `feedback`, que é o campo que ele vê.
+   *
+   * ⚠️ **A aprovação pode levar validade**, gravada como o **fim do dia**
+   * escolhido na hora de Luanda: a lib compara instantes, e a meia-noite do
+   * dia 31 caducava a apólice no próprio dia 31.
+   */
+  const handleDecidirDocumento = async () => {
+    if (!decisaoDocumento) return
+    const { document, decisao } = decisaoDocumento
 
+    if (decisao === 'rejected' && motivoRecusa.trim().length < 5) {
+      showToast('error', 'Escreve o motivo: é o que o motorista vê.')
+      return
+    }
+
+    const expiresAt =
+      decisao === 'approved' && validadeEscolhida
+        ? fimDoDiaEmLuanda(validadeEscolhida)
+        : null
+    if (decisao === 'approved' && validadeEscolhida && !expiresAt) {
+      showToast('error', 'Essa data não existe no calendário.')
+      return
+    }
+
+    const toastId = showToastLoading(
+      `${decisao === 'approved' ? 'Aprovando' : 'Rejeitando'} documento`
+    )
     try {
-      const dataToUpdate: Partial<DocumentInterface> = {
-        status: type
+      setADecidirDocumento(true)
+      if (decisao === 'approved') {
+        await approveDocument.mutateAsync({
+          id: document.id as string,
+          ...(expiresAt ? { expiresAt } : {})
+        })
+      } else {
+        await rejectDocument.mutateAsync({
+          id: document.id as string,
+          reason: motivoRecusa.trim()
+        })
       }
 
-      const documentUpdated = await updateDocument.mutateAsync({
-        id: document.id as string,
-        document: dataToUpdate
-      })
-
       const resultDocument = await fetchAllDocumentsByField('user.id', driverId)
-
       if (resultDocument?.data) {
         setRowsDataDocuments(resultDocument?.data)
       }
 
+      setDecisaoDocumento(null)
       updateToast(
         toastId,
         'success',
-        `Documento ${getDocumentTypeLabel(documentUpdated.type)}, foi ${
-          type === 'approved' ? 'aprovado' : 'rejeitado'
+        `Documento ${getDocumentTypeLabel(document.type)}, foi ${
+          decisao === 'approved' ? 'aprovado' : 'rejeitado'
         }`
       )
     } catch (err) {
-      const message = mapFirebaseError(err)
-      updateToast(toastId, 'error', message)
+      /*
+       * `mapApiError` e não `mapFirebaseError`: o erro vem agora da API, com
+       * o contrato da 3.1 — e a frase que o admin lê é a `user_message`, não
+       * a `message` técnica.
+       */
+      updateToast(
+        toastId,
+        'error',
+        mapApiError(err, 'Não foi possível decidir o documento.')
+      )
+    } finally {
+      setADecidirDocumento(false)
     }
   }
 
@@ -574,6 +716,71 @@ export function DriverViewPage() {
     return actions
   }
 
+  /**
+   * O painel submete o **seguro** pelo motorista.
+   *
+   * ── Porquê, e porque é só este documento ──
+   * Medido no clone de produção a 2026-10-14: **zero** documentos
+   * `insurance`, e **nenhuma app os escreve** — o tipo existe na lib desde a
+   * 2.12.0, mas não há ecrã de submissão na app do motorista. Com a 3.7 em
+   * pé, nenhum motorista podia ser aprovado para `moto_taxi`: a rota recusa,
+   * e recusa certo. A app ganha o ecrã na Fase 6; até lá o caminho é este, que
+   * é como a operação já funciona para o resto (a apólice chega por fora).
+   *
+   * ⚠️ **Nasce pendente, e é o mesmo caminho de sempre a seguir:** sobe o
+   * ficheiro, cria o documento em `pending`, e depois alguém o **aprova**
+   * (com validade). Não se cria já aprovado: quem submete e quem decide
+   * continuam a ser dois gestos, e é isso que deixa rasto em `auditLogs`.
+   *
+   * O `user` leva **só o `id`** — é a forma que produção tem (`user: {id:
+   * 'dri-…'}` nos 51 documentos lidos) e é para onde o resto do schema está a
+   * ir: o §0A tirou o `UserInterface` embutido das `notifications` pela mesma
+   * razão.
+   */
+  const handleSubmeterSeguro = async (file: File) => {
+    if (!rowDataDriver) return
+    const toastId = showToastLoading('A submeter o seguro')
+    try {
+      setASubmeterSeguro(true)
+      const { url } = await uploadSimple(
+        file,
+        `documents/${driverId}`,
+        `insurance_${file.name}`
+      )
+
+      await createDocument.mutateAsync({
+        user: { id: driverId } as UserInterface,
+        /*
+         * ⚠️ **A asserção sai quando o painel subir a lib.** O `'insurance'`
+         * entrou no `DocumentType` na 2.12.0 e o painel está fixo na 2.11.0
+         * (excepção deliberada, no `CLAUDE.md` da raiz) — sem a asserção isto
+         * não compila. A string é a que a lib e a produção usam, verificada
+         * contra os requisitos da 3.7; depois da instalação, apaga-se o
+         * `as DocumentType` e o compilador volta a cobrar o nome.
+         */
+        type: 'insurance' as DocumentType,
+        url,
+        status: 'pending'
+      } as Omit<DocumentEntity, 'id'>)
+
+      const resultDocument = await fetchAllDocumentsByField('user.id', driverId)
+      if (resultDocument?.data) {
+        setRowsDataDocuments(resultDocument?.data)
+      }
+
+      updateToast(
+        toastId,
+        'success',
+        'Seguro submetido. Falta aprová-lo, com a validade da apólice.'
+      )
+    } catch (err) {
+      updateToast(toastId, 'error', mapApiError(err, 'Não foi possível submeter o seguro.'))
+    } finally {
+      setASubmeterSeguro(false)
+      if (inputSeguroRef.current) inputSeguroRef.current.value = ''
+    }
+  }
+
   const actionsDocument = (doc: DocumentInterface) => {
     const actions = []
 
@@ -583,23 +790,41 @@ export function DriverViewPage() {
       onClick: () => handleDownloadDocument(doc)
     })
 
+    const abrirFolha = (decisao: 'approved' | 'rejected') => {
+      setMotivoRecusa('')
+      setValidadeEscolhida('')
+      setDecisaoDocumento({ document: doc, decisao })
+    }
+
+    /*
+     * ⚠️ **Aprovar deixou de ser só para os pendentes.** Um documento
+     * aprovado que **caducou** parece aprovado em qualquer listagem, e a
+     * única forma de o renovar daqui é voltar a aprová-lo com validade nova —
+     * é o que a API passou a aceitar a 2026-10-14. Sem isto, um seguro
+     * caducado só se desbloqueava com uma submissão nova, e para o seguro não
+     * há ecrã do motorista que a faça.
+     */
+    const podeRenovar =
+      doc.status === 'approved' && estaCaducado(doc as DocumentoComValidade)
+
+    if (doc.status === 'pending' || podeRenovar) {
+      actions.push({
+        icon: <Check size={16} />,
+        label: podeRenovar ? 'Renovar validade' : 'Aprovar',
+        onClick: () => abrirFolha('approved'),
+        className:
+          'text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900'
+      })
+    }
+
     if (doc.status === 'pending') {
-      actions.push(
-        {
-          icon: <Check size={16} />,
-          label: 'Aprovar',
-          onClick: () => handleValidateDocument(doc, 'approved'),
-          className:
-            'text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900'
-        },
-        {
-          icon: <XIcon size={16} />,
-          label: 'Rejeitar',
-          onClick: () => handleValidateDocument(doc, 'rejected'),
-          className:
-            'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900'
-        }
-      )
+      actions.push({
+        icon: <XIcon size={16} />,
+        label: 'Rejeitar',
+        onClick: () => abrirFolha('rejected'),
+        className:
+          'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900'
+      })
     }
 
     return actions
@@ -719,9 +944,104 @@ export function DriverViewPage() {
           })}
         </div>
         <p className="text-xs text-gray-500 dark:text-gray-400">
-          O motorista só recebe corridas dos serviços aprovados. A viatura
-          validada (separador Veículos, lida da colecção vehicles) é exigida à parte.
+          O motorista só recebe corridas dos serviços aprovados. Quem verifica
+          os requisitos é o servidor — este ecrã mostra o que ele respondeu.
         </p>
+
+        {/*
+          O que falta, dito pela API.
+
+          ⚠️ A lista vem da **resposta**, não de uma tabela copiada para aqui:
+          os requisitos vivem na lib e são avaliados no servidor. O painel só
+          sabe o que a recusa lhe disse — e é isso que impede as duas versões
+          da mesma regra que esta sub-fase veio acabar.
+        */}
+        {requisitosEmFalta && (
+          <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-900/20">
+            <div className="flex items-start justify-between gap-2">
+              <span className="text-sm font-semibold text-amber-900 dark:text-amber-200">
+                Falta para {RIDE_TYPE_LABELS[requisitosEmFalta.service]}
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setRequisitosEmFalta(null)
+                  setConfirmacoesDadas([])
+                }}
+                className="text-xs text-amber-800 underline dark:text-amber-300"
+              >
+                fechar
+              </button>
+            </div>
+
+            <ul className="mt-2 flex flex-col gap-2">
+              {requisitosEmFalta.missing.map(req => (
+                <li key={req.key} className="text-sm">
+                  {req.kind === 'manual' ? (
+                    <label className="flex items-start gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="mt-1"
+                        checked={confirmacoesDadas.includes(req.key)}
+                        onChange={e =>
+                          setConfirmacoesDadas(anteriores =>
+                            e.target.checked
+                              ? [...anteriores, req.key]
+                              : anteriores.filter(k => k !== req.key)
+                          )
+                        }
+                      />
+                      <span>
+                        <span className="font-medium text-gray-900 dark:text-gray-100">
+                          {req.label}
+                        </span>
+                        <span className="block text-xs text-gray-600 dark:text-gray-400">
+                          {req.detalhe} — confirmo que o vi
+                        </span>
+                      </span>
+                    </label>
+                  ) : (
+                    <span className="flex items-start gap-2">
+                      <span className="mt-1 text-amber-700 dark:text-amber-300">
+                        &bull;
+                      </span>
+                      <span>
+                        <span className="font-medium text-gray-900 dark:text-gray-100">
+                          {req.label}
+                        </span>
+                        <span className="block text-xs text-gray-600 dark:text-gray-400">
+                          {req.detalhe}
+                        </span>
+                      </span>
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+
+            {naoManuaisEmFalta.length > 0 ? (
+              <p className="mt-3 text-xs text-amber-900 dark:text-amber-200">
+                Isto não se resolve daqui: o motorista tem de submeter o que
+                falta — ou carrega-o tu, no separador <strong>Documentos</strong>{' '}
+                — e depois aprova-se o documento.
+              </p>
+            ) : (
+              <button
+                type="button"
+                disabled={!podeConfirmarEAprovar || isUpdatingServices}
+                onClick={() =>
+                  handleToggleService(
+                    requisitosEmFalta.service,
+                    confirmacoesDadas
+                  )
+                }
+                className="mt-3 rounded-lg bg-amber-600 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+              >
+                Confirmar e aprovar
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Summary Cards */}
@@ -1034,9 +1354,41 @@ export function DriverViewPage() {
               {/* Documentos */}
               <TabsContent value="docs">
                 <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-md  dark:border-gray-700">
-                  <h4 className="text-sm font-semibold">
-                    Documentos submetidos
-                  </h4>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h4 className="text-sm font-semibold">
+                      Documentos submetidos
+                    </h4>
+
+                    {/*
+                      ⚠️ **O seguro submete-se daqui, pelo motorista.** Não há
+                      ecrã na app dele que o faça (a app ganha-o na Fase 6), e
+                      sem o seguro nenhum motorista pode ser aprovado para
+                      Moto Táxi. A apólice chega por fora — WhatsApp, papel —
+                      e carrega-se aqui.
+                    */}
+                    <div className="flex items-center gap-2">
+                      <input
+                        ref={inputSeguroRef}
+                        type="file"
+                        accept="image/*,application/pdf"
+                        className="hidden"
+                        onChange={e => {
+                          const file = e.target.files?.[0]
+                          if (file) void handleSubmeterSeguro(file)
+                        }}
+                      />
+                      <button
+                        type="button"
+                        disabled={aSubmeterSeguro}
+                        onClick={() => inputSeguroRef.current?.click()}
+                        className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
+                      >
+                        {aSubmeterSeguro
+                          ? 'A submeter…'
+                          : 'Submeter seguro pelo motorista'}
+                      </button>
+                    </div>
+                  </div>
                   <div className="mt-4 overflow-x-auto">
                     <table className="w-full text-sm text-left">
                       <thead className="text-xs text-gray-500 dark:text-gray-400">
@@ -1044,6 +1396,12 @@ export function DriverViewPage() {
                           <th className="px-3 py-2">Id</th>
                           <th className="px-3 py-2">Tipo</th>
                           <th className="px-3 py-2">Status</th>
+                          {/*
+                            A validade, que é o que distingue um documento
+                            aprovado de um aprovado **caducado** — e um
+                            caducado parece aprovado em qualquer listagem.
+                          */}
+                          <th className="px-3 py-2">Validade</th>
                           <th className="px-3 py-2">Data</th>
                           <th className="px-3 py-2"></th>
                         </tr>
@@ -1070,6 +1428,24 @@ export function DriverViewPage() {
                                   }
                                   label={getDocumentStatusLabel(doc.status)}
                                 />
+                              </td>
+                              <td className="px-3 py-2 text-sm">
+                                {(() => {
+                                  const v = rotuloValidade(
+                                    doc as DocumentoComValidade
+                                  )
+                                  return (
+                                    <span
+                                      className={
+                                        v.caducado
+                                          ? 'text-red-600 dark:text-red-400 font-medium'
+                                          : 'text-gray-600 dark:text-gray-300'
+                                      }
+                                    >
+                                      {v.texto}
+                                    </span>
+                                  )
+                                })()}
                               </td>
                               <td className="px-3 py-2 text-gray-700 dark:text-gray-200">
                                 {
@@ -1196,6 +1572,93 @@ export function DriverViewPage() {
           </div>
         </aside>
       </div>
+
+      {/*
+        A folha da decisão de um documento.
+
+        ⚠️ **Existe porque o botão não chega.** Uma recusa sem motivo deixava
+        o motorista a adivinhar — era o que o painel fazia, e o `feedback`
+        nunca era escrito. E uma aprovação sem validade deixa um seguro
+        **válido para sempre**, que é o oposto do que o `expires_at` existe
+        para fazer.
+      */}
+      {decisaoDocumento && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-xl bg-white p-5 shadow-xl dark:bg-gray-800">
+            <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">
+              {decisaoDocumento.decisao === 'approved'
+                ? 'Aprovar'
+                : 'Recusar'}{' '}
+              {getDocumentTypeLabel(decisaoDocumento.document.type)}
+            </h3>
+
+            {decisaoDocumento.decisao === 'approved' ? (
+              <div className="mt-4 flex flex-col gap-2">
+                <label className="text-sm text-gray-700 dark:text-gray-200">
+                  Validade (opcional)
+                </label>
+                <input
+                  type="date"
+                  value={validadeEscolhida}
+                  onChange={e => setValidadeEscolhida(e.target.value)}
+                  className="rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Guarda-se o <strong>fim desse dia</strong>, na hora de Luanda
+                  — a apólice cobre o dia inteiro. Deixa vazio se o documento
+                  não caduca.
+                </p>
+              </div>
+            ) : (
+              <div className="mt-4 flex flex-col gap-2">
+                <label className="text-sm text-gray-700 dark:text-gray-200">
+                  Motivo (obrigatório)
+                </label>
+                <textarea
+                  value={motivoRecusa}
+                  onChange={e => setMotivoRecusa(e.target.value)}
+                  rows={3}
+                  placeholder="O que é que o motorista tem de corrigir?"
+                  className="rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  ⚠️ <strong>É isto que o motorista vê</strong> — vai para o
+                  `feedback` do documento. Sem motivo, ele volta a submeter o
+                  mesmo.
+                </p>
+              </div>
+            )}
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setDecisaoDocumento(null)}
+                className="rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={
+                  aDecidirDocumento ||
+                  (decisaoDocumento.decisao === 'rejected' &&
+                    motivoRecusa.trim().length < 5)
+                }
+                onClick={handleDecidirDocumento}
+                className={`rounded-lg px-3 py-2 text-sm font-medium text-white disabled:opacity-50 ${
+                  decisaoDocumento.decisao === 'approved'
+                    ? 'bg-green-600'
+                    : 'bg-red-600'
+                }`}
+              >
+                {decisaoDocumento.decisao === 'approved'
+                  ? 'Aprovar'
+                  : 'Recusar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

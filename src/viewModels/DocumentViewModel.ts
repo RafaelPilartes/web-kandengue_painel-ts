@@ -68,6 +68,38 @@ export function useDocumentsViewModel(
     }
   })
 
+  /**
+   * As duas decisões sobre um documento, **pela API** (3.7).
+   *
+   * ⚠️ **Sem `withAudit`:** as rotas escrevem a sua própria linha em
+   * `auditLogs`, no servidor — com o dono do documento, o tipo, a validade e
+   * o motivo. O `withAudit` daqui dava uma segunda entrada para a mesma
+   * decisão.
+   *
+   * ⚠️ **E a recusa exige motivo**, que vai para o `feedback` — o campo que o
+   * **motorista** vê. O painel escrevia `{status: 'rejected'}` e nunca
+   * `feedback`: o motorista recebia um "rejeitado" sem saber o que corrigir.
+   */
+  const approveDocument = useMutation({
+    mutationFn: ({ id, expiresAt }: { id: string; expiresAt?: Date }) =>
+      documentUseCase.executeApprove(id, expiresAt),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [firebaseCollections.documents.root]
+      })
+    }
+  })
+
+  const rejectDocument = useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
+      documentUseCase.executeReject(id, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [firebaseCollections.documents.root]
+      })
+    }
+  })
+
   /** Atualizar documento */
   const updateDocument = useMutation({
     mutationFn: async ({
@@ -161,6 +193,8 @@ export function useDocumentsViewModel(
     filterDocsBy,
 
     createDocument,
+    approveDocument,
+    rejectDocument,
     updateDocument,
     deleteDocument
   }

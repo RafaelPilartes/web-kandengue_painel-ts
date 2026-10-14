@@ -1,6 +1,7 @@
 import axios, { type AxiosResponse } from 'axios'
 import { ApiServer } from './api.server'
 import { auth } from '@/config/firebase.config'
+import { ApiError } from '@/helpers/apiError'
 
 class ApiDAO {
   private baseUrl: string
@@ -59,16 +60,31 @@ class ApiDAO {
       })
       return response.data
     } catch (error: any) {
+      /*
+       * ⚠️ **O contrato de erro da API (3.1) chega inteiro ao chamador.**
+       *
+       * Até aqui atirava-se `new Error(data.message)` e o `code` e o
+       * `details` morriam neste ponto. A 3.7 precisa dos dois: quando a
+       * aprovação de um serviço é recusada, **o que falta vem no `details`**,
+       * e é isso que o admin tem de ver em vez de "requisitos não cumpridos".
+       *
+       * Quem só quer uma frase usa o `mapApiError`, que mostra a
+       * `user_message` quando existe e nunca a `message` de uma validação.
+       */
       if (error.response) {
-        throw new Error(
-          error.response.data?.message ||
-            error.response.data?.msg ||
-            'Unknown error'
+        const corpo = error.response.data ?? {}
+        throw new ApiError(
+          corpo.message || corpo.msg || 'Unknown error',
+          error.response.status ?? null,
+          typeof corpo.code === 'string' ? corpo.code : null,
+          typeof corpo.user_message === 'string' ? corpo.user_message : null,
+          corpo.details ?? null
         )
       } else if (error.request) {
-        throw new Error('No response from server')
+        // `status: null` é o que o `mapApiError` lê como "sem resposta".
+        throw new ApiError('No response from server', null, null, null, null)
       } else {
-        throw new Error('Error in request setup')
+        throw new ApiError('Error in request setup', null, null, null, null)
       }
     }
   }
