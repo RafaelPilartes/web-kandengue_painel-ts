@@ -68,7 +68,6 @@ import { ActionsMenu } from '@/components/ActionsMenu'
 import { IoColorPaletteSharp } from 'react-icons/io5'
 import { BadgeSimple } from '@/components/badge/BadgeSimple'
 import { mapFirebaseError } from '@/helpers/mapFirebaseError'
-import type { DocumentType } from '@/types/document'
 import type { UserInterface } from '@/interfaces/IUser'
 import type { DocumentEntity } from '@/core/entities/Document'
 import { useFileUploadViewModel } from '@/viewModels/FileUploadViewModel'
@@ -797,16 +796,10 @@ export function DriverViewPage() {
 
       await createDocument.mutateAsync({
         user: { id: driverId } as UserInterface,
-        /*
-         * ⚠️ **The assertion goes away when the panel moves to the new lib.**
-         * `'insurance'` entered `DocumentType` in 2.12.0 and the panel is
-         * pinned to 2.11.0 (a deliberate exception, in the root `CLAUDE.md`) —
-         * without the assertion this does not compile. The string is the one
-         * the lib and production use, checked against the 3.7 requirements;
-         * after the install, drop the `as DocumentType` and the compiler goes
-         * back to policing the name.
-         */
-        type: 'insurance' as DocumentType,
+        // With lib 3.0.0 installed, `'insurance'` is part of `DocumentType`
+        // and the compiler polices the name again — the assertion that stood
+        // here while the panel was pinned to 2.11.0 is gone.
+        type: 'insurance',
         url,
         status: 'pending'
       } as Omit<DocumentEntity, 'id'>)

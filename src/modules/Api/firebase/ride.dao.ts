@@ -5,6 +5,7 @@ import { rideConverter } from '@/core/entities/Ride'
 import { firebaseCollections } from '@/constants/firebaseCollections'
 import { BaseFirebaseDAO } from './BaseFirebaseDAO'
 import { doc, getDoc } from 'firebase/firestore'
+import { RIDE_PRIVATE_DOCS } from '@rafaelpilartes/kandengue-shared/interfaces'
 import { db } from '@/config/firebase.config'
 import type { PrivateContacts } from '@/helpers/rideContacts'
 
@@ -30,12 +31,10 @@ export class FirebaseRideDAO
    */
   async getPrivateContacts(rideId: string): Promise<PrivateContacts | null> {
     const snap = await getDoc(
-      /*
-       * The document name written out: `RIDE_PRIVATE_DOCS` landed in the lib
-       * after 2.11.0, which is what the panel pins. It becomes the constant
-       * when the panel moves — which is why it lives in exactly one place.
-       */
-      doc(db, this.path, rideId, 'private', 'contacts')
+      // The name comes from the lib now (3.0.0 installed): `RIDE_PRIVATE_DOCS`
+      // is the same constant the API and the functions use, so the three ends
+      // cannot drift on a document name.
+      doc(db, this.path, rideId, 'private', RIDE_PRIVATE_DOCS.contacts)
     )
     return snap.exists() ? (snap.data() as PrivateContacts) : null
   }

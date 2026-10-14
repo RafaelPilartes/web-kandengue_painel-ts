@@ -20,6 +20,7 @@ import {
   signedDeviationPercent
 } from '@/helpers/fareReview'
 import type { FareComparison } from '@/helpers/fareReview'
+import type { RideReviewFlag } from '@rafaelpilartes/kandengue-shared/types'
 import { mapApiError, stripMarkdown } from '@/helpers/apiError'
 import { auditService } from '@/observability/audit'
 import { formatDateTimeFromFirestore } from '@/utils/date'
@@ -120,23 +121,25 @@ export function FareReviewPage() {
 
   /** Quantas há de cada motivo, para os botões do filtro não mentirem. */
   /*
-   * ⚠️ **Comparada como string, e não como `RideReviewFlag`.** O painel fixa
-   * a lib 2.11.0, onde o tipo tem **um** valor só
-   * (`'promotion_reservation_failed'`) — comparar com `'force_completed'`
-   * nem compila. É a mesma razão por que as etiquetas são um
-   * `Record<string, string>` (§0AB): o painel não pode depender da versão da
-   * lib para reconhecer uma marca que o servidor já escreve.
+   * With lib 3.0.0 installed, `RideReviewFlag` carries all five values and the
+   * comparison is typed again — the `as string` casts that stood here while
+   * the panel was pinned to 2.11.0 (where the type had a single value) are
+   * gone.
+   *
+   * The labels and the explanations stay `Record<string, string>` on purpose:
+   * that is the §0AB rule, and it is what keeps a new flag in the lib from
+   * being a major change for the panel.
    */
-  const FORCED_CLOSE_FLAG = 'force_completed'
+  const FORCED_CLOSE_FLAG: RideReviewFlag = 'force_completed'
 
   /*
-   * O motivo de cada fecho forçado, lido da auditoria (`new_data.reason`).
+   * The reason behind each forced close, read from the audit log
+   * (`new_data.reason`).
    *
-   * ⚠️ **Só para as corridas que têm a marca**, e uma leitura por corrida: a
-   * fila mostra dezenas de linhas e a auditoria não se lê toda para
-   * encontrar um punhado de motivos. `undefined` = ainda não se leu;
-   * `null` = leu-se e não havia — e o ecrã **di-lo**, em vez de esconder a
-   * marca.
+   * ⚠️ **Only for the rides that carry the flag**, and one read per ride: the
+   * queue shows dozens of rows and the audit log is not read whole to find a
+   * handful of reasons. `undefined` = not read yet; `null` = read and there
+   * was none — and the screen **says so** instead of hiding the flag.
    */
   const [closeReasons, setCloseReasons] = useState<
     Record<string, string | null>
@@ -144,11 +147,7 @@ export function FareReviewPage() {
 
   useEffect(() => {
     const forced = flagged
-      .filter(r =>
-        (r.review_flags ?? []).some(
-          f => (f as string) === FORCED_CLOSE_FLAG
-        )
-      )
+      .filter(r => (r.review_flags ?? []).includes(FORCED_CLOSE_FLAG))
       .map(r => r.id as string)
       .filter(id => !(id in closeReasons))
 
@@ -426,8 +425,7 @@ export function FareReviewPage() {
                     <ul className="flex flex-col gap-1.5 rounded-lg bg-gray-50 p-3 dark:bg-gray-900/40">
                       {(ride.review_flags ?? []).map(flag => {
                         const explanation = reviewFlagExplanation(flag)
-                        const isForcedClose =
-                          (flag as string) === FORCED_CLOSE_FLAG
+                        const isForcedClose = flag === FORCED_CLOSE_FLAG
                         const reason = isForcedClose
                           ? closeReasons[ride.id as string]
                           : undefined
