@@ -10,10 +10,20 @@ import type { RideType } from '@/types/enum'
  * who opened the browser console could approve themselves). The panel
  * **shows** what the server said.
  *
- * ⚠️ **`detalhe` keeps its Portuguese name because it is a wire field**, not
- * an identifier we own: it is the key the API sends today, in production.
- * Renaming it here would simply stop reading it. Both ends rename it together
- * in the 3.10 round (§0AH).
+ * ⚠️ **The detail arrives under two names, for one deploy only** (3.10f).
+ *
+ * `detalhe` is the key the API has sent since 3.7 and still sends; `detail`
+ * is the English one the 3.10 API adds. Both carry the same text.
+ *
+ * Why both instead of a swap: this panel ships by **upload**, not by deploy,
+ * so "both ends in the same deploy" is minutes rather than an instant. With
+ * one key the order would matter and the gap would show the admin a list of
+ * missing requirements with no explanation. With both, the order does not
+ * matter and there is no gap.
+ *
+ * ⚠️ **`detalhe` goes away in the round after this one**, once an API that
+ * only sends `detail` is in production. Until then it is the fallback, and
+ * `requirementDetail` below is the only place that knows about either.
  */
 export interface MissingRequirement {
   /** The stable key — this is what goes into the audit log. */
@@ -22,7 +32,22 @@ export interface MissingRequirement {
   label: string
   kind: 'document' | 'vehicle' | 'manual'
   /** Why: "não foi submetido", "aprovado mas **caducado**", "está em pending". */
-  detalhe: string
+  detail?: string
+  /** The same text, under the older Portuguese key. See the note above. */
+  detalhe?: string
+}
+
+/**
+ * The detail text, from whichever key the API sent.
+ *
+ * One function so the two-key window lives in exactly one place: removing
+ * `detalhe` later is then a two-line change here, not a hunt through screens.
+ * Returns an empty string rather than undefined so a caller can render it
+ * without a guard -- a missing detail is a requirement with no explanation,
+ * which is survivable; a crash in the approval screen is not.
+ */
+export function requirementDetail(requirement: MissingRequirement): string {
+  return requirement.detail ?? requirement.detalhe ?? ''
 }
 
 export interface ServiceResult {

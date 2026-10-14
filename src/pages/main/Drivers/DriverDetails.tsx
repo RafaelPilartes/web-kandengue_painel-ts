@@ -35,7 +35,10 @@ import {
   missingRequirements,
   stripMarkdown
 } from '@/helpers/apiError'
-import type { MissingRequirement } from '@/core/interfaces/IAdminDriverRepository'
+import {
+  type MissingRequirement,
+  requirementDetail
+} from '@/core/interfaces/IAdminDriverRepository'
 import {
   type DocumentWithValidity,
   endOfDayInLuanda,
@@ -1038,7 +1041,7 @@ export function DriverViewPage() {
                           {req.label}
                         </span>
                         <span className="block text-xs text-gray-600 dark:text-gray-400">
-                          {stripMarkdown(req.detalhe)} — confirmo que o vi
+                          {stripMarkdown(requirementDetail(req))} — confirmo que o vi
                         </span>
                       </span>
                     </label>
@@ -1052,7 +1055,7 @@ export function DriverViewPage() {
                           {req.label}
                         </span>
                         <span className="block text-xs text-gray-600 dark:text-gray-400">
-                          {stripMarkdown(req.detalhe)}
+                          {stripMarkdown(requirementDetail(req))}
                         </span>
                       </span>
                     </span>

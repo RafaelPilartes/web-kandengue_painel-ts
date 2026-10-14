@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { ApiError, mapApiError, missingRequirements, stripMarkdown } from '../apiError'
+import { requirementDetail } from '@/core/interfaces/IAdminDriverRepository'
 
 /**
  * The API's error contract, on the panel side.
@@ -104,5 +105,61 @@ describe('stripMarkdown', () => {
 
   it('leaves unmarked text alone', () => {
     expect(stripMarkdown('não foi submetido')).toBe('não foi submetido')
+  })
+})
+
+/*
+ * The detail arrives under two keys, for one deploy only (3.10f).
+ *
+ * The API serves both `detalhe` (since 3.7, what production reads) and
+ * `detail` (English, added in 3.10), because this panel ships by upload and
+ * the two ends cannot change in the same instant. These cases pin the three
+ * states the panel has to survive: an API that sends only the old key, one
+ * that sends only the new, and one that sends both.
+ */
+describe('requirementDetail', () => {
+  it('prefers the English key when the API sends both', () => {
+    expect(
+      requirementDetail({
+        key: 'insurance',
+        label: 'Seguro',
+        kind: 'document',
+        detail: 'not submitted',
+        detalhe: 'não foi submetido'
+      })
+    ).toBe('not submitted')
+  })
+
+  it('falls back to the Portuguese key, which is what production sends today', () => {
+    expect(
+      requirementDetail({
+        key: 'insurance',
+        label: 'Seguro',
+        kind: 'document',
+        detalhe: 'não foi submetido'
+      })
+    ).toBe('não foi submetido')
+  })
+
+  it('reads the English key alone, which is what the next round sends', () => {
+    expect(
+      requirementDetail({
+        key: 'insurance',
+        label: 'Seguro',
+        kind: 'document',
+        detail: 'não foi submetido'
+      })
+    ).toBe('não foi submetido')
+  })
+
+  /*
+   * Neither key is survivable: the admin sees a requirement with no
+   * explanation, which is worse than before and better than a crash in the
+   * approval screen.
+   */
+  it('returns an empty string when neither key is there', () => {
+    expect(
+      requirementDetail({ key: 'insurance', label: 'Seguro', kind: 'document' })
+    ).toBe('')
   })
 })
