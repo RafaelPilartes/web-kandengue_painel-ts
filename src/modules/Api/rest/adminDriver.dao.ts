@@ -1,8 +1,10 @@
 import ApiDAO from './Api.dao'
 import type {
   DocumentDecisionResult,
+  DriverStatusResult,
   IAdminDriverRepository,
-  ServiceResult
+  ServiceResult,
+  SettableDriverStatus
 } from '@/core/interfaces/IAdminDriverRepository'
 import type { RideType } from '@/types/enum'
 
@@ -16,6 +18,13 @@ export class AdminDriverDAO implements IAdminDriverRepository {
       service,
       confirmations
     })
+  }
+
+  async setStatus(
+    driverId: string,
+    status: SettableDriverStatus
+  ): Promise<DriverStatusResult> {
+    return ApiDAO.post(`/api/v1/admin/drivers/${driverId}/status`, { status })
   }
 
   /*

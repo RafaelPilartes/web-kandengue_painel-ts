@@ -50,6 +50,23 @@ export function requirementDetail(requirement: MissingRequirement): string {
   return requirement.detail ?? requirement.detalhe ?? ''
 }
 
+/**
+ * The statuses an admin may set — the API's enum, not `UserStatus`.
+ *
+ * `deleted` is absent because the API refuses it: it belongs to account
+ * deletion, where the status is written in the same transaction as the
+ * anonymisation. From a dropdown it would hide a driver from every listing
+ * while keeping their documents, rides and phone number.
+ */
+export type SettableDriverStatus = 'active' | 'inactive' | 'pending' | 'banned'
+
+export interface DriverStatusResult {
+  driver_id: string
+  status: SettableDriverStatus
+  /** `false` when it was already so — the call was a no-op. */
+  changed: boolean
+}
+
 export interface ServiceResult {
   driver_id: string
   services: RideType[]
@@ -92,6 +109,24 @@ export interface IAdminDriverRepository {
 
   /** Removing is never blocked. What is required is the record of who did it. */
   removeService(driverId: string, service: RideType): Promise<ServiceResult>
+
+  /**
+   * Sets the driver's status, with the requirements checked on the server.
+   *
+   * ⚠️ **This panel no longer writes `drivers.status` itself**, and the
+   * Firestore rule denies it — to the admin too, as of 3.10c. The reason is
+   * that `status == 'active'` is a dispatch filter: the list that decided it
+   * lived in this screen, so the weakest check in the system chose who
+   * receives rides, and the browser console could pass it.
+   *
+   * Activation refuses with `ACTIVATION_REQUIREMENTS_NOT_MET` and
+   * `details.missing`, the same shape as service approval. Every other status
+   * goes through unconditionally.
+   */
+  setStatus(
+    driverId: string,
+    status: SettableDriverStatus
+  ): Promise<DriverStatusResult>
 
   /**
    * Approves a document, with an optional expiry date.
