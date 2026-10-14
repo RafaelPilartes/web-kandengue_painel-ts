@@ -4,6 +4,8 @@ import { AppError } from '@/domain/errors/AppError'
 import type { DriverEntity } from '@/core/entities/Driver'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import type { FieldPath } from '@/core/interfaces/IBaseRepository'
+import type { ServiceResult } from '@/core/interfaces/IAdminDriverRepository'
+import type { RideType } from '@/types/enum'
 
 // Defaults do DAO antigo — preservados aqui para o motor novo (que usa 50).
 const LEGACY_PAGE_SIZE = 500
@@ -100,6 +102,36 @@ export class DriverUseCase extends BaseUseCase {
     return this.run('softDelete', () =>
       this.repository.softDelete(id, firebaseUid)
     )
+  }
+
+  /**
+   * The services a driver is approved for — **through the API** (3.7).
+   *
+   * ⚠️ **It is not an `update` to the document, and that is the change.** The
+   * panel used to write `drivers.services` via the client SDK, with the
+   * requirement check on the screen: anyone who opened the browser console
+   * could approve themselves for `moto_taxi` with no insurance, no helmet and
+   * no licence. The server is what checks now, against the lib's
+   * `SERVICE_REQUIREMENTS`, and every decision leaves a line in `auditLogs` —
+   * including what the admin confirmed by hand.
+   *
+   * Outside `run()`, like the other admin actions: the API's message is the
+   * one that says **what is missing**, and the generic `run()` buried it.
+   */
+  executeAddService(
+    driverId: string,
+    service: RideType,
+    confirmations: string[] = []
+  ): Promise<ServiceResult> {
+    return ApiRepository.adminDriver.addService(driverId, service, confirmations)
+  }
+
+  /** Removing is never blocked — only recorded. */
+  executeRemoveService(
+    driverId: string,
+    service: RideType
+  ): Promise<ServiceResult> {
+    return ApiRepository.adminDriver.removeService(driverId, service)
   }
 
   /**

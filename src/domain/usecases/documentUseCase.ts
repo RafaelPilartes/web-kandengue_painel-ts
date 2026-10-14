@@ -3,6 +3,7 @@ import { BaseUseCase } from './BaseUseCase'
 import type { DocumentEntity } from '@/core/entities/Document'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import type { FieldPath } from '@/core/interfaces/IBaseRepository'
+import type { DocumentDecisionResult } from '@/core/interfaces/IAdminDriverRepository'
 
 // Defaults do DAO antigo — preservados aqui para o motor novo (que usa 50).
 const LEGACY_PAGE_SIZE = 500
@@ -79,6 +80,32 @@ export class DocumentUseCase extends BaseUseCase {
 
   executeDelete(id: string): Promise<void> {
     return this.run('delete', () => this.repository.delete(id))
+  }
+
+  /**
+   * Approves a document **through the API** (3.7), with an optional expiry.
+   *
+   * ⚠️ **The expiry is the end of the chosen day, Luanda time** — whoever
+   * collects it converts it (the screen), with `endOfDayInLuanda`. The lib
+   * compares instants (`expires_at > now`): midnight on the 31st expires the
+   * policy on the 31st itself, and the driver loses the day it covers.
+   *
+   * Outside `run()`: the API's message is what explains a refusal.
+   */
+  executeApprove(id: string, expiresAt?: Date): Promise<DocumentDecisionResult> {
+    return ApiRepository.adminDriver.approveDocument(id, expiresAt)
+  }
+
+  /**
+   * Rejects a document, **with a mandatory reason** — and the reason goes to
+   * `feedback`, the field the driver sees.
+   *
+   * The panel used to write `{status: 'rejected'}` and never `feedback`: the
+   * driver got a "rejected" with no idea what to fix and resubmitted the same
+   * document.
+   */
+  executeReject(id: string, reason: string): Promise<DocumentDecisionResult> {
+    return ApiRepository.adminDriver.rejectDocument(id, reason)
   }
 }
 

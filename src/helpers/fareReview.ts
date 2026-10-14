@@ -232,3 +232,72 @@ const REVIEW_FLAG_LABELS: Record<string, string> = {
 export function reviewFlagLabel(flag: string): string {
   return REVIEW_FLAG_LABELS[flag] ?? flag
 }
+
+/**
+ * What each flag **means**, and what the operator does about it.
+ *
+ * ── Why the label is not enough ──
+ * "Cobrada pela distância estimada" says what happened and not **what to do**.
+ * Whoever works the review queue needs to know whether the fare is wrong (and
+ * has to be corrected) or right but simply not measured — those are different
+ * conversations with the passenger. Until now that difference lived in the
+ * HANDOFF, and the operator does not read the HANDOFF.
+ *
+ * ⚠️ **A partial map, like the labels** (panel rule, §0AB): a new flag shows up
+ * on screen without an explanation instead of breaking the build. An
+ * exhaustive `Record<RideReviewFlag, …>` turned every new flag in the lib into
+ * a **major** change.
+ *
+ * The strings themselves are user-facing, so they stay in Portuguese.
+ */
+const REVIEW_FLAG_EXPLANATIONS: Record<string, string> = {
+  promotion_reservation_failed:
+    'A promoção esgotou-se entre a cotação e a criação da corrida: o cliente viu um preço com desconto e a corrida nasceu sem ele. A tarifa está certa pelas regras — o que falta é decidir se se devolve a diferença.',
+  driver_ended_early:
+    'O motorista terminou antes do destino, com motivo (o passageiro foi avisado). Cobrou-se até onde a corrida parou. Vale confirmar que o motivo justifica o valor.',
+  force_completed:
+    'Um administrador fechou esta corrida à força — ela não foi terminada por ninguém no terreno. O motivo está na auditoria, abaixo. A tarifa saiu quase sempre da distância estimada.',
+  completed_location_mismatch:
+    'A posição final da corrida afastou-se do último ponto do percurso gravado: ou o percurso parou de gravar a meio, ou a corrida não acabou onde diz. As duas coisas mudam a distância cobrada.',
+  fare_estimated_fallback:
+    'O percurso gravado não dava para medir (poucos pontos, um salto de GPS, o início longe da recolha), por isso cobrou-se a distância **estimada** da cotação. A tarifa está certa pelas regras e **não foi medida** — o motivo exacto está em `fare.distance.reason`.'
+}
+
+/** The flag's explanation, or `null` when none has been written yet. */
+export function reviewFlagExplanation(flag: string): string | null {
+  return REVIEW_FLAG_EXPLANATIONS[flag] ?? null
+}
+
+/**
+ * The reason behind a forced close, read from the audit log.
+ *
+ * ⚠️ **It reads `new_data.reason`, not the sentence.** The API writes both: the
+ * `description` ("Forçou o fecho da corrida X (estava em Y): reason") and
+ * `new_data: {status, review_flags, reason}`. Going to the structured field is
+ * what makes this immune to a rewording — and `description` changes over time,
+ * like any sentence.
+ *
+ * Returns `null` when there is no entry at all: it may be a ride flagged
+ * before the audit log existed, or a read that failed. **Showing "no reason on
+ * record" beats hiding the flag.**
+ */
+export function forcedCloseReason(
+  logs: ReadonlyArray<{
+    action?: string
+    module?: string
+    new_data?: unknown
+  }>
+): string | null {
+  for (const log of logs) {
+    if (log.module !== 'rides') continue
+    const data = log.new_data as
+      | { reason?: unknown; review_flags?: unknown }
+      | null
+      | undefined
+    const flags = data?.review_flags
+    const hasFlag = Array.isArray(flags) && flags.includes('force_completed')
+    const reason = typeof data?.reason === 'string' ? data.reason.trim() : ''
+    if (hasFlag && reason !== '') return reason
+  }
+  return null
+}

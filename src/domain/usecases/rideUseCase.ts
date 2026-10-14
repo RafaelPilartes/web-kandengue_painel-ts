@@ -1,4 +1,5 @@
 import { ApiRepository } from '@/modules/Api/factory'
+import type { PrivateContacts } from '@/helpers/rideContacts'
 import { BaseUseCase } from './BaseUseCase'
 import type { RideEntity } from '@/core/entities/Ride'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
@@ -101,6 +102,24 @@ export class RideUseCase extends BaseUseCase {
 
   executeDelete(id: string): Promise<void> {
     return this.run('delete', () => this.repository.delete(id))
+  }
+
+  /**
+   * A ride's private contacts (3.2), for the detail panel to show.
+   *
+   * ⚠️ **It never fails because the document is missing:** rides older than
+   * 3.2 do not have it, and the screen falls back to the embedded copy. A
+   * `null` here is information, not an error — which is why it does not go
+   * through `run()`, that turns failures into `AppError`.
+   */
+  async executeGetPrivateContacts(id: string): Promise<PrivateContacts | null> {
+    try {
+      return await this.repository.getPrivateContacts(id)
+    } catch (error) {
+      // A denying rule, or the network: the screen shows the fallback and moves on.
+      console.error('[rideUseCase] private contacts', error)
+      return null
+    }
   }
 
   /** Listener directo — não passa pelo `run()`, que é só para operações que devolvem valor. */

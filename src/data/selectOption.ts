@@ -74,6 +74,13 @@ export const documentTypeOptions: OptionType[] = [
   { value: 'id_back', label: 'BI Verso' },
   { value: 'vehicle_ownership', label: 'Titulo de propriedade' },
   { value: 'vehicle_booklet', label: 'Livrete' },
+  /*
+   * Insurance entered the lib's `DocumentType` in 2.12.0 and is a Moto Táxi
+   * requirement. Without this line the screen showed a raw `insurance` in the
+   * type column, in the decision sheet's title and in the toast — found by the
+   * independent review of phase 4.
+   */
+  { value: 'insurance', label: 'Seguro' },
   { value: 'other', label: 'Offline' }
 ]
 

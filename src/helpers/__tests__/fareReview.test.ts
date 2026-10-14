@@ -9,6 +9,8 @@ import {
   promotionReservationMissing,
   signedDeviationPercent,
   hasAnyReviewFlag,
+  forcedCloseReason,
+  reviewFlagExplanation,
   reviewFlagLabel
 } from '@/helpers/fareReview'
 import type { RideEntity } from '@/core/entities/Ride'
@@ -469,5 +471,97 @@ describe('as marcas do servidor', () => {
       'uma_marca_que_ainda_nao_existe'
     )
     expect(reviewFlagLabel('')).toBe('')
+  })
+})
+
+/**
+ * The flag explanations, and the reason behind a forced close.
+ *
+ * ⚠️ **The panel rule applies to both:** a partial map with a fallback. A new
+ * flag shows up without an explanation — it never breaks the build, which was
+ * what turned every new flag in the lib into a major change.
+ */
+describe('reviewFlagExplanation', () => {
+  it('explains the five flags that exist', () => {
+    for (const flag of [
+      'promotion_reservation_failed',
+      'driver_ended_early',
+      'force_completed',
+      'completed_location_mismatch',
+      'fare_estimated_fallback'
+    ]) {
+      const text = reviewFlagExplanation(flag)
+      expect(text, flag).toBeTruthy()
+      // An explanation is a sentence, not the label repeated.
+      expect((text ?? '').length, flag).toBeGreaterThan(40)
+    }
+  })
+
+  it('has no explanation for a new flag, and that is not an error', () => {
+    expect(reviewFlagExplanation('marca_que_ainda_nao_existe')).toBeNull()
+  })
+
+  /*
+   * The distinction the operator has to make: is the fare wrong, or right but
+   * unmeasured? That is the whole point of this block.
+   */
+  it('says the estimated-distance fare is right but unmeasured', () => {
+    const text = reviewFlagExplanation('fare_estimated_fallback') ?? ''
+    expect(text).toMatch(/estimada/)
+    expect(text).toMatch(/não foi medida/)
+  })
+})
+
+describe('forcedCloseReason', () => {
+  const forcedCloseLog = (reason: unknown) => ({
+    action: 'update',
+    module: 'rides',
+    new_data: {
+      status: 'completed',
+      review_flags: ['force_completed'],
+      ...(reason === undefined ? {} : { reason })
+    }
+  })
+
+  it('reads the reason from the structured field', () => {
+    expect(forcedCloseReason([forcedCloseLog('O motorista ficou sem bateria')])).toBe(
+      'O motorista ficou sem bateria'
+    )
+  })
+
+  // A ride's audit trail has several entries; only one is the forced close.
+  it('ignores the other entries of the same ride', () => {
+    const logs = [
+      { action: 'update', module: 'rides', new_data: { status: 'canceled' } },
+      { action: 'update', module: 'drivers', new_data: { reason: 'outro' } },
+      forcedCloseLog('Cliente ligou a confirmar que a corrida acabou')
+    ]
+    expect(forcedCloseReason(logs)).toBe(
+      'Cliente ligou a confirmar que a corrida acabou'
+    )
+  })
+
+  it('returns null when there is no entry — and the screen says so', () => {
+    expect(forcedCloseReason([])).toBeNull()
+    expect(forcedCloseReason([{ module: 'rides', new_data: null }])).toBeNull()
+  })
+
+  it('treats an empty or non-string reason as absent', () => {
+    for (const value of ['', '   ', 42, null, undefined]) {
+      expect(forcedCloseReason([forcedCloseLog(value)]), String(value)).toBeNull()
+    }
+  })
+
+  // An audit entry without the flag is not the forced close.
+  it('requires the flag on the entry, not just a reason', () => {
+    expect(
+      forcedCloseReason([
+        {
+          action: 'update',
+          module: 'rides',
+          new_data: { reason: 'cancelei', review_flags: [] }
+        }
+      ])
+    ).toBeNull()
   })
 })

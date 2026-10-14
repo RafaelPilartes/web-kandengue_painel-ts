@@ -15,7 +15,25 @@ import {
 } from '@/viewModels/PromotionViewModel'
 import { showToast } from '@/utils/toasts'
 
-const PAYMENT_METHODS: RidePaymentMethod[] = ['cash', 'card', 'wallet']
+/**
+ * How a ride is paid for, in a promotion's rules.
+ *
+ * ⚠️ **`'wallet'` is gone, and it should never have been here.** In the
+ * business model **the passenger always pays the driver** — cash or card — and
+ * the wallet belongs to the **driver**, for fees and bonuses. A ride's
+ * `PaymentMethodType` is only `'cash' | 'card'`, checked against production
+ * (of 109 rides, none with `wallet`).
+ *
+ * The consequence of offering it was a promotion that **never applied**: the
+ * validator compares against the ride's method, the passenger only ever sends
+ * `'cash'` or `'card'`, and it always came back `INVALID_PAYMENT_METHOD` — a
+ * promotion failing silently, with nobody knowing why.
+ *
+ * This screen was the only consumer of the value, which is why the lib could
+ * remove it (3.0.0) in this phase: the breakage does not ride along with an
+ * improvement.
+ */
+const PAYMENT_METHODS: RidePaymentMethod[] = ['cash', 'card']
 
 interface FormState {
   code: string

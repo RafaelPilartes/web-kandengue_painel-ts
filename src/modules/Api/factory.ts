@@ -40,6 +40,7 @@ import type { IPushNotificationRepository } from '@/core/interfaces/IPushNotific
 import { PushNotificationDAO } from './rest/pushNotification.dao'
 import type { IAdminConfigRepository } from '@/core/interfaces/IAdminConfigRepository'
 import type { IAdminMoneyRepository } from '@/core/interfaces/IAdminMoneyRepository'
+import type { IAdminDriverRepository } from '@/core/interfaces/IAdminDriverRepository'
 import type { IAdminRideRepository } from '@/core/interfaces/IAdminRideRepository'
 import type { IAdminVehicleRepository } from '@/core/interfaces/IAdminVehicleRepository'
 import type { IAdminMissionRepository } from '@/core/interfaces/IAdminMissionRepository'
@@ -50,6 +51,7 @@ import { AdminMissionDAO } from './rest/adminMission.dao'
 import { AdminNotificationDAO } from './rest/adminNotification.dao'
 import { AdminPromotionDAO } from './rest/adminPromotion.dao'
 import { AdminMoneyDAO } from './rest/adminMoney.dao'
+import { AdminDriverDAO } from './rest/adminDriver.dao'
 import { AdminRideDAO } from './rest/adminRide.dao'
 import { AdminVehicleDAO } from './rest/adminVehicle.dao'
 import type { IPricingRepository } from '@/core/interfaces/IPricingRepository'
@@ -87,6 +89,7 @@ class ApiFactory {
   private _pushNotifications?: IPushNotificationRepository
   private _adminMoney?: IAdminMoneyRepository
   private _adminVehicle?: IAdminVehicleRepository
+  private _adminDriver?: IAdminDriverRepository
   private _adminRide?: IAdminRideRepository
   private _adminConfig?: IAdminConfigRepository
   private _adminPromotions?: IAdminPromotionRepository
@@ -184,6 +187,16 @@ class ApiFactory {
 
   get adminRide(): IAdminRideRepository {
     return (this._adminRide ??= new AdminRideDAO())
+  }
+
+  /**
+   * Approving services and deciding documents (3.7).
+   *
+   * Reading `drivers` and `documents` stays direct Firestore — the rules will
+   * only close the **writes**, in phase 7.
+   */
+  get adminDriver(): IAdminDriverRepository {
+    return (this._adminDriver ??= new AdminDriverDAO())
   }
 
   get adminConfig(): IAdminConfigRepository {

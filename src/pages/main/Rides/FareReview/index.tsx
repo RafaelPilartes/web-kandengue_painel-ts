@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Spinner } from 'phosphor-react'
 import swal from 'sweetalert'
 import { CheckCircle2, Info, TicketPercent } from 'lucide-react'
@@ -13,11 +13,16 @@ import {
   compareQuotedToCharged,
   failedReservation,
   hasAnyReviewFlag,
+  forcedCloseReason,
+  reviewFlagExplanation,
   reviewFlagLabel,
   fareDistance,
   signedDeviationPercent
 } from '@/helpers/fareReview'
 import type { FareComparison } from '@/helpers/fareReview'
+import type { RideReviewFlag } from '@rafaelpilartes/kandengue-shared/types'
+import { mapApiError, stripMarkdown } from '@/helpers/apiError'
+import { auditService } from '@/observability/audit'
 import { formatDateTimeFromFirestore } from '@/utils/date'
 import { formatMoney } from '@/utils/number'
 import {
@@ -115,6 +120,64 @@ export function FareReviewPage() {
   }, [rides, onlyPending, reason])
 
   /** Quantas há de cada motivo, para os botões do filtro não mentirem. */
+  /*
+   * With lib 3.0.0 installed, `RideReviewFlag` carries all five values and the
+   * comparison is typed again — the `as string` casts that stood here while
+   * the panel was pinned to 2.11.0 (where the type had a single value) are
+   * gone.
+   *
+   * The labels and the explanations stay `Record<string, string>` on purpose:
+   * that is the §0AB rule, and it is what keeps a new flag in the lib from
+   * being a major change for the panel.
+   */
+  const FORCED_CLOSE_FLAG: RideReviewFlag = 'force_completed'
+
+  /*
+   * The reason behind each forced close, read from the audit log
+   * (`new_data.reason`).
+   *
+   * ⚠️ **Only for the rides that carry the flag**, and one read per ride: the
+   * queue shows dozens of rows and the audit log is not read whole to find a
+   * handful of reasons. `undefined` = not read yet; `null` = read and there
+   * was none — and the screen **says so** instead of hiding the flag.
+   */
+  const [closeReasons, setCloseReasons] = useState<
+    Record<string, string | null>
+  >({})
+
+  useEffect(() => {
+    const forced = flagged
+      .filter(r => (r.review_flags ?? []).includes(FORCED_CLOSE_FLAG))
+      .map(r => r.id as string)
+      .filter(id => !(id in closeReasons))
+
+    if (forced.length === 0) return
+
+    let alive = true
+    void Promise.all(
+      forced.map(async id => {
+        try {
+          const logs = await auditService.getByTarget(id)
+          return [id, forcedCloseReason(logs)] as const
+        } catch (error) {
+          // Uma falha a ler a auditoria não pode tirar a corrida da fila.
+          console.error('[fare-review] forced close reason', error)
+          return [id, null] as const
+        }
+      })
+    ).then(pairs => {
+      if (!alive) return
+      setCloseReasons(previous => ({
+        ...previous,
+        ...Object.fromEntries(pairs)
+      }))
+    })
+
+    return () => {
+      alive = false
+    }
+  }, [flagged, closeReasons])
+
   const counts = useMemo(() => {
     const pending = (ride: RideEntity) =>
       !onlyPending || !ride.fare_reviewed_by
@@ -176,11 +239,17 @@ export function FareReviewPage() {
         { icon: result.changed ? 'success' : 'info' }
       )
     } catch (error) {
+      /*
+       * ⚠️ **`mapApiError`, not `error.message`.** Found by the independent
+       * review of phase 4: this route's errors are `kind: 'technical'` (a
+       * `ConflictError`), so they **carry no `user_message`** — and the
+       * `message` is English diagnostics. The admin was reading "Ride rid-… is
+       * not flagged for fare review". It is the same defect that put
+       * "body/code Code must contain only A-Z…" on a passenger's screen, and
+       * the reason the error contract landed in this batch.
+       */
       swal('Erro ao marcar', {
-        text:
-          error instanceof Error
-            ? error.message
-            : 'Houve algum erro ao marcar a revisão...',
+        text: mapApiError(error, 'Houve algum erro ao marcar a revisão...'),
         icon: 'error'
       })
     }
@@ -196,10 +265,13 @@ export function FareReviewPage() {
           <Breadcrumbs items={itemsBreadcrumbs} />
         </div>
         <p className="text-sm text-gray-600 dark:text-gray-300">
-          Corridas que o servidor marcou para confirmação humana, por dois
-          motivos: o <strong>desvio de distância</strong> no fecho da tarifa, e
-          a <strong>reserva de promoção que falhou</strong> na criação — em que
-          o cliente viu um preço e pagou outro.{' '}
+          Corridas que o servidor marcou para confirmação humana: o{' '}
+          <strong>desvio de distância</strong> no fecho da tarifa, a{' '}
+          <strong>reserva de promoção que falhou</strong> na criação — em que o
+          cliente viu um preço e pagou outro — e qualquer{' '}
+          <strong>marca escrita pelo servidor</strong> (fecho forçado, fecho
+          antecipado, tarifa cobrada pela distância estimada), cada uma
+          explicada na linha da corrida.{' '}
           <strong>Marcar como revista não altera a tarifa</strong> — registra
           apenas quem reviu e quando.
         </p>
@@ -330,14 +402,58 @@ export function FareReviewPage() {
                 {/* As marcas do servidor, com o nome cru quando a etiqueta
                     ainda não existe: uma marca nova aparece, não desaparece */}
                 {(ride.review_flags ?? []).length > 0 && (
-                  <div className="flex flex-row flex-wrap gap-2">
-                    {(ride.review_flags ?? []).map(flag => (
-                      <BadgeSimple
-                        key={flag}
-                        label={reviewFlagLabel(flag)}
-                        color="orange"
-                      />
-                    ))}
+                  <div className="flex flex-col gap-2">
+                    <div className="flex flex-row flex-wrap gap-2">
+                      {(ride.review_flags ?? []).map(flag => (
+                        <BadgeSimple
+                          key={flag}
+                          label={reviewFlagLabel(flag)}
+                          color="orange"
+                        />
+                      ))}
+                    </div>
+
+                    {/*
+                      O que cada marca quer dizer.
+
+                      ⚠️ **A etiqueta sozinha não serve a quem revê.** "Cobrada
+                      pela distância estimada" diz o quê e não diz o que fazer:
+                      a tarifa está errada, ou está certa e só não foi medida?
+                      São conversas diferentes com o passageiro, e essa
+                      diferença vivia no HANDOFF — que o operador não lê.
+                    */}
+                    <ul className="flex flex-col gap-1.5 rounded-lg bg-gray-50 p-3 dark:bg-gray-900/40">
+                      {(ride.review_flags ?? []).map(flag => {
+                        const explanation = reviewFlagExplanation(flag)
+                        const isForcedClose = flag === FORCED_CLOSE_FLAG
+                        const reason = isForcedClose
+                          ? closeReasons[ride.id as string]
+                          : undefined
+                        return (
+                          <li
+                            key={`exp-${flag}`}
+                            className="text-xs text-gray-600 dark:text-gray-300"
+                          >
+                            <span className="font-medium text-gray-800 dark:text-gray-100">
+                              {reviewFlagLabel(flag)}:
+                            </span>{' '}
+                            {explanation
+                              ? stripMarkdown(explanation)
+                              : 'Marca nova — ainda sem explicação escrita no painel.'}
+                            {isForcedClose && (
+                              <span className="mt-1 block">
+                                <span className="font-medium text-gray-800 dark:text-gray-100">
+                                  Motivo:
+                                </span>{' '}
+                                {reason === undefined
+                                  ? 'a ler a auditoria…'
+                                  : (reason ?? 'sem motivo registado na auditoria.')}
+                              </span>
+                            )}
+                          </li>
+                        )
+                      })}
+                    </ul>
                   </div>
                 )}
 
