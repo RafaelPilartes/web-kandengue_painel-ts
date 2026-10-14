@@ -18,39 +18,36 @@ export class FirebaseAuditLogDAO
   }
 
   /**
-   * As linhas de auditoria de **um alvo** — uma corrida, um motorista, um
-   * documento.
+   * The audit entries of **one target** — a ride, a driver, a document.
    *
-   * ── Porque não passa pelo `getAll`, e isto não é preferência ──
-   * ⚠️ **Achado pela revisão independente da Fase 4.** O `getAll` do motor
-   * **impõe sempre** um `orderBy` (`options.orderBy ?? defaultOrderField`):
-   * passar-lhe `orderBy: undefined` não o desliga, cai no `created_at`. Uma
-   * igualdade em `target_id` com ordenação noutro campo **exige um índice
-   * composto** — e não há nenhum `auditLogs (target_id, created_at)` em
-   * repositório nenhum. Em produção a query falhava com
-   * `failed-precondition`, o `catch` de quem chama engolia-a, e o ecrã dizia
-   * "sem motivo registado" com o motivo escrito na base de dados.
+   * ── Why it does not go through `getAll`, and this is not a preference ──
+   * ⚠️ **Found by the independent review of phase 4.** The engine's `getAll`
+   * **always imposes** an `orderBy` (`options.orderBy ?? defaultOrderField`):
+   * passing it `orderBy: undefined` does not switch it off, it falls back to
+   * `created_at`. An equality on `target_id` ordered by another field
+   * **requires a composite index** — and there is no
+   * `auditLogs (target_id, created_at)` in any repository. In production the
+   * query failed with `failed-precondition`, the caller's `catch` swallowed
+   * it, and the screen said "no reason on record" with the reason sitting in
+   * the database.
    *
-   * **No emulador isto nunca aparece:** ele não exige índices compostos, por
-   * isso a suite ficava verde.
+   * **This never shows up on the emulator:** it does not require composite
+   * indexes, so the suite stayed green.
    *
-   * Aqui a query é **só a igualdade** — que o índice automático de campo único
-   * já serve — e a ordenação faz-se **em memória**, como o relógio da 3.5 fez
-   * na API pela mesma razão. Meia dúzia de linhas por alvo ordenam-se sem
-   * custo; um índice é uma deploy e um ficheiro a manter.
+   * Here the query is **the equality only** — which the automatic single-field
+   * index already serves — and the ordering happens **in memory**, as the 3.5
+   * scheduler did on the API for the same reason. Half a dozen entries per
+   * target sort for free; an index is a deploy and a file to maintain.
    *
-   * ⚠️ **O `limite` é um tecto do que se lê, não "os mais recentes"**: sem
-   * ordenação no servidor, o Firestore devolve os primeiros que encontrar. É
-   * uma rede contra um alvo patológico, não um critério.
+   * ⚠️ **`max` is a ceiling on what is read, not "the most recent"**: with no
+   * ordering on the server, Firestore returns whichever it finds first. It is
+   * a net against a pathological target, not a criterion.
    */
-  async getByTarget(
-    targetId: string,
-    limite = 50
-  ): Promise<AuditLogInterface[]> {
+  async getByTarget(targetId: string, max = 50): Promise<AuditLogInterface[]> {
     const q = query(
       this.ref.withConverter(this.converter),
       where('target_id', '==', targetId),
-      limit(limite)
+      limit(max)
     )
     const snap = await getDocs(q)
     return snap.docs

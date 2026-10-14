@@ -105,18 +105,18 @@ export class DriverUseCase extends BaseUseCase {
   }
 
   /**
-   * Os serviços que o motorista está aprovado a fazer — **pela API** (3.7).
+   * The services a driver is approved for — **through the API** (3.7).
    *
-   * ⚠️ **Não é um `update` ao documento, e é essa a mudança.** O painel
-   * escrevia `drivers.services` pelo SDK cliente, com a verificação dos
-   * requisitos no ecrã: quem abrisse a consola do browser aprovava-se a si
-   * mesmo para `moto_taxi` sem seguro, sem capacete e sem carta. Agora quem
-   * verifica é o servidor, contra a `SERVICE_REQUIREMENTS` da lib, e cada
-   * decisão deixa uma linha em `auditLogs` — incluindo o que o admin
-   * confirmou à mão.
+   * ⚠️ **It is not an `update` to the document, and that is the change.** The
+   * panel used to write `drivers.services` via the client SDK, with the
+   * requirement check on the screen: anyone who opened the browser console
+   * could approve themselves for `moto_taxi` with no insurance, no helmet and
+   * no licence. The server is what checks now, against the lib's
+   * `SERVICE_REQUIREMENTS`, and every decision leaves a line in `auditLogs` —
+   * including what the admin confirmed by hand.
    *
-   * Fora do `run()`, como as outras acções de admin: a mensagem da API é a
-   * que diz **o que falta**, e o `run()` genérico tapava-a.
+   * Outside `run()`, like the other admin actions: the API's message is the
+   * one that says **what is missing**, and the generic `run()` buried it.
    */
   executeAddService(
     driverId: string,
@@ -126,7 +126,7 @@ export class DriverUseCase extends BaseUseCase {
     return ApiRepository.adminDriver.addService(driverId, service, confirmations)
   }
 
-  /** Retirar nunca é bloqueado — só registado. */
+  /** Removing is never blocked — only recorded. */
   executeRemoveService(
     driverId: string,
     service: RideType

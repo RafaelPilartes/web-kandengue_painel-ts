@@ -30,13 +30,17 @@ import { useDocumentsViewModel } from '@/viewModels/DocumentViewModel'
 import type { WalletInterface } from '@/interfaces/IWallet'
 import type { VehicleInterface } from '@/interfaces/IVehicle'
 import { RIDE_TYPES, type RideType } from '@rafaelpilartes/kandengue-shared/enums'
-import { mapApiError, missingRequirements, semMarcacao } from '@/helpers/apiError'
+import {
+  mapApiError,
+  missingRequirements,
+  stripMarkdown
+} from '@/helpers/apiError'
 import type { MissingRequirement } from '@/core/interfaces/IAdminDriverRepository'
 import {
-  type DocumentoComValidade,
-  estaCaducado,
-  fimDoDiaEmLuanda,
-  rotuloValidade
+  type DocumentWithValidity,
+  endOfDayInLuanda,
+  isExpired,
+  validityLabel
 } from '@/helpers/documentValidity'
 import { RIDE_TYPE_LABELS } from '@rafaelpilartes/kandengue-shared/constants'
 import type { DocumentInterface } from '@/interfaces/IDocument'
@@ -132,30 +136,30 @@ export function DriverViewPage() {
   const [isUpdatingServices, setUpdatingServices] = useState<boolean>(false)
 
   /*
-   * O que a API disse que falta para um serviço, e as confirmações manuais
-   * que o admin já deu. Vive aqui e não numa constante: a lista **vem do
-   * servidor** a cada recusa.
+   * What the API said is missing for a service, and the manual confirmations
+   * the admin has already given. It lives here and not in a constant: the list
+   * **comes from the server** on every refusal.
    */
-  const [requisitosEmFalta, setRequisitosEmFalta] = useState<{
+  const [missingForService, setMissingForService] = useState<{
     service: RideType
     missing: MissingRequirement[]
   } | null>(null)
-  const [confirmacoesDadas, setConfirmacoesDadas] = useState<string[]>([])
+  const [givenConfirmations, setGivenConfirmations] = useState<string[]>([])
 
   /*
-   * A decisão em curso sobre um documento. A folha pede o que o botão não
-   * tem: um motivo (na recusa, obrigatório) ou uma data (na aprovação,
-   * opcional).
+   * The document decision in progress. The sheet asks for what the button does
+   * not carry: a reason (mandatory on a rejection) or a date (optional on an
+   * approval).
    */
-  const [decisaoDocumento, setDecisaoDocumento] = useState<{
+  const [documentDecision, setDocumentDecision] = useState<{
     document: DocumentInterface
-    decisao: 'approved' | 'rejected'
+    decision: 'approved' | 'rejected'
   } | null>(null)
-  const [motivoRecusa, setMotivoRecusa] = useState('')
-  const [validadeEscolhida, setValidadeEscolhida] = useState('')
-  const [aDecidirDocumento, setADecidirDocumento] = useState(false)
-  const [aSubmeterSeguro, setASubmeterSeguro] = useState(false)
-  const inputSeguroRef = useRef<HTMLInputElement | null>(null)
+  const [rejectionReason, setRejectionReason] = useState('')
+  const [chosenExpiry, setChosenExpiry] = useState('')
+  const [isDecidingDocument, setDecidingDocument] = useState(false)
+  const [isSubmittingInsurance, setSubmittingInsurance] = useState(false)
+  const insuranceInputRef = useRef<HTMLInputElement | null>(null)
 
   const [docDriverLicense, setDocDriverLicense] =
     useState<DocumentInterface | null>(null)
@@ -176,20 +180,22 @@ export function DriverViewPage() {
   // Handler
 
   /**
-   * Os serviços que o motorista está aprovado a fazer — **pela API** (3.7).
+   * The services a driver is approved for — **through the API** (3.7).
    *
-   * ⚠️ **Deixou de ser uma escrita a `drivers.services`.** Era-o, pelo SDK
-   * cliente, com a verificação dos requisitos neste ecrã — e um ecrã não é
-   * uma garantia: quem abrisse a consola do browser aprovava-se a si mesmo
-   * para `moto_taxi` sem seguro, sem capacete e sem carta. Agora quem
-   * verifica é o servidor, e cada decisão deixa uma linha em `auditLogs`.
+   * ⚠️ **This stopped being a write to `drivers.services`.** It was one, via
+   * the client SDK, with the requirement check on this screen — and a screen
+   * is not a guarantee: anyone who opened the browser console could approve
+   * themselves for `moto_taxi` with no insurance, no helmet and no licence.
+   * The server is what checks now, and every decision leaves a line in
+   * `auditLogs`.
    *
-   * ⚠️ **E o painel não sabe quais são os requisitos — nem deve.** Quando a
-   * API recusa, ela diz **o que falta**; este ecrã mostra essa lista e, se o
-   * que falta for uma confirmação manual (o capacete extra), oferece a caixa
-   * para o admin a dar e repete o pedido. A tabela vive na lib e é avaliada
-   * no servidor: duplicá-la aqui era voltar a ter duas versões da mesma
-   * regra, que é o que esta sub-fase veio acabar.
+   * ⚠️ **And the panel does not know the requirements — nor should it.** When
+   * the API refuses, it says **what is missing**; this screen shows that list
+   * and, if what is missing is a manual confirmation (the spare helmet),
+   * offers the checkbox for the admin to give it and repeats the request. The
+   * table lives in the lib and is evaluated on the server: duplicating it here
+   * would be back to two versions of the same rule, which is what this
+   * sub-phase came to end.
    */
   const handleToggleService = async (
     service: RideType,
@@ -197,11 +203,11 @@ export function DriverViewPage() {
   ) => {
     if (!rowDataDriver) return
     const id = rowDataDriver.id as string
-    const aRetirar = (rowDataDriver.services ?? []).includes(service)
+    const removing = (rowDataDriver.services ?? []).includes(service)
 
     try {
       setUpdatingServices(true)
-      const result = aRetirar
+      const result = removing
         ? await removeDriverService.mutateAsync({ driverId: id, service })
         : await addDriverService.mutateAsync({
             driverId: id,
@@ -210,8 +216,8 @@ export function DriverViewPage() {
           })
 
       setRowDataDriver({ ...rowDataDriver, services: result.services })
-      setRequisitosEmFalta(null)
-      setConfirmacoesDadas([])
+      setMissingForService(null)
+      setGivenConfirmations([])
       showToast(
         'success',
         result.changed
@@ -224,14 +230,14 @@ export function DriverViewPage() {
       )
     } catch (error) {
       console.error(error)
-      const emFalta = missingRequirements(error)
-      if (emFalta.length > 0) {
+      const missing = missingRequirements(error)
+      if (missing.length > 0) {
         /*
-         * A recusa é informação, não um erro a esconder: o admin precisa de
-         * saber **o que** falta para o ir resolver (ou confirmar).
+         * The refusal is information, not an error to hide: the admin needs to
+         * know **what** is missing in order to go and fix it (or confirm it).
          */
-        setRequisitosEmFalta({ service, missing: emFalta })
-        setConfirmacoesDadas([])
+        setMissingForService({ service, missing })
+        setGivenConfirmations([])
         showToast('info', `Faltam requisitos para ${RIDE_TYPE_LABELS[service]}.`)
       } else {
         showToast(
@@ -244,19 +250,19 @@ export function DriverViewPage() {
     }
   }
 
-  /** As chaves manuais que faltam — as únicas que se resolvem daqui. */
-  const manuaisEmFalta = (requisitosEmFalta?.missing ?? []).filter(
+  /** The missing manual keys — the only ones solvable from here. */
+  const missingManual = (missingForService?.missing ?? []).filter(
     r => r.kind === 'manual'
   )
-  /** O que o motorista tem de submeter: não se resolve com uma caixa. */
-  const naoManuaisEmFalta = (requisitosEmFalta?.missing ?? []).filter(
+  /** What the driver has to submit: a checkbox does not solve it. */
+  const missingNonManual = (missingForService?.missing ?? []).filter(
     r => r.kind !== 'manual'
   )
-  const podeConfirmarEAprovar =
-    requisitosEmFalta !== null &&
-    naoManuaisEmFalta.length === 0 &&
-    manuaisEmFalta.length > 0 &&
-    manuaisEmFalta.every(r => confirmacoesDadas.includes(r.key))
+  const canConfirmAndApprove =
+    missingForService !== null &&
+    missingNonManual.length === 0 &&
+    missingManual.length > 0 &&
+    missingManual.every(r => givenConfirmations.includes(r.key))
   const handleDefaultVehicle = async (vehicle: VehicleInterface) => {
     if (!rowDataDriver) {
       return
@@ -402,46 +408,47 @@ export function DriverViewPage() {
     }
   }
   /**
-   * Decidir um documento — **pela API** (3.7), e com duas mudanças de fundo.
+   * Deciding a document — **through the API** (3.7), with two changes of
+   * substance.
    *
-   * ⚠️ **A recusa exige motivo.** Este ecrã escrevia `{status: 'rejected'}` e
-   * **nunca** `feedback`: o motorista recebia um "rejeitado" sem saber o que
-   * corrigir, e voltava a submeter o mesmo documento. O motivo vai para o
-   * `feedback`, que é o campo que ele vê.
+   * ⚠️ **A rejection requires a reason.** This screen used to write
+   * `{status: 'rejected'}` and **never** `feedback`: the driver got a
+   * "rejected" with no idea what to fix, and resubmitted the same document.
+   * The reason goes to `feedback`, the field they see.
    *
-   * ⚠️ **A aprovação pode levar validade**, gravada como o **fim do dia**
-   * escolhido na hora de Luanda: a lib compara instantes, e a meia-noite do
-   * dia 31 caducava a apólice no próprio dia 31.
+   * ⚠️ **An approval may carry an expiry**, stored as the **end of the day**
+   * chosen, Luanda time: the lib compares instants, and midnight on the 31st
+   * expired the policy on the 31st itself.
    */
-  const handleDecidirDocumento = async () => {
-    if (!decisaoDocumento) return
-    const { document, decisao } = decisaoDocumento
+  const handleDecideDocument = async () => {
+    if (!documentDecision) return
+    const { document, decision } = documentDecision
 
-    if (decisao === 'rejected' && motivoRecusa.trim().length < 5) {
+    if (decision === 'rejected' && rejectionReason.trim().length < 5) {
       showToast('error', 'Escreve o motivo: é o que o motorista vê.')
       return
     }
 
     const expiresAt =
-      decisao === 'approved' && validadeEscolhida
-        ? fimDoDiaEmLuanda(validadeEscolhida)
+      decision === 'approved' && chosenExpiry
+        ? endOfDayInLuanda(chosenExpiry)
         : null
-    if (decisao === 'approved' && validadeEscolhida && !expiresAt) {
+    if (decision === 'approved' && chosenExpiry && !expiresAt) {
       showToast('error', 'Essa data não existe no calendário.')
       return
     }
 
     /*
-     * ⚠️ **Uma renovação sem data não renova nada.** Achado pela revisão
-     * independente da Fase 4: num documento já aprovado, a API sai pela
-     * saída antecipada (`mesmaValidade`) e devolve **200 `changed: false`**,
-     * sem escrever nem auditar — e o painel dizia "foi aprovado". O admin
-     * ficava convencido de que tinha renovado, e o motorista continuava
-     * bloqueado.
+     * ⚠️ **A renewal with no date renews nothing.** Found by the independent
+     * review of phase 4: on an already-approved document the API takes its
+     * early exit (`mesmaValidade`) and returns **200 `changed: false`**,
+     * writing nothing and auditing nothing — and the panel said "approved".
+     * The admin walked away convinced the renewal had happened, and the driver
+     * stayed blocked.
      */
-    const ehRenovacao =
-      decisao === 'approved' && decisaoDocumento.document.status === 'approved'
-    if (ehRenovacao && !expiresAt) {
+    const isRenewal =
+      decision === 'approved' && documentDecision.document.status === 'approved'
+    if (isRenewal && !expiresAt) {
       showToast(
         'error',
         'Escolhe a validade nova: sem data, a renovação não muda nada.'
@@ -450,19 +457,19 @@ export function DriverViewPage() {
     }
 
     const toastId = showToastLoading(
-      `${decisao === 'approved' ? 'Aprovando' : 'Rejeitando'} documento`
+      `${decision === 'approved' ? 'Aprovando' : 'Rejeitando'} documento`
     )
     try {
-      setADecidirDocumento(true)
-      const resultado =
-        decisao === 'approved'
+      setDecidingDocument(true)
+      const result =
+        decision === 'approved'
           ? await approveDocument.mutateAsync({
               id: document.id as string,
               ...(expiresAt ? { expiresAt } : {})
             })
           : await rejectDocument.mutateAsync({
               id: document.id as string,
-              reason: motivoRecusa.trim()
+              reason: rejectionReason.trim()
             })
 
       const resultDocument = await fetchAllDocumentsByField('user.id', driverId)
@@ -470,25 +477,25 @@ export function DriverViewPage() {
         setRowsDataDocuments(resultDocument?.data)
       }
 
-      setDecisaoDocumento(null)
+      setDocumentDecision(null)
       /*
-       * O `changed` da resposta é o que distingue "foi aprovado" de "já estava
-       * assim" — e sem ele o painel dizia a primeira coisa nos dois casos.
+       * The response's `changed` is what tells "approved" from "already was" —
+       * and without it the panel said the first thing in both cases.
        */
       updateToast(
         toastId,
-        resultado.changed ? 'success' : 'info',
-        resultado.changed
+        result.changed ? 'success' : 'info',
+        result.changed
           ? `Documento ${getDocumentTypeLabel(document.type)}, foi ${
-              decisao === 'approved' ? 'aprovado' : 'rejeitado'
+              decision === 'approved' ? 'aprovado' : 'rejeitado'
             }`
           : 'Já estava assim — nada mudou.'
       )
     } catch (err) {
       /*
-       * `mapApiError` e não `mapFirebaseError`: o erro vem agora da API, com
-       * o contrato da 3.1 — e a frase que o admin lê é a `user_message`, não
-       * a `message` técnica.
+       * `mapApiError`, not `mapFirebaseError`: the error now comes from the
+       * API with the 3.1 contract — and the sentence the admin reads is the
+       * `user_message`, not the technical `message`.
        */
       updateToast(
         toastId,
@@ -496,34 +503,35 @@ export function DriverViewPage() {
         mapApiError(err, 'Não foi possível decidir o documento.')
       )
     } finally {
-      setADecidirDocumento(false)
+      setDecidingDocument(false)
     }
   }
 
   /**
-   * O que falta para **activar a conta** — que não é o mesmo que aprovar um
-   * serviço.
+   * What is missing to **activate the account** — which is not the same as
+   * approving a service.
    *
-   * ⚠️ **Esta lista é a última cópia de requisitos que vive no painel, e
-   * fica por decidir.** Ela não decide serviços (isso é a API, desde a 4.1);
-   * decide o `drivers.status = 'active'`, que **é um filtro do dispatch**
-   * (`push-notification.service.ts`: `where('status','==','active')`). Ou
-   * seja: continua a haver duas versões de "este motorista está pronto", e a
-   * mais fraca é a que escolhe quem recebe corridas. Fechá-la é uma rota de
-   * admin que ainda não existe — está registado no §0AG.
+   * ⚠️ **This list is the last copy of requirements living in the panel, and
+   * it is still undecided.** It does not decide services (the API does, since
+   * 4.1); it decides `drivers.status = 'active'`, which **is a dispatch
+   * filter** (`push-notification.service.ts`:
+   * `where('status','==','active')`). So there are still two versions of "this
+   * driver is ready", and the weaker one picks who gets rides. Closing it
+   * means an admin route that does not exist yet — recorded in §0AG, and it
+   * enters with the 3.10 batch.
    *
-   * O que **se corrige já** é a parte que contradizia o §0A: um documento
-   * aprovado que **caducou** contava como válido aqui. Agora conta como em
-   * falta, como em todo o resto do sistema.
+   * What **is fixed already** is the part contradicting §0A: an approved
+   * document that **expired** counted as valid here. Now it counts as missing,
+   * like everywhere else in the system.
    */
   const validateDocumentsBeforeActivation = () => {
     const missing: string[] = []
-    const valido = (d: DocumentInterface | null) =>
-      !!d && d.status === 'approved' && !estaCaducado(d as DocumentoComValidade)
+    const isValid = (d: DocumentInterface | null) =>
+      !!d && d.status === 'approved' && !isExpired(d as DocumentWithValidity)
 
-    if (!valido(docDriverLicense)) missing.push('Carta de condução')
-    if (!valido(docIdFront)) missing.push('BI - Frente')
-    if (!valido(docIdBack)) missing.push('BI - Verso')
+    if (!isValid(docDriverLicense)) missing.push('Carta de condução')
+    if (!isValid(docIdFront)) missing.push('BI - Frente')
+    if (!isValid(docIdBack)) missing.push('BI - Verso')
 
     return missing
   }
@@ -755,31 +763,32 @@ export function DriverViewPage() {
   }
 
   /**
-   * O painel submete o **seguro** pelo motorista.
+   * The panel submits the **insurance** on the driver's behalf.
    *
-   * ── Porquê, e porque é só este documento ──
-   * Medido no clone de produção a 2026-10-14: **zero** documentos
-   * `insurance`, e **nenhuma app os escreve** — o tipo existe na lib desde a
-   * 2.12.0, mas não há ecrã de submissão na app do motorista. Com a 3.7 em
-   * pé, nenhum motorista podia ser aprovado para `moto_taxi`: a rota recusa,
-   * e recusa certo. A app ganha o ecrã na Fase 6; até lá o caminho é este, que
-   * é como a operação já funciona para o resto (a apólice chega por fora).
+   * ── Why, and why only this document ──
+   * Measured on the production clone on 2026-10-14: **zero** `insurance`
+   * documents, and **no app writes them** — the type has been in the lib since
+   * 2.12.0, but there is no submission screen in the driver app. With 3.7 live,
+   * no driver could be approved for `moto_taxi`: the route refuses, and it
+   * refuses correctly. The app gets the screen in phase 6; until then this is
+   * the path, which is how the operation already works for everything else
+   * (the policy arrives out of band).
    *
-   * ⚠️ **Nasce pendente, e é o mesmo caminho de sempre a seguir:** sobe o
-   * ficheiro, cria o documento em `pending`, e depois alguém o **aprova**
-   * (com validade). Não se cria já aprovado: quem submete e quem decide
-   * continuam a ser dois gestos, e é isso que deixa rasto em `auditLogs`.
+   * ⚠️ **It is born pending, and the usual path follows:** upload the file,
+   * create the document as `pending`, and then someone **approves** it (with
+   * an expiry). It is not created approved: submitting and deciding remain two
+   * gestures, and that is what leaves a trail in `auditLogs`.
    *
-   * O `user` leva **só o `id`** — é a forma que produção tem (`user: {id:
-   * 'dri-…'}` nos 51 documentos lidos) e é para onde o resto do schema está a
-   * ir: o §0A tirou o `UserInterface` embutido das `notifications` pela mesma
-   * razão.
+   * `user` carries **only the `id`** — that is the shape production has
+   * (`user: {id: 'dri-…'}` across the 51 documents read) and where the rest of
+   * the schema is heading: §0A dropped the embedded `UserInterface` from
+   * `notifications` for the same reason.
    */
-  const handleSubmeterSeguro = async (file: File) => {
+  const handleSubmitInsurance = async (file: File) => {
     if (!rowDataDriver) return
     const toastId = showToastLoading('A submeter o seguro')
     try {
-      setASubmeterSeguro(true)
+      setSubmittingInsurance(true)
       const { url } = await uploadSimple(
         file,
         `documents/${driverId}`,
@@ -789,12 +798,13 @@ export function DriverViewPage() {
       await createDocument.mutateAsync({
         user: { id: driverId } as UserInterface,
         /*
-         * ⚠️ **A asserção sai quando o painel subir a lib.** O `'insurance'`
-         * entrou no `DocumentType` na 2.12.0 e o painel está fixo na 2.11.0
-         * (excepção deliberada, no `CLAUDE.md` da raiz) — sem a asserção isto
-         * não compila. A string é a que a lib e a produção usam, verificada
-         * contra os requisitos da 3.7; depois da instalação, apaga-se o
-         * `as DocumentType` e o compilador volta a cobrar o nome.
+         * ⚠️ **The assertion goes away when the panel moves to the new lib.**
+         * `'insurance'` entered `DocumentType` in 2.12.0 and the panel is
+         * pinned to 2.11.0 (a deliberate exception, in the root `CLAUDE.md`) —
+         * without the assertion this does not compile. The string is the one
+         * the lib and production use, checked against the 3.7 requirements;
+         * after the install, drop the `as DocumentType` and the compiler goes
+         * back to policing the name.
          */
         type: 'insurance' as DocumentType,
         url,
@@ -814,8 +824,8 @@ export function DriverViewPage() {
     } catch (err) {
       updateToast(toastId, 'error', mapApiError(err, 'Não foi possível submeter o seguro.'))
     } finally {
-      setASubmeterSeguro(false)
-      if (inputSeguroRef.current) inputSeguroRef.current.value = ''
+      setSubmittingInsurance(false)
+      if (insuranceInputRef.current) insuranceInputRef.current.value = ''
     }
   }
 
@@ -828,28 +838,28 @@ export function DriverViewPage() {
       onClick: () => handleDownloadDocument(doc)
     })
 
-    const abrirFolha = (decisao: 'approved' | 'rejected') => {
-      setMotivoRecusa('')
-      setValidadeEscolhida('')
-      setDecisaoDocumento({ document: doc, decisao })
+    const openSheet = (decision: 'approved' | 'rejected') => {
+      setRejectionReason('')
+      setChosenExpiry('')
+      setDocumentDecision({ document: doc, decision })
     }
 
     /*
-     * ⚠️ **Aprovar deixou de ser só para os pendentes.** Um documento
-     * aprovado que **caducou** parece aprovado em qualquer listagem, e a
-     * única forma de o renovar daqui é voltar a aprová-lo com validade nova —
-     * é o que a API passou a aceitar a 2026-10-14. Sem isto, um seguro
-     * caducado só se desbloqueava com uma submissão nova, e para o seguro não
-     * há ecrã do motorista que a faça.
+     * ⚠️ **Approving is no longer only for pending documents.** An approved
+     * document that **expired** looks approved in any listing, and the only
+     * way to renew it from here is to approve it again with a new expiry — it
+     * is what the API started accepting on 2026-10-14. Without this, an
+     * expired insurance policy could only be unblocked by a fresh submission,
+     * and for insurance there is no driver screen that makes one.
      */
-    const podeRenovar =
-      doc.status === 'approved' && estaCaducado(doc as DocumentoComValidade)
+    const canRenew =
+      doc.status === 'approved' && isExpired(doc as DocumentWithValidity)
 
-    if (doc.status === 'pending' || podeRenovar) {
+    if (doc.status === 'pending' || canRenew) {
       actions.push({
         icon: <Check size={16} />,
-        label: podeRenovar ? 'Renovar validade' : 'Aprovar',
-        onClick: () => abrirFolha('approved'),
+        label: canRenew ? 'Renovar validade' : 'Aprovar',
+        onClick: () => openSheet('approved'),
         className:
           'text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900'
       })
@@ -859,7 +869,7 @@ export function DriverViewPage() {
       actions.push({
         icon: <XIcon size={16} />,
         label: 'Rejeitar',
-        onClick: () => abrirFolha('rejected'),
+        onClick: () => openSheet('rejected'),
         className:
           'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900'
       })
@@ -987,24 +997,25 @@ export function DriverViewPage() {
         </p>
 
         {/*
-          O que falta, dito pela API.
+          What is missing, as the API said it.
 
-          ⚠️ A lista vem da **resposta**, não de uma tabela copiada para aqui:
-          os requisitos vivem na lib e são avaliados no servidor. O painel só
-          sabe o que a recusa lhe disse — e é isso que impede as duas versões
-          da mesma regra que esta sub-fase veio acabar.
+          ⚠️ The list comes from the **response**, not from a table copied in
+          here: the requirements live in the lib and are evaluated on the
+          server. The panel only knows what the refusal told it — and that is
+          what prevents the two versions of the same rule this sub-phase came
+          to end.
         */}
-        {requisitosEmFalta && (
+        {missingForService && (
           <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-900/20">
             <div className="flex items-start justify-between gap-2">
               <span className="text-sm font-semibold text-amber-900 dark:text-amber-200">
-                Falta para {RIDE_TYPE_LABELS[requisitosEmFalta.service]}
+                Falta para {RIDE_TYPE_LABELS[missingForService.service]}
               </span>
               <button
                 type="button"
                 onClick={() => {
-                  setRequisitosEmFalta(null)
-                  setConfirmacoesDadas([])
+                  setMissingForService(null)
+                  setGivenConfirmations([])
                 }}
                 className="text-xs text-amber-800 underline dark:text-amber-300"
               >
@@ -1013,16 +1024,16 @@ export function DriverViewPage() {
             </div>
 
             <ul className="mt-2 flex flex-col gap-2">
-              {requisitosEmFalta.missing.map(req => (
+              {missingForService.missing.map(req => (
                 <li key={req.key} className="text-sm">
                   {req.kind === 'manual' ? (
                     <label className="flex items-start gap-2 cursor-pointer">
                       <input
                         type="checkbox"
                         className="mt-1"
-                        checked={confirmacoesDadas.includes(req.key)}
+                        checked={givenConfirmations.includes(req.key)}
                         onChange={e =>
-                          setConfirmacoesDadas(anteriores =>
+                          setGivenConfirmations(anteriores =>
                             e.target.checked
                               ? [...anteriores, req.key]
                               : anteriores.filter(k => k !== req.key)
@@ -1034,7 +1045,7 @@ export function DriverViewPage() {
                           {req.label}
                         </span>
                         <span className="block text-xs text-gray-600 dark:text-gray-400">
-                          {semMarcacao(req.detalhe)} — confirmo que o vi
+                          {stripMarkdown(req.detalhe)} — confirmo que o vi
                         </span>
                       </span>
                     </label>
@@ -1048,7 +1059,7 @@ export function DriverViewPage() {
                           {req.label}
                         </span>
                         <span className="block text-xs text-gray-600 dark:text-gray-400">
-                          {semMarcacao(req.detalhe)}
+                          {stripMarkdown(req.detalhe)}
                         </span>
                       </span>
                     </span>
@@ -1057,7 +1068,7 @@ export function DriverViewPage() {
               ))}
             </ul>
 
-            {naoManuaisEmFalta.length > 0 ? (
+            {missingNonManual.length > 0 ? (
               <p className="mt-3 text-xs text-amber-900 dark:text-amber-200">
                 Isto não se resolve daqui: o motorista tem de submeter o que
                 falta — ou carrega-o tu, no separador <strong>Documentos</strong>{' '}
@@ -1066,11 +1077,11 @@ export function DriverViewPage() {
             ) : (
               <button
                 type="button"
-                disabled={!podeConfirmarEAprovar || isUpdatingServices}
+                disabled={!canConfirmAndApprove || isUpdatingServices}
                 onClick={() =>
                   handleToggleService(
-                    requisitosEmFalta.service,
-                    confirmacoesDadas
+                    missingForService.service,
+                    givenConfirmations
                   )
                 }
                 className="mt-3 rounded-lg bg-amber-600 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
@@ -1398,30 +1409,31 @@ export function DriverViewPage() {
                     </h4>
 
                     {/*
-                      ⚠️ **O seguro submete-se daqui, pelo motorista.** Não há
-                      ecrã na app dele que o faça (a app ganha-o na Fase 6), e
-                      sem o seguro nenhum motorista pode ser aprovado para
-                      Moto Táxi. A apólice chega por fora — WhatsApp, papel —
-                      e carrega-se aqui.
+                      ⚠️ **The insurance is submitted from here, on the
+                      driver's behalf.** There is no screen in their app that
+                      does it (the app gets one in phase 6), and without the
+                      policy no driver can be approved for Moto Táxi. The
+                      policy arrives out of band — WhatsApp, paper — and is
+                      uploaded here.
                     */}
                     <div className="flex items-center gap-2">
                       <input
-                        ref={inputSeguroRef}
+                        ref={insuranceInputRef}
                         type="file"
                         accept="image/*,application/pdf"
                         className="hidden"
                         onChange={e => {
                           const file = e.target.files?.[0]
-                          if (file) void handleSubmeterSeguro(file)
+                          if (file) void handleSubmitInsurance(file)
                         }}
                       />
                       <button
                         type="button"
-                        disabled={aSubmeterSeguro}
-                        onClick={() => inputSeguroRef.current?.click()}
+                        disabled={isSubmittingInsurance}
+                        onClick={() => insuranceInputRef.current?.click()}
                         className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
                       >
-                        {aSubmeterSeguro
+                        {isSubmittingInsurance
                           ? 'A submeter…'
                           : 'Submeter seguro pelo motorista'}
                       </button>
@@ -1469,18 +1481,18 @@ export function DriverViewPage() {
                               </td>
                               <td className="px-3 py-2 text-sm">
                                 {(() => {
-                                  const v = rotuloValidade(
-                                    doc as DocumentoComValidade
+                                  const label = validityLabel(
+                                    doc as DocumentWithValidity
                                   )
                                   return (
                                     <span
                                       className={
-                                        v.caducado
+                                        label.expired
                                           ? 'text-red-600 dark:text-red-400 font-medium'
                                           : 'text-gray-600 dark:text-gray-300'
                                       }
                                     >
-                                      {v.texto}
+                                      {label.text}
                                     </span>
                                   )
                                 })()}
@@ -1612,33 +1624,33 @@ export function DriverViewPage() {
       </div>
 
       {/*
-        A folha da decisão de um documento.
+        The document decision sheet.
 
-        ⚠️ **Existe porque o botão não chega.** Uma recusa sem motivo deixava
-        o motorista a adivinhar — era o que o painel fazia, e o `feedback`
-        nunca era escrito. E uma aprovação sem validade deixa um seguro
-        **válido para sempre**, que é o oposto do que o `expires_at` existe
-        para fazer.
+        ⚠️ **It exists because the button is not enough.** A rejection with no
+        reason left the driver guessing — which is what the panel did, and
+        `feedback` was never written. And an approval with no expiry leaves an
+        insurance policy **valid forever**, the opposite of what `expires_at`
+        exists to do.
       */}
-      {decisaoDocumento && (
+      {documentDecision && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-md rounded-xl bg-white p-5 shadow-xl dark:bg-gray-800">
             <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">
-              {decisaoDocumento.decisao === 'approved'
+              {documentDecision.decision === 'approved'
                 ? 'Aprovar'
                 : 'Recusar'}{' '}
-              {getDocumentTypeLabel(decisaoDocumento.document.type)}
+              {getDocumentTypeLabel(documentDecision.document.type)}
             </h3>
 
-            {decisaoDocumento.decisao === 'approved' ? (
+            {documentDecision.decision === 'approved' ? (
               <div className="mt-4 flex flex-col gap-2">
                 <label className="text-sm text-gray-700 dark:text-gray-200">
                   Validade (opcional)
                 </label>
                 <input
                   type="date"
-                  value={validadeEscolhida}
-                  onChange={e => setValidadeEscolhida(e.target.value)}
+                  value={chosenExpiry}
+                  onChange={e => setChosenExpiry(e.target.value)}
                   className="rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
                 />
                 <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -1653,8 +1665,8 @@ export function DriverViewPage() {
                   Motivo (obrigatório)
                 </label>
                 <textarea
-                  value={motivoRecusa}
-                  onChange={e => setMotivoRecusa(e.target.value)}
+                  value={rejectionReason}
+                  onChange={e => setRejectionReason(e.target.value)}
                   rows={3}
                   placeholder="O que é que o motorista tem de corrigir?"
                   className="rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
@@ -1670,7 +1682,7 @@ export function DriverViewPage() {
             <div className="mt-5 flex justify-end gap-2">
               <button
                 type="button"
-                onClick={() => setDecisaoDocumento(null)}
+                onClick={() => setDocumentDecision(null)}
                 className="rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
               >
                 Cancelar
@@ -1678,18 +1690,18 @@ export function DriverViewPage() {
               <button
                 type="button"
                 disabled={
-                  aDecidirDocumento ||
-                  (decisaoDocumento.decisao === 'rejected' &&
-                    motivoRecusa.trim().length < 5)
+                  isDecidingDocument ||
+                  (documentDecision.decision === 'rejected' &&
+                    rejectionReason.trim().length < 5)
                 }
-                onClick={handleDecidirDocumento}
+                onClick={handleDecideDocument}
                 className={`rounded-lg px-3 py-2 text-sm font-medium text-white disabled:opacity-50 ${
-                  decisaoDocumento.decisao === 'approved'
+                  documentDecision.decision === 'approved'
                     ? 'bg-green-600'
                     : 'bg-red-600'
                 }`}
               >
-                {decisaoDocumento.decisao === 'approved'
+                {documentDecision.decision === 'approved'
                   ? 'Aprovar'
                   : 'Recusar'}
               </button>

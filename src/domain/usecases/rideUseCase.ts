@@ -1,5 +1,5 @@
 import { ApiRepository } from '@/modules/Api/factory'
-import type { ContactosPrivados } from '@/helpers/rideContacts'
+import type { PrivateContacts } from '@/helpers/rideContacts'
 import { BaseUseCase } from './BaseUseCase'
 import type { RideEntity } from '@/core/entities/Ride'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
@@ -105,21 +105,19 @@ export class RideUseCase extends BaseUseCase {
   }
 
   /**
-   * Os contactos privados de uma corrida (3.2), para o detalhe os mostrar.
+   * A ride's private contacts (3.2), for the detail panel to show.
    *
-   * ⚠️ **Nunca falha por não existir:** as corridas anteriores à 3.2 não têm
-   * o documento, e o ecrã recua para a cópia embutida. Um `null` aqui é
-   * informação, não erro — por isso não passa pelo `run()`, que transforma
-   * falhas em `AppError`.
+   * ⚠️ **It never fails because the document is missing:** rides older than
+   * 3.2 do not have it, and the screen falls back to the embedded copy. A
+   * `null` here is information, not an error — which is why it does not go
+   * through `run()`, that turns failures into `AppError`.
    */
-  async executeGetPrivateContacts(
-    id: string
-  ): Promise<ContactosPrivados | null> {
+  async executeGetPrivateContacts(id: string): Promise<PrivateContacts | null> {
     try {
       return await this.repository.getPrivateContacts(id)
     } catch (error) {
-      // Uma regra que negue, ou rede: o ecrã mostra o recuo e segue.
-      console.error('[rideUseCase] contactos privados', error)
+      // A denying rule, or the network: the screen shows the fallback and moves on.
+      console.error('[rideUseCase] private contacts', error)
       return null
     }
   }

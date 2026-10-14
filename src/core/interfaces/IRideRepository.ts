@@ -1,14 +1,14 @@
 // core/interfaces/IRideRepository.ts
 import type { IBaseRepository } from './IBaseRepository'
 import type { RideDocEntity } from '../entities/Ride'
-import type { ContactosPrivados } from '@/helpers/rideContacts'
+import type { PrivateContacts } from '@/helpers/rideContacts'
 
 export interface IRideRepository extends IBaseRepository<RideDocEntity> {
   /**
-   * Os contactos de `rides/{id}/private/contacts`, ou `null` se o documento
-   * não existir — o que é normal nas corridas anteriores à 3.2, que **não
-   * migram** (§0A). Quem chama junta-o com a cópia embutida na corrida pelo
-   * `contactosDaCorrida`.
+   * The contacts from `rides/{id}/private/contacts`, or `null` if the document
+   * does not exist — normal for rides older than 3.2, which **are not
+   * migrated** (§0A). The caller merges it with the copy embedded in the ride
+   * via `rideContacts`.
    */
-  getPrivateContacts(rideId: string): Promise<ContactosPrivados | null>
+  getPrivateContacts(rideId: string): Promise<PrivateContacts | null>
 }

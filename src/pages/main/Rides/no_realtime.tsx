@@ -6,10 +6,10 @@ import { useRidesViewModel } from '@/viewModels/RideViewModel'
 import { useRideTrackingsViewModel } from '@/viewModels/RideTrackingViewModel'
 import type { RideInterface } from '@/interfaces/IRide'
 import {
-  contactosDaCorrida,
-  type ContactosPrivados,
-  explicaOrigem,
-  SEM_CONTACTO
+  explainSource,
+  NO_CONTACT_LABEL,
+  type PrivateContacts,
+  rideContacts
 } from '@/helpers/rideContacts'
 import { rideUseCase } from '@/domain/usecases/rideUseCase'
 import type { RideTrackingsInterface } from '@/interfaces/IRideTracking'
@@ -62,15 +62,15 @@ export function RealtimePage() {
     useState<RideTrackingsInterface | null>(null)
 
   /*
-   * Os contactos de `rides/{id}/private/contacts` (3.2). `null` enquanto não
-   * se leu, e `null` também quando o documento não existe — as corridas
-   * anteriores à 3.2 não o têm e **não migram** (§0A). É o
-   * `contactosDaCorrida` que junta os dois sítios.
+   * The contacts from `rides/{id}/private/contacts` (3.2). `null` while it has
+   * not been read, and `null` too when the document does not exist — rides
+   * older than 3.2 do not have it and **are not migrated** (§0A). It is
+   * `rideContacts` that merges both places.
    */
-  const [contactosPrivados, setContactosPrivados] =
-    useState<ContactosPrivados | null>(null)
-  const contactos = contactosDaCorrida({
-    contacts: contactosPrivados,
+  const [privateContacts, setPrivateContacts] =
+    useState<PrivateContacts | null>(null)
+  const contacts = rideContacts({
+    contacts: privateContacts,
     ride: selectedRide
   })
 
@@ -78,25 +78,26 @@ export function RealtimePage() {
 
   const handleSelectRide = async (ride: RideInterface) => {
     setSelectedRide(ride)
-    setContactosPrivados(null)
+    setPrivateContacts(null)
 
     /*
-     * Fora do `try` de baixo de propósito: uma falha a ler a rota do mapa não
-     * pode tirar os telefones do ecrã, e vice-versa. O `executeGet…` já
-     * devolve `null` em vez de rebentar.
+     * Deliberately outside the `try` below: a failure reading the map route
+     * must not take the phone numbers off the screen, and vice versa.
+     * `executeGet…` already returns `null` instead of throwing.
      *
-     * ⚠️ **A resposta só se aceita se ainda for desta corrida.** Achado pela
-     * revisão independente da Fase 4: sem a guarda, abrir A (recente, com
-     * documento, leitura mais lenta) e logo B (antiga, sem documento, resposta
-     * imediata) fazia o telefone de **A** aparecer no detalhe de **B** — e com
-     * `origem: 'privado'`, logo **sem** o aviso de que podia estar velho. O
-     * operador ligava à pessoa errada a partir de um ecrã que se dizia certo.
+     * ⚠️ **The answer is only accepted if it still belongs to this ride.**
+     * Found by the independent review of phase 4: without the guard, opening A
+     * (recent, with a document, slower read) and then B (old, no document,
+     * instant answer) put **A**'s phone number in **B**'s detail panel — and
+     * with `source: 'private'`, so **without** the warning that it might be
+     * stale. The operator would call the wrong person from a screen claiming
+     * to be right.
      */
-    const pedido = ride.id as string
-    void rideUseCase.executeGetPrivateContacts(pedido).then(contactos => {
-      setSelectedRide(actual => {
-        if (actual?.id === pedido) setContactosPrivados(contactos)
-        return actual
+    const requested = ride.id as string
+    void rideUseCase.executeGetPrivateContacts(requested).then(answer => {
+      setSelectedRide(current => {
+        if (current?.id === requested) setPrivateContacts(answer)
+        return current
       })
     })
 
@@ -381,7 +382,7 @@ export function RealtimePage() {
                 <button
                   onClick={() => {
                     setSelectedRide(null)
-                    setContactosPrivados(null)
+                    setPrivateContacts(null)
                   }}
                   className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
                 >
@@ -418,16 +419,17 @@ export function RealtimePage() {
                     value={selectedRide.driver?.email || 'Não disponível'}
                   />
                   {/*
-                    O telefone vem do documento privado, com recuo para a
-                    cópia da corrida. O privado ganha porque é o **servidor**
-                    que o escreve, no aceite: a cópia em `ride.driver.phone` é
-                    o retrato do momento em que a app a escreveu, e numa
-                    corrida reatribuída pode ser de outra pessoa.
+                    The number comes from the private document, falling back to
+                    the copy in the ride. The private one wins because the
+                    **server** writes it on accept: the copy in
+                    `ride.driver.phone` is a snapshot of the moment the app
+                    wrote it, and on a reassigned ride it may belong to someone
+                    else.
                   */}
-                  <div title={explicaOrigem(contactos.motorista)}>
+                  <div title={explainSource(contacts.driver)}>
                     <CopyField
                       icon={<Phone size={16} />}
-                      value={contactos.motorista.valor || SEM_CONTACTO}
+                      value={contacts.driver.value || NO_CONTACT_LABEL}
                     />
                   </div>
                 </div>
@@ -455,16 +457,16 @@ export function RealtimePage() {
                 </div>
 
                 {/*
-                  O telefone do passageiro, que este ecrã **não mostrava**: a
-                  corrida nasce com `user: {id, name, photo}` e mais nada
-                  (§0A), e quem o tem é o documento privado. Sem isto, um
-                  operador que precisasse de ligar a quem pediu a corrida não
-                  tinha por onde.
+                  The passenger's phone number, which this screen **did not
+                  show**: a ride is born with `user: {id, name, photo}` and
+                  nothing else (§0A), and the private document is what has it.
+                  Without this, an operator who needed to call whoever ordered
+                  the ride had nowhere to look.
                 */}
-                <div className="mt-3" title={explicaOrigem(contactos.passageiro)}>
+                <div className="mt-3" title={explainSource(contacts.passenger)}>
                   <CopyField
                     icon={<Phone size={16} />}
-                    value={contactos.passageiro.valor || SEM_CONTACTO}
+                    value={contacts.passenger.value || NO_CONTACT_LABEL}
                   />
                 </div>
               </div>
@@ -476,25 +478,25 @@ export function RealtimePage() {
                   </h4>
                   <div className="space-y-3">
                     {/*
-                      O remetente, que o documento privado também guarda
-                      (`sender_phone`) e que este ecrã não mostrava: numa
-                      entrega, quem a envia é metade da chamada que o operador
-                      pode ter de fazer. Só aparece quando existe — nem todas
-                      as entregas têm remetente registado.
+                      The sender, which the private document also keeps
+                      (`sender_phone`) and this screen did not show: on a
+                      delivery, whoever sends it is half of the call the
+                      operator may have to make. It only appears when it
+                      exists — not every delivery has a sender on record.
                     */}
-                    {contactos.remetente.valor && (
+                    {contacts.sender.value && (
                       <div>
                         <span className="text-sm text-gray-500 dark:text-gray-400">
                           Remetente:
                         </span>
                         <p
                           className="text-sm"
-                          title={explicaOrigem(contactos.remetente)}
+                          title={explainSource(contacts.sender)}
                         >
                           {selectedRide.details?.sender?.name
                             ? `${selectedRide.details.sender.name} — `
                             : ''}
-                          {contactos.remetente.valor}
+                          {contacts.sender.value}
                         </p>
                       </div>
                     )}
@@ -516,9 +518,9 @@ export function RealtimePage() {
                           </p>
                           <p
                             className="text-sm"
-                            title={explicaOrigem(contactos.destinatario)}
+                            title={explainSource(contacts.receiver)}
                           >
-                            {contactos.destinatario.valor || SEM_CONTACTO}
+                            {contacts.receiver.value || NO_CONTACT_LABEL}
                           </p>
                         </div>
                       </div>

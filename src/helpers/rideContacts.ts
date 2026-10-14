@@ -1,74 +1,71 @@
 import type { RideInterface } from '@/interfaces/IRide'
 
 /**
- * Os telefones de uma corrida, e de onde cada um veio.
+ * The phone numbers of a ride, and where each one came from.
  *
- * ── Porque existe ──
- * Desde a sub-fase 3.2 os contactos vivem em
- * `rides/{id}/private/contacts` — um documento à parte, legível pelo
- * passageiro dono, pelo motorista atribuído e pelo admin. As corridas
- * anteriores **não migram** (decisão do §0A), e por isso o painel tem de ler
- * os dois sítios: o documento privado primeiro, a cópia embutida na corrida
- * como recuo.
+ * ── Why this exists ──
+ * Since sub-phase 3.2 the contacts live in `rides/{id}/private/contacts` — a
+ * separate document, readable by the owning passenger, the assigned driver and
+ * an admin. Rides created before 3.2 **are not migrated** (§0A decision), so
+ * the panel has to read both places: the private document first, the copy
+ * embedded in the ride as a fallback.
  *
- * ⚠️ **A origem vai no resultado de propósito.** Um telefone que falta e um
- * telefone que veio da cópia antiga são coisas diferentes para quem está a
- * tentar ligar a alguém: o primeiro não existe, o segundo pode estar velho.
- * Sem esta distinção, o ecrã mostrava "não disponível" nos dois casos.
+ * ⚠️ **The source is part of the result on purpose.** A phone that is missing
+ * and a phone that came from the old copy are different things for someone
+ * trying to call: the first does not exist, the second may be stale. Without
+ * that distinction the screen showed "not available" for both.
  */
-export type OrigemContacto = 'privado' | 'corrida' | null
+export type ContactSource = 'private' | 'ride' | null
 
-export type Contacto = {
-  valor: string | null
-  origem: OrigemContacto
+export type Contact = {
+  value: string | null
+  source: ContactSource
 }
 
-export type ContactosDaCorrida = {
-  passageiro: Contacto
-  motorista: Contacto
-  remetente: Contacto
-  destinatario: Contacto
+export type RideContacts = {
+  passenger: Contact
+  driver: Contact
+  sender: Contact
+  receiver: Contact
 }
 
-/** Os campos do documento `private/contacts`, como o servidor os escreve. */
-export type ContactosPrivados = {
+/** The fields of the `private/contacts` document, as the server writes them. */
+export type PrivateContacts = {
   passenger_phone?: string
   driver_phone?: string
   sender_phone?: string
   receiver_phone?: string
 }
 
-const limpo = (v: unknown): string | null => {
+const trimmed = (v: unknown): string | null => {
   if (typeof v !== 'string') return null
   const t = v.trim()
   return t === '' ? null : t
 }
 
-const escolhe = (
-  doPrivado: unknown,
-  daCorrida: unknown
-): Contacto => {
-  const p = limpo(doPrivado)
-  if (p) return { valor: p, origem: 'privado' }
-  const c = limpo(daCorrida)
-  if (c) return { valor: c, origem: 'corrida' }
-  return { valor: null, origem: null }
+const pick = (fromPrivate: unknown, fromRide: unknown): Contact => {
+  const p = trimmed(fromPrivate)
+  if (p) return { value: p, source: 'private' }
+  const r = trimmed(fromRide)
+  if (r) return { value: r, source: 'ride' }
+  return { value: null, source: null }
 }
 
 /**
- * Junta os dois sítios, com o privado a ganhar.
+ * Merges both places, with the private document winning.
  *
- * O privado ganha porque é o que o **servidor** escreve: o `driver_phone` vem
- * do aceite (ou da sincronização do trigger) e é o do motorista que está
- * mesmo na corrida. A cópia em `ride.driver.phone` é um retrato do momento em
- * que a app o escreveu, e numa corrida reatribuída pode ser de outra pessoa.
+ * The private document wins because it is what the **server** writes:
+ * `driver_phone` comes from the accept (or from the trigger's sync) and
+ * belongs to the driver who is actually on the ride. The copy in
+ * `ride.driver.phone` is a snapshot of the moment the app wrote it, and on a
+ * reassigned ride it may belong to someone else.
  */
-export function contactosDaCorrida(input: {
-  contacts: ContactosPrivados | null
+export function rideContacts(input: {
+  contacts: PrivateContacts | null
   ride: Pick<RideInterface, 'user' | 'driver' | 'details'> | null
-}): ContactosDaCorrida {
+}): RideContacts {
   const { contacts, ride } = input
-  const detalhes = ride?.details as
+  const details = ride?.details as
     | {
         sender?: { phone?: string }
         receiver?: { phone?: string }
@@ -76,20 +73,20 @@ export function contactosDaCorrida(input: {
     | undefined
 
   return {
-    passageiro: escolhe(contacts?.passenger_phone, ride?.user?.phone),
-    motorista: escolhe(contacts?.driver_phone, ride?.driver?.phone),
-    remetente: escolhe(contacts?.sender_phone, detalhes?.sender?.phone),
-    destinatario: escolhe(contacts?.receiver_phone, detalhes?.receiver?.phone)
+    passenger: pick(contacts?.passenger_phone, ride?.user?.phone),
+    driver: pick(contacts?.driver_phone, ride?.driver?.phone),
+    sender: pick(contacts?.sender_phone, details?.sender?.phone),
+    receiver: pick(contacts?.receiver_phone, details?.receiver?.phone)
   }
 }
 
-/** O que se mostra quando não há telefone nenhum. */
-export const SEM_CONTACTO = 'Não disponível'
+/** Shown when there is no phone number at all. User-facing: Portuguese. */
+export const NO_CONTACT_LABEL = 'Não disponível'
 
-/** O texto do `title`, para quem passar o rato por cima. */
-export function explicaOrigem(c: Contacto): string | undefined {
-  if (!c.valor) return 'Não está nos contactos da corrida nem na cópia antiga.'
-  if (c.origem === 'corrida') {
+/** The `title` text, for whoever hovers over the number. */
+export function explainSource(c: Contact): string | undefined {
+  if (!c.value) return 'Não está nos contactos da corrida nem na cópia antiga.'
+  if (c.source === 'ride') {
     return 'Copiado da corrida (anterior aos contactos privados) — pode estar velho.'
   }
   return undefined

@@ -172,3 +172,43 @@ Usa `firebase` client SDK v12 (Auth + Firestore + Storage).
 - **API Fastify**: REST para envio de push notifications
 - **Apps**: partilha as mesmas collections Firestore
 - **Website**: lê `applications` criadas pelo website público
+
+---
+
+## Língua — código em inglês, português só no que o utilizador lê
+
+**Decidido a 2026-10-14. Vale para todos os sete pacotes.**
+
+| | Língua |
+| --- | --- |
+| identificadores (variáveis, funções, tipos, interfaces, constantes) | **inglês** |
+| nomes de ficheiros e de pastas | **inglês** |
+| **comentários** | **inglês** |
+| nomes de testes (`describe`/`it`) | **inglês** |
+| mensagens de commit | **inglês** |
+| texto que o utilizador lê — ecrãs, pushes, `user_message`, etiquetas | **português** |
+| `HANDOFF.md`, `decisions.md`, `progress.md` | **português** |
+
+A linha que separa as duas colunas é **quem lê**: se um utilizador, um
+passageiro, um motorista ou um administrador lê a frase, ela é em português; se
+quem a lê é quem mexe no código, é em inglês.
+
+```ts
+// ✅ o identificador em inglês, o valor em português
+export const NO_CONTACT_LABEL = 'Não disponível'
+
+// ✅ uma mensagem de negócio é texto de pessoa: fica em português
+throw new BusinessError('Esta corrida já passou da recolha.')
+```
+
+⚠️ **Mudou a 2026-10-14, e antes disso a convenção era o contrário**
+(comentários e nomes de domínio em português). Por isso o código tem as duas
+formas, e isso **não é descuido**: a renomeação faz-se por fases, com as
+suites a provar que nada mudou de comportamento — está no `HANDOFF.md`, §0AH.
+Código **novo** segue esta regra desde já.
+
+⚠️ **Um nome que viaja na rede não se renomeia sozinho.** Um campo de um
+documento do Firestore, uma chave de um corpo HTTP ou um valor de um `enum`
+que já está gravado são **contrato**, não identificador: mudam com uma
+migração ou numa subida major combinada entre as duas pontas, nunca num
+`rename` de um lado só.

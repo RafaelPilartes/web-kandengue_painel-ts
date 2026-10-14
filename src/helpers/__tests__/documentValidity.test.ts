@@ -1,119 +1,100 @@
 import { describe, expect, it } from 'vitest'
 import {
-  diaEmLuanda,
-  estaCaducado,
-  fimDoDiaEmLuanda,
-  rotuloValidade
+  dayInLuanda,
+  endOfDayInLuanda,
+  isExpired,
+  validityLabel
 } from '../documentValidity'
 
 /**
- * A validade de um documento.
+ * A document's expiry date.
  *
- * ⚠️ **O que estes casos protegem é um dia de trabalho de um motorista.** Um
- * `<input type='date'>` devolve `'2027-03-31'` e um `new Date(valor)` faz
- * disso a meia-noite UTC; a lib compara instantes, por isso a apólice
- * 'válida até 31/03' caducava às 00:00:01 do dia 31. Angola é UTC+1.
+ * ⚠️ **What these cases protect is a driver's working day.** An
+ * `<input type="date">` yields `'2027-03-31'` and `new Date(value)` turns that
+ * into midnight UTC; the lib compares instants, so the policy "valid until
+ * 31/03" expired at 00:00:01 on the 31st. Angola is UTC+1.
  */
-describe('fimDoDiaEmLuanda', () => {
-  it('devolve o último instante do dia escolhido, na hora de Luanda', () => {
-    const d = fimDoDiaEmLuanda('2027-03-31')
-    // 23:59:59.999 em Luanda (UTC+1) são 22:59:59.999 UTC do mesmo dia.
+describe('endOfDayInLuanda', () => {
+  it('returns the last instant of the chosen day, Luanda time', () => {
+    const d = endOfDayInLuanda('2027-03-31')
+    // 23:59:59.999 in Luanda (UTC+1) is 22:59:59.999 UTC on the same day.
     expect(d?.toISOString()).toBe('2027-03-31T22:59:59.999Z')
   })
 
-  it('o dia escolhido conta todo, e o seguinte não', () => {
-    const limite = fimDoDiaEmLuanda('2026-10-14') as Date
-    // Meio-dia em Luanda no dia 14: ainda vale.
-    const meioDia14 = new Date('2026-10-14T11:00:00Z')
-    expect(limite.getTime() > meioDia14.getTime()).toBe(true)
-    // Uma da manhã em Luanda do dia 15 (= 00:00Z do dia 15): já não.
-    const madrugada15 = new Date('2026-10-15T00:00:00Z')
-    expect(limite.getTime() > madrugada15.getTime()).toBe(false)
+  it('covers the whole chosen day, and not the next one', () => {
+    const limit = endOfDayInLuanda('2026-10-14') as Date
+    // Midday in Luanda on the 14th: still valid.
+    const midday14 = new Date('2026-10-14T11:00:00Z')
+    expect(limit.getTime() > midday14.getTime()).toBe(true)
+    // 1am in Luanda on the 15th (= 00:00Z on the 15th): no longer.
+    const earlyThe15th = new Date('2026-10-15T00:00:00Z')
+    expect(limit.getTime() > earlyThe15th.getTime()).toBe(false)
   })
 
-  it('uma data que o calendário não tem não é validade', () => {
-    for (const valor of ['2026-02-31', '2026-13-01', '2026-00-10']) {
-      expect(fimDoDiaEmLuanda(valor), valor).toBeNull()
+  it('rejects a date the calendar does not have', () => {
+    for (const value of ['2026-02-31', '2026-13-01', '2026-00-10']) {
+      expect(endOfDayInLuanda(value), value).toBeNull()
     }
   })
 
-  it('lixo à entrada devolve null, não uma data inventada', () => {
-    for (const valor of ['', '  ', '31/03/2027', '2027-3-1', 'amanhã']) {
-      expect(fimDoDiaEmLuanda(valor), valor).toBeNull()
+  it('returns null for garbage instead of inventing a date', () => {
+    for (const value of ['', '  ', '31/03/2027', '2027-3-1', 'amanhã']) {
+      expect(endOfDayInLuanda(value), value).toBeNull()
     }
   })
 
-  // Ida e volta: o que se grava mostra-se como o dia que o admin escolheu.
-  it('o dia volta inteiro no `diaEmLuanda`', () => {
-    for (const dia of ['2026-10-14', '2027-01-01', '2026-12-31']) {
-      expect(diaEmLuanda(fimDoDiaEmLuanda(dia) as Date), dia).toBe(dia)
+  // Round trip: what we store is shown back as the day the admin picked.
+  it('round-trips the day through dayInLuanda', () => {
+    for (const day of ['2026-10-14', '2027-01-01', '2026-12-31']) {
+      expect(dayInLuanda(endOfDayInLuanda(day) as Date), day).toBe(day)
     }
   })
 })
 
-describe('estaCaducado', () => {
-  const agora = new Date('2026-10-14T12:00:00Z')
+describe('isExpired', () => {
+  const now = new Date('2026-10-14T12:00:00Z')
 
-  it('sem validade, nunca caduca', () => {
-    expect(estaCaducado({}, agora)).toBe(false)
-    expect(estaCaducado({ expires_at: undefined }, agora)).toBe(false)
+  it('never expires without an expiry date', () => {
+    expect(isExpired({}, now)).toBe(false)
+    expect(isExpired({ expires_at: undefined }, now)).toBe(false)
   })
 
-  it('usa a mesma comparação da lib: `expires_at > now`', () => {
-    expect(
-      estaCaducado({ expires_at: new Date('2026-10-14T12:00:01Z') }, agora)
-    ).toBe(false)
-    expect(estaCaducado({ expires_at: agora }, agora)).toBe(true)
-    expect(
-      estaCaducado({ expires_at: new Date('2026-10-14T11:59:59Z') }, agora)
-    ).toBe(true)
+  it('uses the same comparison as the lib: `expires_at > now`', () => {
+    expect(isExpired({ expires_at: new Date('2026-10-14T12:00:01Z') }, now)).toBe(false)
+    expect(isExpired({ expires_at: now }, now)).toBe(true)
+    expect(isExpired({ expires_at: new Date('2026-10-14T11:59:59Z') }, now)).toBe(true)
   })
 
   /*
-   * ⚠️ O caso que a conversão existe para evitar: a meia-noite do próprio dia
-   * conta como caducada. É o que acontece a quem grave a data crua.
+   * ⚠️ The case the conversion exists to avoid: midnight of the day itself
+   * counts as expired. That is what happens to anyone storing the raw date.
    */
-  it('a meia-noite do dia conta como caducada — e o fim do dia não', () => {
+  it('treats midnight of the day as expired — and the end of day as valid', () => {
+    expect(isExpired({ expires_at: new Date('2026-10-14T00:00:00Z') }, now)).toBe(true)
     expect(
-      estaCaducado({ expires_at: new Date('2026-10-14T00:00:00Z') }, agora)
-    ).toBe(true)
-    expect(
-      estaCaducado(
-        { expires_at: fimDoDiaEmLuanda('2026-10-14') as Date },
-        agora
-      )
+      isExpired({ expires_at: endOfDayInLuanda('2026-10-14') as Date }, now)
     ).toBe(false)
   })
 })
 
-describe('rotuloValidade', () => {
-  const agora = new Date('2026-10-14T12:00:00Z')
+describe('validityLabel', () => {
+  const now = new Date('2026-10-14T12:00:00Z')
 
-  it('diz o dia, e se já passou', () => {
-    expect(
-      rotuloValidade(
-        { expires_at: fimDoDiaEmLuanda('2027-03-31') as Date },
-        agora
-      )
-    ).toEqual({
-      texto: 'válido até 2027-03-31',
-      caducado: false
+  it('states the day, and whether it has passed', () => {
+    expect(validityLabel({ expires_at: endOfDayInLuanda('2027-03-31') as Date }, now)).toEqual({
+      text: 'válido até 2027-03-31',
+      expired: false
     })
-    expect(
-      rotuloValidade(
-        { expires_at: fimDoDiaEmLuanda('2026-01-05') as Date },
-        agora
-      )
-    ).toEqual({
-      texto: 'caducou 2026-01-05',
-      caducado: true
+    expect(validityLabel({ expires_at: endOfDayInLuanda('2026-01-05') as Date }, now)).toEqual({
+      text: 'caducou 2026-01-05',
+      expired: true
     })
   })
 
-  it('sem validade, di-lo em vez de inventar uma data', () => {
-    expect(rotuloValidade({}, agora)).toEqual({
-      texto: 'sem validade',
-      caducado: false
+  it('says there is no expiry instead of inventing a date', () => {
+    expect(validityLabel({}, now)).toEqual({
+      text: 'sem validade',
+      expired: false
     })
   })
 })

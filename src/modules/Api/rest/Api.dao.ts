@@ -61,15 +61,15 @@ class ApiDAO {
       return response.data
     } catch (error: any) {
       /*
-       * ⚠️ **O contrato de erro da API (3.1) chega inteiro ao chamador.**
+       * ⚠️ **The API's error contract (3.1) reaches the caller intact.**
        *
-       * Até aqui atirava-se `new Error(data.message)` e o `code` e o
-       * `details` morriam neste ponto. A 3.7 precisa dos dois: quando a
-       * aprovação de um serviço é recusada, **o que falta vem no `details`**,
-       * e é isso que o admin tem de ver em vez de "requisitos não cumpridos".
+       * Until now this threw `new Error(data.message)` and the `code` and
+       * `details` died right here. 3.7 needs both: when a service approval is
+       * refused, **what is missing comes in `details`**, and that is what the
+       * admin has to see instead of "requirements not met".
        *
-       * Quem só quer uma frase usa o `mapApiError`, que mostra a
-       * `user_message` quando existe e nunca a `message` de uma validação.
+       * Whoever only wants a sentence uses `mapApiError`, which shows the
+       * `user_message` when there is one and never a validation's `message`.
        */
       if (error.response) {
         const corpo = error.response.data ?? {}
@@ -81,7 +81,7 @@ class ApiDAO {
           corpo.details ?? null
         )
       } else if (error.request) {
-        // `status: null` é o que o `mapApiError` lê como "sem resposta".
+        // `status: null` is what `mapApiError` reads as "no answer".
         throw new ApiError('No response from server', null, null, null, null)
       } else {
         throw new ApiError('Error in request setup', null, null, null, null)

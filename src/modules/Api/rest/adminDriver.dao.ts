@@ -19,11 +19,11 @@ export class AdminDriverDAO implements IAdminDriverRepository {
   }
 
   /*
-   * O serviço vai no **caminho**, não no corpo. A decisão é de 2026-10-14 e a
-   * razão é esta chamada: no `axios` o corpo de um `delete` vai no terceiro
-   * argumento, não no segundo como no `post` — quem a escrevesse da forma
-   * óbvia mandava um `DELETE` sem corpo e recebia um 400 sobre um campo que
-   * jurava ter enviado.
+   * The service goes in the **path**, not in the body. Decided 2026-10-14, and
+   * this very call is the reason: in `axios` the body of a `delete` goes in
+   * the third argument, not the second as in `post` — whoever wrote it the
+   * obvious way would send a `DELETE` with no body and get a 400 about a field
+   * they were sure they had sent.
    */
   async removeService(
     driverId: string,

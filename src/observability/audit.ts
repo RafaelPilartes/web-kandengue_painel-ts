@@ -284,19 +284,16 @@ export class AuditService {
   }
 
   /**
-   * As linhas de auditoria de **um alvo** (uma corrida, um motorista, um
-   * documento), da mais recente para a mais antiga.
+   * The audit entries of **one target** (a ride, a driver, a document), newest
+   * first.
    *
-   * A query vive no DAO e **não passa pelo `getAll`** — o motor impõe sempre
-   * um `orderBy`, e a combinação com a igualdade em `target_id` exigia um
-   * índice composto que não existe. O porquê está escrito no
-   * `auditLog.dao.ts`.
+   * The query lives in the DAO and **does not go through `getAll`** — the
+   * engine always imposes an `orderBy`, and combining that with the equality
+   * on `target_id` required a composite index that does not exist. The why is
+   * written in `auditLog.dao.ts`.
    */
-  async getByTarget(
-    targetId: string,
-    limite = 50
-  ): Promise<AuditLogInterface[]> {
-    return auditLogDAO.getByTarget(targetId, limite)
+  async getByTarget(targetId: string, max = 50): Promise<AuditLogInterface[]> {
+    return auditLogDAO.getByTarget(targetId, max)
   }
 }
 

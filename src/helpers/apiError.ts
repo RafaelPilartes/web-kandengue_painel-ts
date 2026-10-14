@@ -1,26 +1,26 @@
 import type { MissingRequirement } from '@/core/interfaces/IAdminDriverRepository'
 
 /**
- * O erro da API, com o contrato da 3.1 preservado.
+ * The API's error, with the 3.1 contract preserved.
  *
- * ── Porque existe ──
- * O `Api.dao.ts` embrulhava tudo num `new Error(data.message)`: o `code` e o
- * `details` da resposta **morriam ali**. Para a maior parte das rotas isso
- * bastava — o painel só mostrava a frase. Deixou de bastar na 3.7: quando a
- * aprovação de um serviço é recusada, **o que falta vem no `details`**, e é
- * isso que o admin precisa de ver em vez de um 'requisitos não cumpridos'.
+ * ── Why this exists ──
+ * `Api.dao.ts` used to wrap everything in `new Error(data.message)`: the
+ * `code` and the `details` **died right there**. That was enough for most
+ * routes — the panel only showed the sentence. It stopped being enough in 3.7:
+ * when a service approval is refused, **what is missing comes in `details`**,
+ * and that is what the admin needs to see instead of "requirements not met".
  *
- * O contrato (§0A, Fase 3): `code` é estável e é por ele que se decide;
- * `user_message` só existe nos erros de **negócio** e é o único texto que se
- * mostra tal e qual. As validações e os erros técnicos **não a levam** — e aí
- * o painel escolhe a sua frase, porque a `message` deles é diagnóstico para
- * quem desenvolve.
+ * The contract (§0A, phase 3): `code` is stable and is what decisions are made
+ * on; `user_message` only exists on **business** errors and is the only text
+ * shown verbatim. Validation and technical errors **do not carry it** — and
+ * there the panel picks its own sentence, because their `message` is
+ * diagnostics for whoever writes the code.
  */
 export class ApiError extends Error {
   /*
-   * Campos declarados e atribuídos à mão: o `tsconfig` do painel corre com
-   * `erasableSyntaxOnly`, e os parâmetros-propriedade do TypeScript não
-   * passam por lá (é sintaxe que não se apaga só com os tipos).
+   * Fields declared and assigned by hand: the panel's `tsconfig` runs with
+   * `erasableSyntaxOnly`, and TypeScript's parameter properties do not pass
+   * there (it is syntax that types alone cannot erase).
    */
   readonly status: number | null
   readonly code: string | null
@@ -44,28 +44,30 @@ export class ApiError extends Error {
 }
 
 /**
- * O que se mostra a um administrador.
+ * What an administrator gets to read.
  *
- * ⚠️ **Nunca a `message` de uma validação ou de um erro técnico.** É a lição
- * do §0A: foi por esse caminho que `body/code Code must contain only A-Z…`
- * chegou ao ecrã de um passageiro. Um administrador tolera mais diagnóstico
- * do que um passageiro — mas 'Unknown error' e `body/service Invalid enum
- * value` também não lhe dizem nada, e escondem o que ele podia resolver.
+ * ⚠️ **Never the `message` of a validation or technical error.** That is the
+ * §0A lesson: it was through that path that `body/code Code must contain only
+ * A-Z…` reached a passenger's screen. An admin tolerates more diagnostics than
+ * a passenger — but "Unknown error" and `body/service Invalid enum value` tell
+ * them nothing either, and hide what they could have fixed.
  *
- * A ordem: a `user_message` do negócio; senão uma frase por estado; senão a
- * genérica. O texto técnico fica no `console`, não no ecrã.
+ * The order: the business `user_message`; then a sentence per status; then the
+ * generic one. Technical text stays in the console, not on the screen.
+ *
+ * The sentences are user-facing, so they are in Portuguese.
  */
 export function mapApiError(
-  erro: unknown,
-  generica = 'Não foi possível concluir a operação.'
+  error: unknown,
+  generic = 'Não foi possível concluir a operação.'
 ): string {
-  if (!(erro instanceof ApiError)) {
-    return erro instanceof Error && erro.message ? erro.message : generica
+  if (!(error instanceof ApiError)) {
+    return error instanceof Error && error.message ? error.message : generic
   }
 
-  if (erro.userMessage) return erro.userMessage
+  if (error.userMessage) return error.userMessage
 
-  switch (erro.status) {
+  switch (error.status) {
     case 400:
     case 422:
       return 'O pedido não foi aceite pelo servidor. Confirma os dados e tenta de novo.'
@@ -82,29 +84,30 @@ export function mapApiError(
     case null:
       return 'Sem resposta do servidor. Verifica a ligação.'
     default:
-      return erro.status && erro.status >= 500
+      return error.status && error.status >= 500
         ? 'O servidor falhou. Tenta de novo dentro de um momento.'
-        : generica
+        : generic
   }
 }
 
 /**
- * Os requisitos em falta que a API devolve numa recusa de serviço (3.7).
+ * The missing requirements the API returns when it refuses a service (3.7).
  *
- * Lê o `details` de um `ApiError` com `code: 'SERVICE_REQUIREMENTS_NOT_MET'`
- * e devolve a lista; para qualquer outro erro devolve vazio. **Não inventa
- * nada** — se o `details` vier com outra forma (uma versão da API mais nova
- * do que este painel), devolve vazio e quem chama mostra a frase da API.
+ * Reads the `details` of an `ApiError` whose `code` is
+ * `SERVICE_REQUIREMENTS_NOT_MET` and returns the list; for any other error it
+ * returns an empty one. **It invents nothing** — if `details` arrives in a
+ * different shape (a newer API than this panel), it returns empty and the
+ * caller shows the API's sentence instead.
  */
-export function missingRequirements(erro: unknown): MissingRequirement[] {
-  if (!(erro instanceof ApiError)) return []
-  if (erro.code !== 'SERVICE_REQUIREMENTS_NOT_MET') return []
+export function missingRequirements(error: unknown): MissingRequirement[] {
+  if (!(error instanceof ApiError)) return []
+  if (error.code !== 'SERVICE_REQUIREMENTS_NOT_MET') return []
 
-  const d = erro.details as { missing?: unknown } | null
-  const lista = Array.isArray(d?.missing) ? d.missing : null
-  if (!lista) return []
+  const d = error.details as { missing?: unknown } | null
+  const list = Array.isArray(d?.missing) ? d.missing : null
+  if (!list) return []
 
-  return lista.filter(
+  return list.filter(
     (r): r is MissingRequirement =>
       !!r &&
       typeof r === 'object' &&
@@ -114,21 +117,21 @@ export function missingRequirements(erro: unknown): MissingRequirement[] {
 }
 
 /**
- * Tira a marcação de markdown de um texto que vai para um `<span>`.
+ * Strips markdown emphasis from text that goes into a `<span>`.
  *
- * ⚠️ **A API escreve ênfase em markdown**, e com razão: os mesmos textos vão
- * para logs, para o HANDOFF e para respostas HTTP (`"aprovado mas
- * **caducado**"`). O painel rende-os como texto simples, por isso o admin lia
- * literalmente `aprovado mas **caducado**` — achado pela revisão independente
- * da Fase 4.
+ * ⚠️ **The API writes emphasis in markdown**, and rightly so: the same strings
+ * go to logs, to the HANDOFF and to HTTP responses (`"aprovado mas
+ * **caducado**"`). The panel renders them as plain text, so the admin was
+ * literally reading `aprovado mas **caducado**` — found by the independent
+ * review of phase 4.
  *
- * Tira em vez de interpretar: um renderizador de markdown num campo que vem
- * do servidor é uma superfície que não se quer (e uma dependência a mais para
- * dois asteriscos). O que se perde é a ênfase; o que se ganha é a frase
- * legível.
+ * It strips rather than interprets: a markdown renderer fed from a server
+ * field is a surface we do not want (and a dependency too many for two
+ * asterisks). What is lost is the emphasis; what is gained is a readable
+ * sentence.
  */
-export function semMarcacao(texto: string): string {
-  return texto
+export function stripMarkdown(text: string): string {
+  return text
     .replace(/\*\*(.+?)\*\*/g, '$1')
     .replace(/\*(.+?)\*/g, '$1')
     .replace(/`(.+?)`/g, '$1')

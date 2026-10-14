@@ -9,7 +9,7 @@ import {
   promotionReservationMissing,
   signedDeviationPercent,
   hasAnyReviewFlag,
-  motivoDoFechoForcado,
+  forcedCloseReason,
   reviewFlagExplanation,
   reviewFlagLabel
 } from '@/helpers/fareReview'
@@ -475,14 +475,14 @@ describe('as marcas do servidor', () => {
 })
 
 /**
- * As explicações das marcas, e o motivo do fecho forçado.
+ * The flag explanations, and the reason behind a forced close.
  *
- * ⚠️ **A regra do painel vale para as duas:** mapa parcial com recuo. Uma
- * marca nova aparece no ecrã sem explicação — nunca parte a compilação, que
- * era o que transformava cada marca nova da lib numa alteração major.
+ * ⚠️ **The panel rule applies to both:** a partial map with a fallback. A new
+ * flag shows up without an explanation — it never breaks the build, which was
+ * what turned every new flag in the lib into a major change.
  */
 describe('reviewFlagExplanation', () => {
-  it('explica as cinco marcas que existem', () => {
+  it('explains the five flags that exist', () => {
     for (const flag of [
       'promotion_reservation_failed',
       'driver_ended_early',
@@ -490,30 +490,30 @@ describe('reviewFlagExplanation', () => {
       'completed_location_mismatch',
       'fare_estimated_fallback'
     ]) {
-      const texto = reviewFlagExplanation(flag)
-      expect(texto, flag).toBeTruthy()
-      // Uma explicação é uma frase, não uma etiqueta repetida.
-      expect((texto ?? '').length, flag).toBeGreaterThan(40)
+      const text = reviewFlagExplanation(flag)
+      expect(text, flag).toBeTruthy()
+      // An explanation is a sentence, not the label repeated.
+      expect((text ?? '').length, flag).toBeGreaterThan(40)
     }
   })
 
-  it('uma marca nova não tem explicação, e isso não é um erro', () => {
+  it('has no explanation for a new flag, and that is not an error', () => {
     expect(reviewFlagExplanation('marca_que_ainda_nao_existe')).toBeNull()
   })
 
   /*
-   * A distinção que o operador precisa de fazer: a tarifa está errada, ou
-   * está certa e não foi medida? É a razão de ser deste bloco.
+   * The distinction the operator has to make: is the fare wrong, or right but
+   * unmeasured? That is the whole point of this block.
    */
-  it('a da distância estimada diz que a tarifa está certa e não foi medida', () => {
-    const texto = reviewFlagExplanation('fare_estimated_fallback') ?? ''
-    expect(texto).toMatch(/estimada/)
-    expect(texto).toMatch(/não foi medida/)
+  it('says the estimated-distance fare is right but unmeasured', () => {
+    const text = reviewFlagExplanation('fare_estimated_fallback') ?? ''
+    expect(text).toMatch(/estimada/)
+    expect(text).toMatch(/não foi medida/)
   })
 })
 
-describe('motivoDoFechoForcado', () => {
-  const logDoFecho = (reason: unknown) => ({
+describe('forcedCloseReason', () => {
+  const forcedCloseLog = (reason: unknown) => ({
     action: 'update',
     module: 'rides',
     new_data: {
@@ -523,39 +523,39 @@ describe('motivoDoFechoForcado', () => {
     }
   })
 
-  it('lê o motivo do campo estruturado', () => {
-    expect(motivoDoFechoForcado([logDoFecho('O motorista ficou sem bateria')])).toBe(
+  it('reads the reason from the structured field', () => {
+    expect(forcedCloseReason([forcedCloseLog('O motorista ficou sem bateria')])).toBe(
       'O motorista ficou sem bateria'
     )
   })
 
-  // A auditoria de uma corrida tem várias linhas; só uma é o fecho forçado.
-  it('ignora as outras linhas da mesma corrida', () => {
+  // A ride's audit trail has several entries; only one is the forced close.
+  it('ignores the other entries of the same ride', () => {
     const logs = [
       { action: 'update', module: 'rides', new_data: { status: 'canceled' } },
       { action: 'update', module: 'drivers', new_data: { reason: 'outro' } },
-      logDoFecho('Cliente ligou a confirmar que a corrida acabou')
+      forcedCloseLog('Cliente ligou a confirmar que a corrida acabou')
     ]
-    expect(motivoDoFechoForcado(logs)).toBe(
+    expect(forcedCloseReason(logs)).toBe(
       'Cliente ligou a confirmar que a corrida acabou'
     )
   })
 
-  it('sem linha nenhuma, devolve null — e o ecrã di-lo', () => {
-    expect(motivoDoFechoForcado([])).toBeNull()
-    expect(motivoDoFechoForcado([{ module: 'rides', new_data: null }])).toBeNull()
+  it('returns null when there is no entry — and the screen says so', () => {
+    expect(forcedCloseReason([])).toBeNull()
+    expect(forcedCloseReason([{ module: 'rides', new_data: null }])).toBeNull()
   })
 
-  it('um motivo vazio ou de outro tipo conta como ausente', () => {
-    for (const valor of ['', '   ', 42, null, undefined]) {
-      expect(motivoDoFechoForcado([logDoFecho(valor)]), String(valor)).toBeNull()
+  it('treats an empty or non-string reason as absent', () => {
+    for (const value of ['', '   ', 42, null, undefined]) {
+      expect(forcedCloseReason([forcedCloseLog(value)]), String(value)).toBeNull()
     }
   })
 
-  // Uma linha de auditoria sem a marca não é o fecho forçado.
-  it('exige a marca na linha, não só um motivo', () => {
+  // An audit entry without the flag is not the forced close.
+  it('requires the flag on the entry, not just a reason', () => {
     expect(
-      motivoDoFechoForcado([
+      forcedCloseReason([
         {
           action: 'update',
           module: 'rides',

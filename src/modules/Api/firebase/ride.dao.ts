@@ -6,40 +6,38 @@ import { firebaseCollections } from '@/constants/firebaseCollections'
 import { BaseFirebaseDAO } from './BaseFirebaseDAO'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '@/config/firebase.config'
-import type { ContactosPrivados } from '@/helpers/rideContacts'
+import type { PrivateContacts } from '@/helpers/rideContacts'
 
 export class FirebaseRideDAO
   extends BaseFirebaseDAO<RideDocEntity>
   implements IRideRepository
 {
   /**
-   * Os contactos de uma corrida, de `rides/{id}/private/contacts`.
+   * A ride's contacts, from `rides/{id}/private/contacts`.
    *
-   * ── Porque é um método à parte, e não um campo da corrida ──
-   * É **outro documento**, numa subcolecção que não herda as regras do pai
-   * (foi o que a 3.2 ensinou, e o que o §0AB corrigiu): o admin lê-o, o
-   * passageiro dono lê-o, o motorista atribuído lê só este — nunca os
-   * códigos. Lê-se à parte porque se autoriza à parte.
+   * ── Why a method of its own, and not a field of the ride ──
+   * It is **another document**, in a subcollection that does not inherit the
+   * parent's rules (what 3.2 taught, and what §0AB fixed): the admin reads it,
+   * the owning passenger reads it, the assigned driver reads only this one —
+   * never the codes. It is read apart because it is authorised apart.
    *
-   * ⚠️ **Devolve `null` quando não existe, e isso é um caso normal**: as
-   * corridas anteriores à 3.2 não têm o documento e **não migram** (§0A). Quem
-   * chama junta-o com a cópia embutida pelo `contactosDaCorrida`.
+   * ⚠️ **Returns `null` when it does not exist, and that is a normal case**:
+   * rides older than 3.2 have no document and **are not migrated** (§0A). The
+   * caller merges it with the embedded copy via `rideContacts`.
    *
-   * Sem converter: são quatro strings, e um converter para elas era cerimónia
-   * sem conteúdo.
+   * No converter: it is four strings, and a converter for them would be
+   * ceremony without content.
    */
-  async getPrivateContacts(
-    rideId: string
-  ): Promise<ContactosPrivados | null> {
+  async getPrivateContacts(rideId: string): Promise<PrivateContacts | null> {
     const snap = await getDoc(
       /*
-       * O nome do documento à mão: o `RIDE_PRIVATE_DOCS` entrou na lib depois
-       * da 2.11.0, que é a que o painel fixa. Troca-se pela constante quando
-       * o painel subir — e é por isso que está num sítio só.
+       * The document name written out: `RIDE_PRIVATE_DOCS` landed in the lib
+       * after 2.11.0, which is what the panel pins. It becomes the constant
+       * when the panel moves — which is why it lives in exactly one place.
        */
       doc(db, this.path, rideId, 'private', 'contacts')
     )
-    return snap.exists() ? (snap.data() as ContactosPrivados) : null
+    return snap.exists() ? (snap.data() as PrivateContacts) : null
   }
 
   constructor() {

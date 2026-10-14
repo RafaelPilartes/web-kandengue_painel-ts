@@ -190,10 +190,10 @@ class ApiFactory {
   }
 
   /**
-   * Aprovar serviços e decidir documentos (3.7).
+   * Approving services and deciding documents (3.7).
    *
-   * A leitura de `drivers` e de `documents` continua a ser Firestore directo
-   * — as regras só vão fechar a **escrita**, na Fase 7.
+   * Reading `drivers` and `documents` stays direct Firestore — the rules will
+   * only close the **writes**, in phase 7.
    */
   get adminDriver(): IAdminDriverRepository {
     return (this._adminDriver ??= new AdminDriverDAO())

@@ -16,21 +16,22 @@ import {
 import { showToast } from '@/utils/toasts'
 
 /**
- * Como a corrida se paga, nas regras de uma promoção.
+ * How a ride is paid for, in a promotion's rules.
  *
- * ⚠️ **O `'wallet'` saiu, e nunca devia ter estado aqui.** No modelo de
- * negócio **o passageiro paga sempre ao motorista** — dinheiro ou cartão — e a
- * carteira é **do motorista**, para as taxas e os bónus. O
- * `PaymentMethodType` da corrida é só `'cash' | 'card'`, verificado contra
- * produção (das 109 corridas, nenhuma com `wallet`).
+ * ⚠️ **`'wallet'` is gone, and it should never have been here.** In the
+ * business model **the passenger always pays the driver** — cash or card — and
+ * the wallet belongs to the **driver**, for fees and bonuses. A ride's
+ * `PaymentMethodType` is only `'cash' | 'card'`, checked against production
+ * (of 109 rides, none with `wallet`).
  *
- * A consequência de o oferecer era uma promoção que **nunca aplicava**: o
- * validador compara com o método da corrida, o passageiro só manda `'cash'`
- * ou `'card'`, e dava sempre `INVALID_PAYMENT_METHOD` — uma promoção a falhar
- * em silêncio, sem ninguém saber porquê.
+ * The consequence of offering it was a promotion that **never applied**: the
+ * validator compares against the ride's method, the passenger only ever sends
+ * `'cash'` or `'card'`, and it always came back `INVALID_PAYMENT_METHOD` — a
+ * promotion failing silently, with nobody knowing why.
  *
- * Este ecrã era o único consumidor do valor, e é por isso que a lib podia
- * removê-lo (3.0.0) nesta fase: a rotura não viaja de carona numa melhoria.
+ * This screen was the only consumer of the value, which is why the lib could
+ * remove it (3.0.0) in this phase: the breakage does not ride along with an
+ * improvement.
  */
 const PAYMENT_METHODS: RidePaymentMethod[] = ['cash', 'card']
 

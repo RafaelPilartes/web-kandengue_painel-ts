@@ -113,13 +113,13 @@ export function useDriversViewModel(
   })
 
   /**
-   * Os serviços aprovados, **pela API** (3.7).
+   * The approved services, **through the API** (3.7).
    *
-   * ⚠️ **Sem `withAudit`, e é deliberado.** Estas duas rotas escrevem a sua
-   * própria linha em `auditLogs`, no servidor e dentro da transacção —
-   * incluindo **o que o admin confirmou à mão**, que o painel não tem como
-   * registar. Embrulhá-las no `withAudit` daqui dava **duas** entradas para a
-   * mesma decisão, e a segunda contava menos do que a primeira.
+   * ⚠️ **No `withAudit`, and that is deliberate.** These two routes write
+   * their own line in `auditLogs`, on the server and inside the transaction —
+   * including **what the admin confirmed by hand**, which the panel has no way
+   * to record. Wrapping them in `withAudit` from here gave **two** entries for
+   * the same decision, and the second one knew less than the first.
    */
   const addDriverService = useMutation({
     mutationFn: ({

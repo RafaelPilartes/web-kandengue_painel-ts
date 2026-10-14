@@ -13,14 +13,14 @@ import {
   compareQuotedToCharged,
   failedReservation,
   hasAnyReviewFlag,
-  motivoDoFechoForcado,
+  forcedCloseReason,
   reviewFlagExplanation,
   reviewFlagLabel,
   fareDistance,
   signedDeviationPercent
 } from '@/helpers/fareReview'
 import type { FareComparison } from '@/helpers/fareReview'
-import { mapApiError, semMarcacao } from '@/helpers/apiError'
+import { mapApiError, stripMarkdown } from '@/helpers/apiError'
 import { auditService } from '@/observability/audit'
 import { formatDateTimeFromFirestore } from '@/utils/date'
 import { formatMoney } from '@/utils/number'
@@ -127,7 +127,7 @@ export function FareReviewPage() {
    * `Record<string, string>` (§0AB): o painel não pode depender da versão da
    * lib para reconhecer uma marca que o servidor já escreve.
    */
-  const MARCA_FECHO_FORCADO = 'force_completed'
+  const FORCED_CLOSE_FLAG = 'force_completed'
 
   /*
    * O motivo de cada fecho forçado, lido da auditoria (`new_data.reason`).
@@ -138,46 +138,46 @@ export function FareReviewPage() {
    * `null` = leu-se e não havia — e o ecrã **di-lo**, em vez de esconder a
    * marca.
    */
-  const [motivosDoFecho, setMotivosDoFecho] = useState<
+  const [closeReasons, setCloseReasons] = useState<
     Record<string, string | null>
   >({})
 
   useEffect(() => {
-    const forcadas = flagged
+    const forced = flagged
       .filter(r =>
         (r.review_flags ?? []).some(
-          f => (f as string) === MARCA_FECHO_FORCADO
+          f => (f as string) === FORCED_CLOSE_FLAG
         )
       )
       .map(r => r.id as string)
-      .filter(id => !(id in motivosDoFecho))
+      .filter(id => !(id in closeReasons))
 
-    if (forcadas.length === 0) return
+    if (forced.length === 0) return
 
-    let vivo = true
+    let alive = true
     void Promise.all(
-      forcadas.map(async id => {
+      forced.map(async id => {
         try {
           const logs = await auditService.getByTarget(id)
-          return [id, motivoDoFechoForcado(logs)] as const
+          return [id, forcedCloseReason(logs)] as const
         } catch (error) {
           // Uma falha a ler a auditoria não pode tirar a corrida da fila.
-          console.error('[fare-review] motivo do fecho forçado', error)
+          console.error('[fare-review] forced close reason', error)
           return [id, null] as const
         }
       })
-    ).then(pares => {
-      if (!vivo) return
-      setMotivosDoFecho(anterior => ({
-        ...anterior,
-        ...Object.fromEntries(pares)
+    ).then(pairs => {
+      if (!alive) return
+      setCloseReasons(previous => ({
+        ...previous,
+        ...Object.fromEntries(pairs)
       }))
     })
 
     return () => {
-      vivo = false
+      alive = false
     }
-  }, [flagged, motivosDoFecho])
+  }, [flagged, closeReasons])
 
   const counts = useMemo(() => {
     const pending = (ride: RideEntity) =>
@@ -241,13 +241,13 @@ export function FareReviewPage() {
       )
     } catch (error) {
       /*
-       * ⚠️ **`mapApiError` e não `error.message`.** Achado pela revisão
-       * independente da Fase 4: os erros desta rota são `kind: 'technical'`
-       * (um `ConflictError`), logo **não trazem `user_message`** — e o
-       * `message` é diagnóstico em inglês. O admin via "Ride rid-… is not
-       * flagged for fare review". É o mesmo defeito que levou
-       * "body/code Code must contain only A-Z…" ao ecrã de um passageiro, e
-       * a razão de o contrato de erro ter entrado neste lote.
+       * ⚠️ **`mapApiError`, not `error.message`.** Found by the independent
+       * review of phase 4: this route's errors are `kind: 'technical'` (a
+       * `ConflictError`), so they **carry no `user_message`** — and the
+       * `message` is English diagnostics. The admin was reading "Ride rid-… is
+       * not flagged for fare review". It is the same defect that put
+       * "body/code Code must contain only A-Z…" on a passenger's screen, and
+       * the reason the error contract landed in this batch.
        */
       swal('Erro ao marcar', {
         text: mapApiError(error, 'Houve algum erro ao marcar a revisão...'),
@@ -425,11 +425,11 @@ export function FareReviewPage() {
                     */}
                     <ul className="flex flex-col gap-1.5 rounded-lg bg-gray-50 p-3 dark:bg-gray-900/40">
                       {(ride.review_flags ?? []).map(flag => {
-                        const explicacao = reviewFlagExplanation(flag)
-                        const ehFechoForcado =
-                          (flag as string) === MARCA_FECHO_FORCADO
-                        const motivo = ehFechoForcado
-                          ? motivosDoFecho[ride.id as string]
+                        const explanation = reviewFlagExplanation(flag)
+                        const isForcedClose =
+                          (flag as string) === FORCED_CLOSE_FLAG
+                        const reason = isForcedClose
+                          ? closeReasons[ride.id as string]
                           : undefined
                         return (
                           <li
@@ -439,17 +439,17 @@ export function FareReviewPage() {
                             <span className="font-medium text-gray-800 dark:text-gray-100">
                               {reviewFlagLabel(flag)}:
                             </span>{' '}
-                            {explicacao
-                              ? semMarcacao(explicacao)
+                            {explanation
+                              ? stripMarkdown(explanation)
                               : 'Marca nova — ainda sem explicação escrita no painel.'}
-                            {ehFechoForcado && (
+                            {isForcedClose && (
                               <span className="mt-1 block">
                                 <span className="font-medium text-gray-800 dark:text-gray-100">
                                   Motivo:
                                 </span>{' '}
-                                {motivo === undefined
+                                {reason === undefined
                                   ? 'a ler a auditoria…'
-                                  : (motivo ?? 'sem motivo registado na auditoria.')}
+                                  : (reason ?? 'sem motivo registado na auditoria.')}
                               </span>
                             )}
                           </li>

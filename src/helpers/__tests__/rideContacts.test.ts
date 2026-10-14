@@ -1,20 +1,20 @@
 import { describe, expect, it } from 'vitest'
 import {
-  contactosDaCorrida,
-  explicaOrigem,
-  type ContactosPrivados
+  explainSource,
+  type PrivateContacts,
+  rideContacts
 } from '../rideContacts'
 import type { RideInterface } from '@/interfaces/IRide'
 
 /**
- * Os telefones de uma corrida, e de onde vieram.
+ * The phone numbers of a ride, and where they came from.
  *
- * ⚠️ **O que estes casos protegem é uma chamada telefónica.** O operador
- * precisa de falar com alguém, e as corridas anteriores à 3.2 não têm o
- * documento privado — se o painel lesse só um dos sítios, metade das corridas
- * ficava sem contacto nenhum.
+ * ⚠️ **What these cases protect is a phone call.** The operator needs to reach
+ * someone, and rides older than 3.2 have no private document — if the panel
+ * read only one of the two places, half the rides would show no contact at
+ * all.
  */
-const corrida = (over: Record<string, unknown> = {}) =>
+const aRide = (over: Record<string, unknown> = {}) =>
   ({
     user: { id: 'us-1', name: 'Ana', phone: '+244900000001' },
     driver: { id: 'dri-1', name: 'Bruno', phone: '+244900000002' },
@@ -25,85 +25,85 @@ const corrida = (over: Record<string, unknown> = {}) =>
     ...over
   }) as unknown as RideInterface
 
-const privados: ContactosPrivados = {
+const privateContacts: PrivateContacts = {
   passenger_phone: '+244911111111',
   driver_phone: '+244922222222',
   sender_phone: '+244933333333',
   receiver_phone: '+244944444444'
 }
 
-describe('contactosDaCorrida', () => {
+describe('rideContacts', () => {
   /*
-   * ⚠️ **O privado ganha, e a razão é concreta:** o `driver_phone` é escrito
-   * pelo servidor no aceite, e o `ride.driver.phone` é o retrato do momento
-   * em que a app o escreveu — numa corrida reatribuída pode ser de outra
-   * pessoa.
+   * ⚠️ **The private document wins, for a concrete reason:** `driver_phone` is
+   * written by the server on accept, while `ride.driver.phone` is the snapshot
+   * of the moment the app wrote it — on a reassigned ride it may belong to
+   * someone else.
    */
-  it('o documento privado ganha à cópia da corrida', () => {
-    const c = contactosDaCorrida({ contacts: privados, ride: corrida() })
-    expect(c.passageiro).toEqual({ valor: '+244911111111', origem: 'privado' })
-    expect(c.motorista).toEqual({ valor: '+244922222222', origem: 'privado' })
-    expect(c.remetente.origem).toBe('privado')
-    expect(c.destinatario.origem).toBe('privado')
+  it('prefers the private document over the copy in the ride', () => {
+    const c = rideContacts({ contacts: privateContacts, ride: aRide() })
+    expect(c.passenger).toEqual({ value: '+244911111111', source: 'private' })
+    expect(c.driver).toEqual({ value: '+244922222222', source: 'private' })
+    expect(c.sender.source).toBe('private')
+    expect(c.receiver.source).toBe('private')
   })
 
-  // As corridas anteriores à 3.2 não têm o documento — e não migram (§0A).
-  it('sem documento privado, recua para a corrida', () => {
-    const c = contactosDaCorrida({ contacts: null, ride: corrida() })
-    expect(c.passageiro).toEqual({ valor: '+244900000001', origem: 'corrida' })
-    expect(c.motorista).toEqual({ valor: '+244900000002', origem: 'corrida' })
-    expect(c.remetente.valor).toBe('+244900000003')
-    expect(c.destinatario.valor).toBe('+244900000004')
+  // Rides older than 3.2 have no document — and are not migrated (§0A).
+  it('falls back to the ride when there is no private document', () => {
+    const c = rideContacts({ contacts: null, ride: aRide() })
+    expect(c.passenger).toEqual({ value: '+244900000001', source: 'ride' })
+    expect(c.driver).toEqual({ value: '+244900000002', source: 'ride' })
+    expect(c.sender.value).toBe('+244900000003')
+    expect(c.receiver.value).toBe('+244900000004')
   })
 
-  // O caso real: o documento existe, mas o motorista ainda não aceitou.
-  it('mistura os dois: o que falta no privado vem da corrida', () => {
-    const c = contactosDaCorrida({
+  // The real case: the document exists, but no driver has accepted yet.
+  it('mixes both: what the private document lacks comes from the ride', () => {
+    const c = rideContacts({
       contacts: { passenger_phone: '+244911111111' },
-      ride: corrida()
+      ride: aRide()
     })
-    expect(c.passageiro.origem).toBe('privado')
-    expect(c.motorista).toEqual({ valor: '+244900000002', origem: 'corrida' })
+    expect(c.passenger.source).toBe('private')
+    expect(c.driver).toEqual({ value: '+244900000002', source: 'ride' })
   })
 
-  it('sem telefone em sítio nenhum, di-lo em vez de mostrar vazio', () => {
-    const c = contactosDaCorrida({
+  it('says so when there is no phone anywhere, instead of showing blank', () => {
+    const c = rideContacts({
       contacts: null,
-      ride: corrida({ driver: { id: 'dri-1', name: 'Bruno' }, details: {} })
+      ride: aRide({ driver: { id: 'dri-1', name: 'Bruno' }, details: {} })
     })
-    expect(c.motorista).toEqual({ valor: null, origem: null })
-    expect(c.destinatario).toEqual({ valor: null, origem: null })
+    expect(c.driver).toEqual({ value: null, source: null })
+    expect(c.receiver).toEqual({ value: null, source: null })
   })
 
-  // Um campo vazio ou com espaços não é um telefone.
-  it('string vazia conta como ausente, e o recuo funciona', () => {
-    const c = contactosDaCorrida({
+  // An empty or whitespace-only field is not a phone number.
+  it('treats an empty string as absent, and the fallback still works', () => {
+    const c = rideContacts({
       contacts: { driver_phone: '   ', passenger_phone: '' },
-      ride: corrida()
+      ride: aRide()
     })
-    expect(c.motorista).toEqual({ valor: '+244900000002', origem: 'corrida' })
-    expect(c.passageiro).toEqual({ valor: '+244900000001', origem: 'corrida' })
+    expect(c.driver).toEqual({ value: '+244900000002', source: 'ride' })
+    expect(c.passenger).toEqual({ value: '+244900000001', source: 'ride' })
   })
 
-  it('uma corrida sem nada não rebenta', () => {
-    const c = contactosDaCorrida({ contacts: null, ride: null })
-    expect(c.passageiro.valor).toBeNull()
-    expect(c.motorista.valor).toBeNull()
+  it('survives a ride with nothing in it', () => {
+    const c = rideContacts({ contacts: null, ride: null })
+    expect(c.passenger.value).toBeNull()
+    expect(c.driver.value).toBeNull()
   })
 })
 
-describe('explicaOrigem', () => {
-  it('avisa quando o telefone vem da cópia antiga', () => {
-    expect(explicaOrigem({ valor: '+2449', origem: 'corrida' })).toMatch(
+describe('explainSource', () => {
+  it('warns when the number came from the old copy', () => {
+    expect(explainSource({ value: '+2449', source: 'ride' })).toMatch(
       /pode estar velho/
     )
   })
 
-  it('não diz nada quando vem do documento privado', () => {
-    expect(explicaOrigem({ valor: '+2449', origem: 'privado' })).toBeUndefined()
+  it('says nothing when it came from the private document', () => {
+    expect(explainSource({ value: '+2449', source: 'private' })).toBeUndefined()
   })
 
-  it('explica a ausência', () => {
-    expect(explicaOrigem({ valor: null, origem: null })).toMatch(/nem na cópia/)
+  it('explains the absence', () => {
+    expect(explainSource({ value: null, source: null })).toMatch(/nem na cópia/)
   })
 })

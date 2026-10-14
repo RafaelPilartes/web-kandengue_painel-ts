@@ -83,26 +83,26 @@ export class DocumentUseCase extends BaseUseCase {
   }
 
   /**
-   * Aprova um documento **pela API** (3.7), com validade opcional.
+   * Approves a document **through the API** (3.7), with an optional expiry.
    *
-   * ⚠️ **A validade é o fim do dia escolhido, na hora de Luanda** — quem a
-   * converte é quem a recolhe (o ecrã), com o `fimDoDiaEmLuanda`. A lib
-   * compara instantes (`expires_at > now`): a meia-noite do dia 31 caduca a
-   * apólice no próprio dia 31, e o motorista perde o dia que ela cobre.
+   * ⚠️ **The expiry is the end of the chosen day, Luanda time** — whoever
+   * collects it converts it (the screen), with `endOfDayInLuanda`. The lib
+   * compares instants (`expires_at > now`): midnight on the 31st expires the
+   * policy on the 31st itself, and the driver loses the day it covers.
    *
-   * Fora do `run()`: a mensagem da API é a que explica a recusa.
+   * Outside `run()`: the API's message is what explains a refusal.
    */
   executeApprove(id: string, expiresAt?: Date): Promise<DocumentDecisionResult> {
     return ApiRepository.adminDriver.approveDocument(id, expiresAt)
   }
 
   /**
-   * Recusa um documento, **com motivo obrigatório** — e o motivo vai para o
-   * `feedback`, que é o campo que o motorista vê.
+   * Rejects a document, **with a mandatory reason** — and the reason goes to
+   * `feedback`, the field the driver sees.
    *
-   * O painel escrevia `{status: 'rejected'}` e nunca `feedback`: o motorista
-   * recebia um "rejeitado" sem saber o que corrigir e voltava a submeter o
-   * mesmo documento.
+   * The panel used to write `{status: 'rejected'}` and never `feedback`: the
+   * driver got a "rejected" with no idea what to fix and resubmitted the same
+   * document.
    */
   executeReject(id: string, reason: string): Promise<DocumentDecisionResult> {
     return ApiRepository.adminDriver.rejectDocument(id, reason)

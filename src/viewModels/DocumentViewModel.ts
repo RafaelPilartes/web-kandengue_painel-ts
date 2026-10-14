@@ -69,16 +69,16 @@ export function useDocumentsViewModel(
   })
 
   /**
-   * As duas decisões sobre um documento, **pela API** (3.7).
+   * The two decisions on a document, **through the API** (3.7).
    *
-   * ⚠️ **Sem `withAudit`:** as rotas escrevem a sua própria linha em
-   * `auditLogs`, no servidor — com o dono do documento, o tipo, a validade e
-   * o motivo. O `withAudit` daqui dava uma segunda entrada para a mesma
-   * decisão.
+   * ⚠️ **No `withAudit`:** the routes write their own line in `auditLogs`, on
+   * the server — with the document's owner, its type, the expiry and the
+   * reason. `withAudit` from here gave a second entry for the same decision.
    *
-   * ⚠️ **E a recusa exige motivo**, que vai para o `feedback` — o campo que o
-   * **motorista** vê. O painel escrevia `{status: 'rejected'}` e nunca
-   * `feedback`: o motorista recebia um "rejeitado" sem saber o que corrigir.
+   * ⚠️ **And a rejection requires a reason**, which goes to `feedback` — the
+   * field the **driver** sees. The panel used to write
+   * `{status: 'rejected'}` and never `feedback`: the driver got a "rejected"
+   * with no idea what to fix.
    */
   const approveDocument = useMutation({
     mutationFn: ({ id, expiresAt }: { id: string; expiresAt?: Date }) =>

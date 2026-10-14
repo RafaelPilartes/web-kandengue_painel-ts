@@ -5,12 +5,11 @@ import type { AuditLogInterface } from '@/interfaces/IAuditLog'
 export interface IAuditLogRepository
   extends IBaseRepository<AuditLogInterface> {
   /**
-   * As linhas de auditoria de um alvo (corrida, motorista, documento), da
-   * mais recente para a mais antiga.
+   * The audit entries of one target (ride, driver, document), newest first.
    *
-   * Query própria, **sem ordenação no servidor**: a igualdade em `target_id`
-   * com ordenação noutro campo exigia um índice composto que não existe. Ver
-   * o `auditLog.dao.ts`.
+   * Its own query, **with no ordering on the server**: an equality on
+   * `target_id` ordered by another field required a composite index that does
+   * not exist. See `auditLog.dao.ts`.
    */
-  getByTarget(targetId: string, limite?: number): Promise<AuditLogInterface[]>
+  getByTarget(targetId: string, max?: number): Promise<AuditLogInterface[]>
 }

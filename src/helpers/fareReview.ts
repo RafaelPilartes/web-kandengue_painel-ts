@@ -234,19 +234,21 @@ export function reviewFlagLabel(flag: string): string {
 }
 
 /**
- * O que cada marca **quer dizer**, e o que o operador faz com ela.
+ * What each flag **means**, and what the operator does about it.
  *
- * ── Porque não basta a etiqueta ──
- * "Cobrada pela distância estimada" diz o quê e não diz **o que fazer**. Quem
- * está na fila de revisão precisa de saber se a tarifa está errada (e tem de
- * ser corrigida) ou se está certa e só não foi medida — são conversas
- * diferentes com o passageiro. Até aqui essa diferença vivia no HANDOFF, e o
- * operador não lê o HANDOFF.
+ * ── Why the label is not enough ──
+ * "Cobrada pela distância estimada" says what happened and not **what to do**.
+ * Whoever works the review queue needs to know whether the fare is wrong (and
+ * has to be corrected) or right but simply not measured — those are different
+ * conversations with the passenger. Until now that difference lived in the
+ * HANDOFF, and the operator does not read the HANDOFF.
  *
- * ⚠️ **Mapa parcial, como as etiquetas** (regra do painel, §0AB): uma marca
- * nova aparece no ecrã sem explicação em vez de partir a compilação. Um
- * `Record<RideReviewFlag, …>` exaustivo fazia de cada marca nova uma
- * alteração **major** da lib.
+ * ⚠️ **A partial map, like the labels** (panel rule, §0AB): a new flag shows up
+ * on screen without an explanation instead of breaking the build. An
+ * exhaustive `Record<RideReviewFlag, …>` turned every new flag in the lib into
+ * a **major** change.
+ *
+ * The strings themselves are user-facing, so they stay in Portuguese.
  */
 const REVIEW_FLAG_EXPLANATIONS: Record<string, string> = {
   promotion_reservation_failed:
@@ -261,25 +263,25 @@ const REVIEW_FLAG_EXPLANATIONS: Record<string, string> = {
     'O percurso gravado não dava para medir (poucos pontos, um salto de GPS, o início longe da recolha), por isso cobrou-se a distância **estimada** da cotação. A tarifa está certa pelas regras e **não foi medida** — o motivo exacto está em `fare.distance.reason`.'
 }
 
-/** A explicação da marca, ou `null` quando ainda não há uma escrita. */
+/** The flag's explanation, or `null` when none has been written yet. */
 export function reviewFlagExplanation(flag: string): string | null {
   return REVIEW_FLAG_EXPLANATIONS[flag] ?? null
 }
 
 /**
- * O motivo do fecho forçado, lido da auditoria.
+ * The reason behind a forced close, read from the audit log.
  *
- * ⚠️ **Lê o `new_data.reason`, não a frase.** A API escreve as duas coisas: a
- * `description` ("Forçou o fecho da corrida X (estava em Y): motivo") e o
- * `new_data: {status, review_flags, reason}`. Ir ao campo estruturado é o que
- * torna isto imune a uma mudança de redacção — e o `description` muda com o
- * tempo, como qualquer frase.
+ * ⚠️ **It reads `new_data.reason`, not the sentence.** The API writes both: the
+ * `description` ("Forçou o fecho da corrida X (estava em Y): reason") and
+ * `new_data: {status, review_flags, reason}`. Going to the structured field is
+ * what makes this immune to a rewording — and `description` changes over time,
+ * like any sentence.
  *
- * Devolve `null` quando não há linha nenhuma: pode ser uma corrida marcada
- * antes de a auditoria existir, ou a leitura ter falhado. **Mostrar "sem
- * motivo registado" é melhor do que esconder a marca.**
+ * Returns `null` when there is no entry at all: it may be a ride flagged
+ * before the audit log existed, or a read that failed. **Showing "no reason on
+ * record" beats hiding the flag.**
  */
-export function motivoDoFechoForcado(
+export function forcedCloseReason(
   logs: ReadonlyArray<{
     action?: string
     module?: string
@@ -288,15 +290,14 @@ export function motivoDoFechoForcado(
 ): string | null {
   for (const log of logs) {
     if (log.module !== 'rides') continue
-    const dados = log.new_data as
+    const data = log.new_data as
       | { reason?: unknown; review_flags?: unknown }
       | null
       | undefined
-    const marcas = dados?.review_flags
-    const temMarca =
-      Array.isArray(marcas) && marcas.includes('force_completed')
-    const motivo = typeof dados?.reason === 'string' ? dados.reason.trim() : ''
-    if (temMarca && motivo !== '') return motivo
+    const flags = data?.review_flags
+    const hasFlag = Array.isArray(flags) && flags.includes('force_completed')
+    const reason = typeof data?.reason === 'string' ? data.reason.trim() : ''
+    if (hasFlag && reason !== '') return reason
   }
   return null
 }

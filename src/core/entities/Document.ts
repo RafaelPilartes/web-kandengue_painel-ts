@@ -28,11 +28,13 @@ export interface DocumentDoc {
   feedback?: string
   vehicle_id?: string
   /**
-   * Quando o documento deixa de valer. Opcional: só os que caducam o têm.
+   * When the document stops being valid. Optional: only the ones that expire
+   * carry it.
    *
-   * ⚠️ **Chega como `Timestamp`, e tem de sair como `Date`.** É o campo que a
-   * API escreve ao aprovar (3.7) e o que distingue um aprovado de um aprovado
-   * **caducado** — e um caducado parece aprovado em qualquer listagem.
+   * ⚠️ **It arrives as a `Timestamp` and has to leave as a `Date`.** It is the
+   * field the API writes on approval (3.7), and the one that tells an approved
+   * document from an approved **expired** one — and an expired one looks
+   * approved in any listing.
    */
   expires_at?: Timestamp | null
   created_at?: Timestamp | null
@@ -46,35 +48,35 @@ export const documentConverter: FirestoreDataConverter<DocumentEntity> = {
   },
   fromFirestore(snapshot, options) {
     const d = snapshot.data(options) as DocumentDoc
-    const validade = toDate(d.expires_at) ?? undefined
+    const expiry = toDate(d.expires_at) ?? undefined
     const entity = new DocumentEntity({
       ...d,
       id: snapshot.id,
-      expires_at: validade,
+      expires_at: expiry,
       created_at: toDate(d.created_at) ?? undefined,
       updated_at: toDate(d.updated_at) ?? undefined
     } as DocumentInterface)
 
     /*
-     * ⚠️ **A validade atribui-se outra vez, à mão, e sem isto ela não chega
-     * ao ecrã.** Achado pela revisão independente da Fase 4.
+     * ⚠️ **The expiry is assigned again, by hand, and without this it never
+     * reaches the screen.** Found by the independent review of phase 4.
      *
-     * A `DocumentEntity` da lib **2.11.0** — a que o painel fixa — não declara
-     * `expires_at`, e uma classe só copia o que declara: o campo entrava no
-     * construtor e desaparecia. Resultado: a coluna de validade dizia "sem
-     * validade" para **todos** os documentos, mesmo os aprovados com data, e a
-     * acção "Renovar validade" nunca aparecia.
+     * Lib **2.11.0**'s `DocumentEntity` — the one the panel pins — does not
+     * declare `expires_at`, and a class only copies what it declares: the
+     * field went into the constructor and vanished. Result: the validity
+     * column said "sem validade" for **every** document, including ones just
+     * approved with a date, and the "Renovar validade" action never showed up.
      *
-     * Com a 3.0.0 instalada o construtor já o guarda, e esta linha passa a ser
-     * uma reatribuição do mesmo valor **já convertido** — que é a outra metade
-     * do defeito: sem a conversão, o que a classe nova guardava era o
-     * `Timestamp` cru, e o `estaCaducado` chamava `.getTime()` num objecto que
-     * não o tem. Rebentava o render da tabela.
+     * With 3.0.0 installed the constructor does keep it, and this line becomes
+     * a reassignment of the same **already converted** value — which is the
+     * other half of the defect: without the conversion, what the new class
+     * kept was the raw `Timestamp`, and `isExpired` called `.getTime()` on an
+     * object that has no such method. It blew up the table render.
      *
-     * Fica depois da subida da lib (não é muleta): é ela que garante que o
-     * campo é um `Date`, venha de que versão vier.
+     * This stays after the lib bump (it is not a crutch): it is what
+     * guarantees the field is a `Date`, whichever version it comes from.
      */
-    ;(entity as DocumentInterface & { expires_at?: Date }).expires_at = validade
+    ;(entity as DocumentInterface & { expires_at?: Date }).expires_at = expiry
 
     return entity
   }

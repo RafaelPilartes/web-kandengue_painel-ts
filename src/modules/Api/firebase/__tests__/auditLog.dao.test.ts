@@ -92,75 +92,76 @@ describe('FirebaseAuditLogDAO', () => {
   })
 
   /*
-   * ─────────── `getByTarget`: a query de um alvo (Fase 4) ───────────
+   * ─────────── `getByTarget`: one target's query (phase 4) ───────────
    *
-   * ⚠️ **Este teste não prova a parte que mais interessa, e di-lo.** O
-   * emulador **não exige índices compostos**, por isso uma query com
-   * `where + orderBy` passa aqui e falha em produção com
-   * `failed-precondition` — foi assim que o motivo do fecho forçado
-   * desapareceu do ecrã sem ninguém ver. O que isto prova é o contrato: filtra
-   * pelo alvo, ordena do mais recente para o mais antigo, e respeita o tecto.
-   * Que **não** há `orderBy` no servidor vê-se no código do DAO, não aqui.
+   * ⚠️ **This test does not prove the part that matters most, and says so.**
+   * The emulator **does not require composite indexes**, so a `where +
+   * orderBy` query passes here and fails in production with
+   * `failed-precondition` — which is how the forced-close reason vanished from
+   * the screen with nobody noticing. What this proves is the contract: filter
+   * by target, newest first, and respect the ceiling. That there is **no**
+   * server-side `orderBy` is visible in the DAO's code, not here.
    */
-  it('devolve só as linhas do alvo, da mais recente para a mais antiga', async () => {
+  it('returns only the target entries, newest first', async () => {
     await seed('log-a', {
       ...baseLog,
       target_id: 'rid-1',
-      description: 'antiga',
+      description: 'older',
       created_at: ts('2026-10-01T10:00:00Z')
     })
     await seed('log-b', {
       ...baseLog,
       target_id: 'rid-1',
-      description: 'recente',
+      description: 'newer',
       created_at: ts('2026-10-14T10:00:00Z')
     })
     await seed('log-c', {
       ...baseLog,
       target_id: 'rid-2',
-      description: 'de outra corrida',
+      description: 'another ride',
       created_at: ts('2026-10-14T11:00:00Z')
     })
 
-    const linhas = await dao.getByTarget('rid-1')
-    expect(linhas.map(l => l.description)).toEqual(['recente', 'antiga'])
+    const entries = await dao.getByTarget('rid-1')
+    expect(entries.map(l => l.description)).toEqual(['newer', 'older'])
   })
 
-  it('um alvo sem linhas devolve lista vazia, não erro', async () => {
-    expect(await dao.getByTarget('rid-sem-nada')).toEqual([])
+  it('returns an empty list for a target with no entries, not an error', async () => {
+    expect(await dao.getByTarget('rid-nothing')).toEqual([])
   })
 
   /*
-   * ⚠️ **Uma linha gravada sem `created_at` não desaparece** — e um `orderBy`
-   * no servidor tê-la-ia excluído (o `orderBy` do Firestore exclui documentos
-   * sem o campo), que é outra razão para não o usar.
+   * ⚠️ **An entry stored without `created_at` does not disappear** — and a
+   * server-side `orderBy` would have excluded it (Firestore's `orderBy` drops
+   * documents without the field), which is another reason not to use one.
    *
-   * O que ela leva é a data que o converter lhe dá (`toDate(...) ?? new
-   * Date()`), por isso aparece **no topo** e não no fim: é "agora". Foi o que
-   * este teste me mostrou quando o escrevi ao contrário — e fica assim,
-   * porque o comportamento é o do converter e não o desta query.
+   * What it carries is the date the converter gives it (`toDate(...) ?? new
+   * Date()`), so it shows up **at the top** and not at the end: it is "now".
+   * This test taught me that when I wrote it the other way round — and it
+   * stays like this, because the behaviour belongs to the converter and not to
+   * this query.
    */
-  it('uma linha gravada sem data entra na mesma, com a data do converter', async () => {
+  it('keeps an entry stored without a date, using the converter date', async () => {
     await seed('log-a', {
       ...baseLog,
       target_id: 'rid-3',
-      description: 'com data',
+      description: 'with date',
       created_at: ts('2026-10-14T10:00:00Z')
     })
     await seed('log-b', {
       ...baseLog,
       target_id: 'rid-3',
-      description: 'sem data',
+      description: 'without date',
       created_at: null
     })
 
-    const linhas = await dao.getByTarget('rid-3')
-    expect(linhas).toHaveLength(2)
-    expect(linhas.map(l => l.description).sort()).toEqual([
-      'com data',
-      'sem data'
+    const entries = await dao.getByTarget('rid-3')
+    expect(entries).toHaveLength(2)
+    expect(entries.map(l => l.description).sort()).toEqual([
+      'with date',
+      'without date'
     ])
-    for (const l of linhas) expect(l.created_at).toBeInstanceOf(Date)
+    for (const l of entries) expect(l.created_at).toBeInstanceOf(Date)
   })
 
   // ─────────── O caso característico desta task: sem searchField ───────────
