@@ -1,4 +1,5 @@
 import { ApiRepository } from '@/modules/Api/factory'
+import type { ContactosPrivados } from '@/helpers/rideContacts'
 import { BaseUseCase } from './BaseUseCase'
 import type { RideEntity } from '@/core/entities/Ride'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
@@ -101,6 +102,26 @@ export class RideUseCase extends BaseUseCase {
 
   executeDelete(id: string): Promise<void> {
     return this.run('delete', () => this.repository.delete(id))
+  }
+
+  /**
+   * Os contactos privados de uma corrida (3.2), para o detalhe os mostrar.
+   *
+   * ⚠️ **Nunca falha por não existir:** as corridas anteriores à 3.2 não têm
+   * o documento, e o ecrã recua para a cópia embutida. Um `null` aqui é
+   * informação, não erro — por isso não passa pelo `run()`, que transforma
+   * falhas em `AppError`.
+   */
+  async executeGetPrivateContacts(
+    id: string
+  ): Promise<ContactosPrivados | null> {
+    try {
+      return await this.repository.getPrivateContacts(id)
+    } catch (error) {
+      // Uma regra que negue, ou rede: o ecrã mostra o recuo e segue.
+      console.error('[rideUseCase] contactos privados', error)
+      return null
+    }
   }
 
   /** Listener directo — não passa pelo `run()`, que é só para operações que devolvem valor. */

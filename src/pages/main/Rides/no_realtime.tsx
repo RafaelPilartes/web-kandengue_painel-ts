@@ -5,6 +5,13 @@ import { Mail, Phone, Package, User, X } from 'lucide-react'
 import { useRidesViewModel } from '@/viewModels/RideViewModel'
 import { useRideTrackingsViewModel } from '@/viewModels/RideTrackingViewModel'
 import type { RideInterface } from '@/interfaces/IRide'
+import {
+  contactosDaCorrida,
+  type ContactosPrivados,
+  explicaOrigem,
+  SEM_CONTACTO
+} from '@/helpers/rideContacts'
+import { rideUseCase } from '@/domain/usecases/rideUseCase'
 import type { RideTrackingsInterface } from '@/interfaces/IRideTracking'
 import { getRideStatusLabel } from '@/utils/gettersLabels'
 import { CopyField } from '@/components/CopyField'
@@ -54,10 +61,33 @@ export function RealtimePage() {
   const [selectedRideTracking, setSelectedRideTracking] =
     useState<RideTrackingsInterface | null>(null)
 
+  /*
+   * Os contactos de `rides/{id}/private/contacts` (3.2). `null` enquanto não
+   * se leu, e `null` também quando o documento não existe — as corridas
+   * anteriores à 3.2 não o têm e **não migram** (§0A). É o
+   * `contactosDaCorrida` que junta os dois sítios.
+   */
+  const [contactosPrivados, setContactosPrivados] =
+    useState<ContactosPrivados | null>(null)
+  const contactos = contactosDaCorrida({
+    contacts: contactosPrivados,
+    ride: selectedRide
+  })
+
   const namePageLowercase = 'corridas'
 
   const handleSelectRide = async (ride: RideInterface) => {
     setSelectedRide(ride)
+    setContactosPrivados(null)
+
+    /*
+     * Fora do `try` de baixo de propósito: uma falha a ler a rota do mapa não
+     * pode tirar os telefones do ecrã, e vice-versa. O `executeGet…` já
+     * devolve `null` em vez de rebentar.
+     */
+    void rideUseCase
+      .executeGetPrivateContacts(ride.id as string)
+      .then(setContactosPrivados)
 
     try {
       await fetchRoute(ride.pickup, ride.dropoff)
@@ -373,10 +403,19 @@ export function RealtimePage() {
                     icon={<Mail size={16} />}
                     value={selectedRide.driver?.email || 'Não disponível'}
                   />
-                  <CopyField
-                    icon={<Phone size={16} />}
-                    value={selectedRide.driver?.phone || 'Não disponível'}
-                  />
+                  {/*
+                    O telefone vem do documento privado, com recuo para a
+                    cópia da corrida. O privado ganha porque é o **servidor**
+                    que o escreve, no aceite: a cópia em `ride.driver.phone` é
+                    o retrato do momento em que a app a escreveu, e numa
+                    corrida reatribuída pode ser de outra pessoa.
+                  */}
+                  <div title={explicaOrigem(contactos.motorista)}>
+                    <CopyField
+                      icon={<Phone size={16} />}
+                      value={contactos.motorista.valor || SEM_CONTACTO}
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -399,6 +438,20 @@ export function RealtimePage() {
                       {selectedRide.user?.email}
                     </p>
                   </div>
+                </div>
+
+                {/*
+                  O telefone do passageiro, que este ecrã **não mostrava**: a
+                  corrida nasce com `user: {id, name, photo}` e mais nada
+                  (§0A), e quem o tem é o documento privado. Sem isto, um
+                  operador que precisasse de ligar a quem pediu a corrida não
+                  tinha por onde.
+                */}
+                <div className="mt-3" title={explicaOrigem(contactos.passageiro)}>
+                  <CopyField
+                    icon={<Phone size={16} />}
+                    value={contactos.passageiro.valor || SEM_CONTACTO}
+                  />
                 </div>
               </div>
 
@@ -423,8 +476,11 @@ export function RealtimePage() {
                           <p className="font-medium">
                             {selectedRide.details.receiver.name}
                           </p>
-                          <p className="text-sm">
-                            {selectedRide.details.receiver.phone}
+                          <p
+                            className="text-sm"
+                            title={explicaOrigem(contactos.destinatario)}
+                          >
+                            {contactos.destinatario.valor || SEM_CONTACTO}
                           </p>
                         </div>
                       </div>
