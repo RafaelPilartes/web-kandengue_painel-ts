@@ -282,6 +282,40 @@ export class AuditService {
       after
     })
   }
+
+  /**
+   * As linhas de auditoria de **um alvo** (uma corrida, um motorista, um
+   * documento), da mais recente para a mais antiga.
+   *
+   * ── Porque não passa pelo `getAll` ──
+   * O `getAll` ordena sempre por `created_at`, e uma igualdade em `target_id`
+   * com ordenação noutro campo **exige um índice composto** no Firestore: sem
+   * ele a query falha com `failed-precondition`, e o ecrã perdia o motivo em
+   * vez de o mostrar. Aqui pede-se **só a igualdade** — que o índice
+   * automático de campo único já serve — e ordena-se **em memória**. É o
+   * mesmo caminho que o relógio da 3.5 tomou na API, pela mesma razão: vinte
+   * linhas de auditoria de uma corrida ordenam-se sem custo nenhum.
+   *
+   * ⚠️ **E por isso o `limite` é um tecto do que se lê, não dos mais
+   * recentes**: sem ordenação no servidor, o Firestore devolve os primeiros
+   * que encontrar. Para uma corrida há um punhado de linhas, e o tecto é uma
+   * rede contra um alvo patológico — não um critério.
+   */
+  async getByTarget(
+    targetId: string,
+    limite = 50
+  ): Promise<AuditLogInterface[]> {
+    const { data } = await auditLogDAO.getAll({
+      filters: { target_id: targetId } as Partial<AuditLogInterface>,
+      orderBy: undefined,
+      limit: limite
+    })
+    return [...data].sort((a, b) => {
+      const ta = a.created_at ? new Date(a.created_at).getTime() : 0
+      const tb = b.created_at ? new Date(b.created_at).getTime() : 0
+      return tb - ta
+    })
+  }
 }
 
 // Singleton instance

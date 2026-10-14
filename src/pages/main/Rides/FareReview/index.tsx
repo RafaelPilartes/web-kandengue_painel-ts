@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Spinner } from 'phosphor-react'
 import swal from 'sweetalert'
 import { CheckCircle2, Info, TicketPercent } from 'lucide-react'
@@ -13,11 +13,14 @@ import {
   compareQuotedToCharged,
   failedReservation,
   hasAnyReviewFlag,
+  motivoDoFechoForcado,
+  reviewFlagExplanation,
   reviewFlagLabel,
   fareDistance,
   signedDeviationPercent
 } from '@/helpers/fareReview'
 import type { FareComparison } from '@/helpers/fareReview'
+import { auditService } from '@/observability/audit'
 import { formatDateTimeFromFirestore } from '@/utils/date'
 import { formatMoney } from '@/utils/number'
 import {
@@ -115,6 +118,66 @@ export function FareReviewPage() {
   }, [rides, onlyPending, reason])
 
   /** Quantas há de cada motivo, para os botões do filtro não mentirem. */
+  /*
+   * ⚠️ **Comparada como string, e não como `RideReviewFlag`.** O painel fixa
+   * a lib 2.11.0, onde o tipo tem **um** valor só
+   * (`'promotion_reservation_failed'`) — comparar com `'force_completed'`
+   * nem compila. É a mesma razão por que as etiquetas são um
+   * `Record<string, string>` (§0AB): o painel não pode depender da versão da
+   * lib para reconhecer uma marca que o servidor já escreve.
+   */
+  const MARCA_FECHO_FORCADO = 'force_completed'
+
+  /*
+   * O motivo de cada fecho forçado, lido da auditoria (`new_data.reason`).
+   *
+   * ⚠️ **Só para as corridas que têm a marca**, e uma leitura por corrida: a
+   * fila mostra dezenas de linhas e a auditoria não se lê toda para
+   * encontrar um punhado de motivos. `undefined` = ainda não se leu;
+   * `null` = leu-se e não havia — e o ecrã **di-lo**, em vez de esconder a
+   * marca.
+   */
+  const [motivosDoFecho, setMotivosDoFecho] = useState<
+    Record<string, string | null>
+  >({})
+
+  useEffect(() => {
+    const forcadas = flagged
+      .filter(r =>
+        (r.review_flags ?? []).some(
+          f => (f as string) === MARCA_FECHO_FORCADO
+        )
+      )
+      .map(r => r.id as string)
+      .filter(id => !(id in motivosDoFecho))
+
+    if (forcadas.length === 0) return
+
+    let vivo = true
+    void Promise.all(
+      forcadas.map(async id => {
+        try {
+          const logs = await auditService.getByTarget(id)
+          return [id, motivoDoFechoForcado(logs)] as const
+        } catch (error) {
+          // Uma falha a ler a auditoria não pode tirar a corrida da fila.
+          console.error('[fare-review] motivo do fecho forçado', error)
+          return [id, null] as const
+        }
+      })
+    ).then(pares => {
+      if (!vivo) return
+      setMotivosDoFecho(anterior => ({
+        ...anterior,
+        ...Object.fromEntries(pares)
+      }))
+    })
+
+    return () => {
+      vivo = false
+    }
+  }, [flagged, motivosDoFecho])
+
   const counts = useMemo(() => {
     const pending = (ride: RideEntity) =>
       !onlyPending || !ride.fare_reviewed_by
@@ -330,14 +393,57 @@ export function FareReviewPage() {
                 {/* As marcas do servidor, com o nome cru quando a etiqueta
                     ainda não existe: uma marca nova aparece, não desaparece */}
                 {(ride.review_flags ?? []).length > 0 && (
-                  <div className="flex flex-row flex-wrap gap-2">
-                    {(ride.review_flags ?? []).map(flag => (
-                      <BadgeSimple
-                        key={flag}
-                        label={reviewFlagLabel(flag)}
-                        color="orange"
-                      />
-                    ))}
+                  <div className="flex flex-col gap-2">
+                    <div className="flex flex-row flex-wrap gap-2">
+                      {(ride.review_flags ?? []).map(flag => (
+                        <BadgeSimple
+                          key={flag}
+                          label={reviewFlagLabel(flag)}
+                          color="orange"
+                        />
+                      ))}
+                    </div>
+
+                    {/*
+                      O que cada marca quer dizer.
+
+                      ⚠️ **A etiqueta sozinha não serve a quem revê.** "Cobrada
+                      pela distância estimada" diz o quê e não diz o que fazer:
+                      a tarifa está errada, ou está certa e só não foi medida?
+                      São conversas diferentes com o passageiro, e essa
+                      diferença vivia no HANDOFF — que o operador não lê.
+                    */}
+                    <ul className="flex flex-col gap-1.5 rounded-lg bg-gray-50 p-3 dark:bg-gray-900/40">
+                      {(ride.review_flags ?? []).map(flag => {
+                        const explicacao = reviewFlagExplanation(flag)
+                        const ehFechoForcado =
+                          (flag as string) === MARCA_FECHO_FORCADO
+                        const motivo = ehFechoForcado
+                          ? motivosDoFecho[ride.id as string]
+                          : undefined
+                        return (
+                          <li
+                            key={`exp-${flag}`}
+                            className="text-xs text-gray-600 dark:text-gray-300"
+                          >
+                            <span className="font-medium text-gray-800 dark:text-gray-100">
+                              {reviewFlagLabel(flag)}:
+                            </span>{' '}
+                            {explicacao ?? 'Marca nova — ainda sem explicação escrita no painel.'}
+                            {ehFechoForcado && (
+                              <span className="mt-1 block">
+                                <span className="font-medium text-gray-800 dark:text-gray-100">
+                                  Motivo:
+                                </span>{' '}
+                                {motivo === undefined
+                                  ? 'a ler a auditoria…'
+                                  : (motivo ?? 'sem motivo registado na auditoria.')}
+                              </span>
+                            )}
+                          </li>
+                        )
+                      })}
+                    </ul>
                   </div>
                 )}
 

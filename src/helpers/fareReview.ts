@@ -232,3 +232,71 @@ const REVIEW_FLAG_LABELS: Record<string, string> = {
 export function reviewFlagLabel(flag: string): string {
   return REVIEW_FLAG_LABELS[flag] ?? flag
 }
+
+/**
+ * O que cada marca **quer dizer**, e o que o operador faz com ela.
+ *
+ * ── Porque não basta a etiqueta ──
+ * "Cobrada pela distância estimada" diz o quê e não diz **o que fazer**. Quem
+ * está na fila de revisão precisa de saber se a tarifa está errada (e tem de
+ * ser corrigida) ou se está certa e só não foi medida — são conversas
+ * diferentes com o passageiro. Até aqui essa diferença vivia no HANDOFF, e o
+ * operador não lê o HANDOFF.
+ *
+ * ⚠️ **Mapa parcial, como as etiquetas** (regra do painel, §0AB): uma marca
+ * nova aparece no ecrã sem explicação em vez de partir a compilação. Um
+ * `Record<RideReviewFlag, …>` exaustivo fazia de cada marca nova uma
+ * alteração **major** da lib.
+ */
+const REVIEW_FLAG_EXPLANATIONS: Record<string, string> = {
+  promotion_reservation_failed:
+    'A promoção esgotou-se entre a cotação e a criação da corrida: o cliente viu um preço com desconto e a corrida nasceu sem ele. A tarifa está certa pelas regras — o que falta é decidir se se devolve a diferença.',
+  driver_ended_early:
+    'O motorista terminou antes do destino, com motivo (o passageiro foi avisado). Cobrou-se até onde a corrida parou. Vale confirmar que o motivo justifica o valor.',
+  force_completed:
+    'Um administrador fechou esta corrida à força — ela não foi terminada por ninguém no terreno. O motivo está na auditoria, abaixo. A tarifa saiu quase sempre da distância estimada.',
+  completed_location_mismatch:
+    'A posição final da corrida afastou-se do último ponto do percurso gravado: ou o percurso parou de gravar a meio, ou a corrida não acabou onde diz. As duas coisas mudam a distância cobrada.',
+  fare_estimated_fallback:
+    'O percurso gravado não dava para medir (poucos pontos, um salto de GPS, o início longe da recolha), por isso cobrou-se a distância **estimada** da cotação. A tarifa está certa pelas regras e **não foi medida** — o motivo exacto está em `fare.distance.reason`.'
+}
+
+/** A explicação da marca, ou `null` quando ainda não há uma escrita. */
+export function reviewFlagExplanation(flag: string): string | null {
+  return REVIEW_FLAG_EXPLANATIONS[flag] ?? null
+}
+
+/**
+ * O motivo do fecho forçado, lido da auditoria.
+ *
+ * ⚠️ **Lê o `new_data.reason`, não a frase.** A API escreve as duas coisas: a
+ * `description` ("Forçou o fecho da corrida X (estava em Y): motivo") e o
+ * `new_data: {status, review_flags, reason}`. Ir ao campo estruturado é o que
+ * torna isto imune a uma mudança de redacção — e o `description` muda com o
+ * tempo, como qualquer frase.
+ *
+ * Devolve `null` quando não há linha nenhuma: pode ser uma corrida marcada
+ * antes de a auditoria existir, ou a leitura ter falhado. **Mostrar "sem
+ * motivo registado" é melhor do que esconder a marca.**
+ */
+export function motivoDoFechoForcado(
+  logs: ReadonlyArray<{
+    action?: string
+    module?: string
+    new_data?: unknown
+  }>
+): string | null {
+  for (const log of logs) {
+    if (log.module !== 'rides') continue
+    const dados = log.new_data as
+      | { reason?: unknown; review_flags?: unknown }
+      | null
+      | undefined
+    const marcas = dados?.review_flags
+    const temMarca =
+      Array.isArray(marcas) && marcas.includes('force_completed')
+    const motivo = typeof dados?.reason === 'string' ? dados.reason.trim() : ''
+    if (temMarca && motivo !== '') return motivo
+  }
+  return null
+}
