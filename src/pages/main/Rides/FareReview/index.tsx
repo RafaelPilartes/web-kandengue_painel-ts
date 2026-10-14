@@ -20,6 +20,7 @@ import {
   signedDeviationPercent
 } from '@/helpers/fareReview'
 import type { FareComparison } from '@/helpers/fareReview'
+import { mapApiError, semMarcacao } from '@/helpers/apiError'
 import { auditService } from '@/observability/audit'
 import { formatDateTimeFromFirestore } from '@/utils/date'
 import { formatMoney } from '@/utils/number'
@@ -239,11 +240,17 @@ export function FareReviewPage() {
         { icon: result.changed ? 'success' : 'info' }
       )
     } catch (error) {
+      /*
+       * ⚠️ **`mapApiError` e não `error.message`.** Achado pela revisão
+       * independente da Fase 4: os erros desta rota são `kind: 'technical'`
+       * (um `ConflictError`), logo **não trazem `user_message`** — e o
+       * `message` é diagnóstico em inglês. O admin via "Ride rid-… is not
+       * flagged for fare review". É o mesmo defeito que levou
+       * "body/code Code must contain only A-Z…" ao ecrã de um passageiro, e
+       * a razão de o contrato de erro ter entrado neste lote.
+       */
       swal('Erro ao marcar', {
-        text:
-          error instanceof Error
-            ? error.message
-            : 'Houve algum erro ao marcar a revisão...',
+        text: mapApiError(error, 'Houve algum erro ao marcar a revisão...'),
         icon: 'error'
       })
     }
@@ -259,10 +266,13 @@ export function FareReviewPage() {
           <Breadcrumbs items={itemsBreadcrumbs} />
         </div>
         <p className="text-sm text-gray-600 dark:text-gray-300">
-          Corridas que o servidor marcou para confirmação humana, por dois
-          motivos: o <strong>desvio de distância</strong> no fecho da tarifa, e
-          a <strong>reserva de promoção que falhou</strong> na criação — em que
-          o cliente viu um preço e pagou outro.{' '}
+          Corridas que o servidor marcou para confirmação humana: o{' '}
+          <strong>desvio de distância</strong> no fecho da tarifa, a{' '}
+          <strong>reserva de promoção que falhou</strong> na criação — em que o
+          cliente viu um preço e pagou outro — e qualquer{' '}
+          <strong>marca escrita pelo servidor</strong> (fecho forçado, fecho
+          antecipado, tarifa cobrada pela distância estimada), cada uma
+          explicada na linha da corrida.{' '}
           <strong>Marcar como revista não altera a tarifa</strong> — registra
           apenas quem reviu e quando.
         </p>
@@ -429,7 +439,9 @@ export function FareReviewPage() {
                             <span className="font-medium text-gray-800 dark:text-gray-100">
                               {reviewFlagLabel(flag)}:
                             </span>{' '}
-                            {explicacao ?? 'Marca nova — ainda sem explicação escrita no painel.'}
+                            {explicacao
+                              ? semMarcacao(explicacao)
+                              : 'Marca nova — ainda sem explicação escrita no painel.'}
                             {ehFechoForcado && (
                               <span className="mt-1 block">
                                 <span className="font-medium text-gray-800 dark:text-gray-100">

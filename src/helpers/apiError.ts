@@ -112,3 +112,24 @@ export function missingRequirements(erro: unknown): MissingRequirement[] {
       typeof (r as MissingRequirement).label === 'string'
   )
 }
+
+/**
+ * Tira a marcação de markdown de um texto que vai para um `<span>`.
+ *
+ * ⚠️ **A API escreve ênfase em markdown**, e com razão: os mesmos textos vão
+ * para logs, para o HANDOFF e para respostas HTTP (`"aprovado mas
+ * **caducado**"`). O painel rende-os como texto simples, por isso o admin lia
+ * literalmente `aprovado mas **caducado**` — achado pela revisão independente
+ * da Fase 4.
+ *
+ * Tira em vez de interpretar: um renderizador de markdown num campo que vem
+ * do servidor é uma superfície que não se quer (e uma dependência a mais para
+ * dois asteriscos). O que se perde é a ênfase; o que se ganha é a frase
+ * legível.
+ */
+export function semMarcacao(texto: string): string {
+  return texto
+    .replace(/\*\*(.+?)\*\*/g, '$1')
+    .replace(/\*(.+?)\*/g, '$1')
+    .replace(/`(.+?)`/g, '$1')
+}

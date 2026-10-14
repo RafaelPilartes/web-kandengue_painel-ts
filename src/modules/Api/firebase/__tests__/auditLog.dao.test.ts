@@ -91,6 +91,78 @@ describe('FirebaseAuditLogDAO', () => {
     expect(snap.exists()).toBe(true)
   })
 
+  /*
+   * ─────────── `getByTarget`: a query de um alvo (Fase 4) ───────────
+   *
+   * ⚠️ **Este teste não prova a parte que mais interessa, e di-lo.** O
+   * emulador **não exige índices compostos**, por isso uma query com
+   * `where + orderBy` passa aqui e falha em produção com
+   * `failed-precondition` — foi assim que o motivo do fecho forçado
+   * desapareceu do ecrã sem ninguém ver. O que isto prova é o contrato: filtra
+   * pelo alvo, ordena do mais recente para o mais antigo, e respeita o tecto.
+   * Que **não** há `orderBy` no servidor vê-se no código do DAO, não aqui.
+   */
+  it('devolve só as linhas do alvo, da mais recente para a mais antiga', async () => {
+    await seed('log-a', {
+      ...baseLog,
+      target_id: 'rid-1',
+      description: 'antiga',
+      created_at: ts('2026-10-01T10:00:00Z')
+    })
+    await seed('log-b', {
+      ...baseLog,
+      target_id: 'rid-1',
+      description: 'recente',
+      created_at: ts('2026-10-14T10:00:00Z')
+    })
+    await seed('log-c', {
+      ...baseLog,
+      target_id: 'rid-2',
+      description: 'de outra corrida',
+      created_at: ts('2026-10-14T11:00:00Z')
+    })
+
+    const linhas = await dao.getByTarget('rid-1')
+    expect(linhas.map(l => l.description)).toEqual(['recente', 'antiga'])
+  })
+
+  it('um alvo sem linhas devolve lista vazia, não erro', async () => {
+    expect(await dao.getByTarget('rid-sem-nada')).toEqual([])
+  })
+
+  /*
+   * ⚠️ **Uma linha gravada sem `created_at` não desaparece** — e um `orderBy`
+   * no servidor tê-la-ia excluído (o `orderBy` do Firestore exclui documentos
+   * sem o campo), que é outra razão para não o usar.
+   *
+   * O que ela leva é a data que o converter lhe dá (`toDate(...) ?? new
+   * Date()`), por isso aparece **no topo** e não no fim: é "agora". Foi o que
+   * este teste me mostrou quando o escrevi ao contrário — e fica assim,
+   * porque o comportamento é o do converter e não o desta query.
+   */
+  it('uma linha gravada sem data entra na mesma, com a data do converter', async () => {
+    await seed('log-a', {
+      ...baseLog,
+      target_id: 'rid-3',
+      description: 'com data',
+      created_at: ts('2026-10-14T10:00:00Z')
+    })
+    await seed('log-b', {
+      ...baseLog,
+      target_id: 'rid-3',
+      description: 'sem data',
+      created_at: null
+    })
+
+    const linhas = await dao.getByTarget('rid-3')
+    expect(linhas).toHaveLength(2)
+    expect(linhas.map(l => l.description).sort()).toEqual([
+      'com data',
+      'sem data'
+    ])
+    for (const l of linhas) expect(l.created_at).toBeInstanceOf(Date)
+  })
+
   // ─────────── O caso característico desta task: sem searchField ───────────
 
   it('pesquisar lança AppError(failed-precondition) em vez de devolver vazio', async () => {

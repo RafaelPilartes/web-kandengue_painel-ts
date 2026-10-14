@@ -30,7 +30,7 @@ import { useDocumentsViewModel } from '@/viewModels/DocumentViewModel'
 import type { WalletInterface } from '@/interfaces/IWallet'
 import type { VehicleInterface } from '@/interfaces/IVehicle'
 import { RIDE_TYPES, type RideType } from '@rafaelpilartes/kandengue-shared/enums'
-import { mapApiError, missingRequirements } from '@/helpers/apiError'
+import { mapApiError, missingRequirements, semMarcacao } from '@/helpers/apiError'
 import type { MissingRequirement } from '@/core/interfaces/IAdminDriverRepository'
 import {
   type DocumentoComValidade,
@@ -431,22 +431,39 @@ export function DriverViewPage() {
       return
     }
 
+    /*
+     * ⚠️ **Uma renovação sem data não renova nada.** Achado pela revisão
+     * independente da Fase 4: num documento já aprovado, a API sai pela
+     * saída antecipada (`mesmaValidade`) e devolve **200 `changed: false`**,
+     * sem escrever nem auditar — e o painel dizia "foi aprovado". O admin
+     * ficava convencido de que tinha renovado, e o motorista continuava
+     * bloqueado.
+     */
+    const ehRenovacao =
+      decisao === 'approved' && decisaoDocumento.document.status === 'approved'
+    if (ehRenovacao && !expiresAt) {
+      showToast(
+        'error',
+        'Escolhe a validade nova: sem data, a renovação não muda nada.'
+      )
+      return
+    }
+
     const toastId = showToastLoading(
       `${decisao === 'approved' ? 'Aprovando' : 'Rejeitando'} documento`
     )
     try {
       setADecidirDocumento(true)
-      if (decisao === 'approved') {
-        await approveDocument.mutateAsync({
-          id: document.id as string,
-          ...(expiresAt ? { expiresAt } : {})
-        })
-      } else {
-        await rejectDocument.mutateAsync({
-          id: document.id as string,
-          reason: motivoRecusa.trim()
-        })
-      }
+      const resultado =
+        decisao === 'approved'
+          ? await approveDocument.mutateAsync({
+              id: document.id as string,
+              ...(expiresAt ? { expiresAt } : {})
+            })
+          : await rejectDocument.mutateAsync({
+              id: document.id as string,
+              reason: motivoRecusa.trim()
+            })
 
       const resultDocument = await fetchAllDocumentsByField('user.id', driverId)
       if (resultDocument?.data) {
@@ -454,12 +471,18 @@ export function DriverViewPage() {
       }
 
       setDecisaoDocumento(null)
+      /*
+       * O `changed` da resposta é o que distingue "foi aprovado" de "já estava
+       * assim" — e sem ele o painel dizia a primeira coisa nos dois casos.
+       */
       updateToast(
         toastId,
-        'success',
-        `Documento ${getDocumentTypeLabel(document.type)}, foi ${
-          decisao === 'approved' ? 'aprovado' : 'rejeitado'
-        }`
+        resultado.changed ? 'success' : 'info',
+        resultado.changed
+          ? `Documento ${getDocumentTypeLabel(document.type)}, foi ${
+              decisao === 'approved' ? 'aprovado' : 'rejeitado'
+            }`
+          : 'Já estava assim — nada mudou.'
       )
     } catch (err) {
       /*
@@ -477,15 +500,30 @@ export function DriverViewPage() {
     }
   }
 
+  /**
+   * O que falta para **activar a conta** — que não é o mesmo que aprovar um
+   * serviço.
+   *
+   * ⚠️ **Esta lista é a última cópia de requisitos que vive no painel, e
+   * fica por decidir.** Ela não decide serviços (isso é a API, desde a 4.1);
+   * decide o `drivers.status = 'active'`, que **é um filtro do dispatch**
+   * (`push-notification.service.ts`: `where('status','==','active')`). Ou
+   * seja: continua a haver duas versões de "este motorista está pronto", e a
+   * mais fraca é a que escolhe quem recebe corridas. Fechá-la é uma rota de
+   * admin que ainda não existe — está registado no §0AG.
+   *
+   * O que **se corrige já** é a parte que contradizia o §0A: um documento
+   * aprovado que **caducou** contava como válido aqui. Agora conta como em
+   * falta, como em todo o resto do sistema.
+   */
   const validateDocumentsBeforeActivation = () => {
     const missing: string[] = []
+    const valido = (d: DocumentInterface | null) =>
+      !!d && d.status === 'approved' && !estaCaducado(d as DocumentoComValidade)
 
-    if (!docDriverLicense || docDriverLicense.status !== 'approved')
-      missing.push('Carta de condução')
-    if (!docIdFront || docIdFront.status !== 'approved')
-      missing.push('BI - Frente')
-    if (!docIdBack || docIdBack.status !== 'approved')
-      missing.push('BI - Verso')
+    if (!valido(docDriverLicense)) missing.push('Carta de condução')
+    if (!valido(docIdFront)) missing.push('BI - Frente')
+    if (!valido(docIdBack)) missing.push('BI - Verso')
 
     return missing
   }
@@ -996,7 +1034,7 @@ export function DriverViewPage() {
                           {req.label}
                         </span>
                         <span className="block text-xs text-gray-600 dark:text-gray-400">
-                          {req.detalhe} — confirmo que o vi
+                          {semMarcacao(req.detalhe)} — confirmo que o vi
                         </span>
                       </span>
                     </label>
@@ -1010,7 +1048,7 @@ export function DriverViewPage() {
                           {req.label}
                         </span>
                         <span className="block text-xs text-gray-600 dark:text-gray-400">
-                          {req.detalhe}
+                          {semMarcacao(req.detalhe)}
                         </span>
                       </span>
                     </span>

@@ -74,6 +74,13 @@ export const documentTypeOptions: OptionType[] = [
   { value: 'id_back', label: 'BI Verso' },
   { value: 'vehicle_ownership', label: 'Titulo de propriedade' },
   { value: 'vehicle_booklet', label: 'Livrete' },
+  /*
+   * O seguro entrou no `DocumentType` da lib na 2.12.0 e é um requisito do
+   * Moto Táxi. Sem esta linha, o ecrã mostrava `insurance` cru na coluna do
+   * tipo, no título da folha de decisão e no toast — achado pela revisão
+   * independente da Fase 4.
+   */
+  { value: 'insurance', label: 'Seguro' },
   { value: 'other', label: 'Offline' }
 ]
 

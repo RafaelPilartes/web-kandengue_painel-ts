@@ -84,10 +84,21 @@ export function RealtimePage() {
      * Fora do `try` de baixo de propósito: uma falha a ler a rota do mapa não
      * pode tirar os telefones do ecrã, e vice-versa. O `executeGet…` já
      * devolve `null` em vez de rebentar.
+     *
+     * ⚠️ **A resposta só se aceita se ainda for desta corrida.** Achado pela
+     * revisão independente da Fase 4: sem a guarda, abrir A (recente, com
+     * documento, leitura mais lenta) e logo B (antiga, sem documento, resposta
+     * imediata) fazia o telefone de **A** aparecer no detalhe de **B** — e com
+     * `origem: 'privado'`, logo **sem** o aviso de que podia estar velho. O
+     * operador ligava à pessoa errada a partir de um ecrã que se dizia certo.
      */
-    void rideUseCase
-      .executeGetPrivateContacts(ride.id as string)
-      .then(setContactosPrivados)
+    const pedido = ride.id as string
+    void rideUseCase.executeGetPrivateContacts(pedido).then(contactos => {
+      setSelectedRide(actual => {
+        if (actual?.id === pedido) setContactosPrivados(contactos)
+        return actual
+      })
+    })
 
     try {
       await fetchRoute(ride.pickup, ride.dropoff)
@@ -368,7 +379,10 @@ export function RealtimePage() {
                   <span className="mt-1 text-xs">#{selectedRide.id}</span>
                 </div>
                 <button
-                  onClick={() => setSelectedRide(null)}
+                  onClick={() => {
+                    setSelectedRide(null)
+                    setContactosPrivados(null)
+                  }}
                   className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
                 >
                   <X size={20} />
@@ -461,6 +475,30 @@ export function RealtimePage() {
                     Detalhes da Entrega
                   </h4>
                   <div className="space-y-3">
+                    {/*
+                      O remetente, que o documento privado também guarda
+                      (`sender_phone`) e que este ecrã não mostrava: numa
+                      entrega, quem a envia é metade da chamada que o operador
+                      pode ter de fazer. Só aparece quando existe — nem todas
+                      as entregas têm remetente registado.
+                    */}
+                    {contactos.remetente.valor && (
+                      <div>
+                        <span className="text-sm text-gray-500 dark:text-gray-400">
+                          Remetente:
+                        </span>
+                        <p
+                          className="text-sm"
+                          title={explicaOrigem(contactos.remetente)}
+                        >
+                          {selectedRide.details?.sender?.name
+                            ? `${selectedRide.details.sender.name} — `
+                            : ''}
+                          {contactos.remetente.valor}
+                        </p>
+                      </div>
+                    )}
+
                     <div>
                       <span className="text-sm text-gray-500 dark:text-gray-400">
                         Destinatário:
