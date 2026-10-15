@@ -1,6 +1,7 @@
 import { ApiRepository } from '@/modules/Api/factory'
 import { BaseUseCase } from './BaseUseCase'
 import type { DocumentEntity } from '@/core/entities/Document'
+import { isFromDeletedAccount } from '@/core/entities/Document'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import type { FieldPath } from '@/core/interfaces/IBaseRepository'
 import type { DocumentDecisionResult } from '@/core/interfaces/IAdminDriverRepository'
@@ -8,6 +9,30 @@ import type { DocumentDecisionResult } from '@/core/interfaces/IAdminDriverRepos
 // Defaults do DAO antigo — preservados aqui para o motor novo (que usa 50).
 const LEGACY_PAGE_SIZE = 500
 const LEGACY_FIELD_PAGE_SIZE = 10
+
+/**
+ * Esconde os documentos de contas eliminadas.
+ *
+ * A decisão de 2026-10-15 foi: ficam guardados (licenciamento) e **sem acesso
+ * pelo painel**. Até aqui a marca era um campo que ninguém lia, e os
+ * documentos continuavam a aparecer — a decisão existia e não estava
+ * implementada.
+ *
+ * ⚠️ **Filtra-se aqui, no cliente, e NÃO com um `where` no Firestore.** Um
+ * `where('account_deleted', '!=', true)` **não devolve os documentos sem o
+ * campo** — e esses são todos os normais. O filtro teria escondido a
+ * colecção inteira e mostrado só os das contas eliminadas, ou seja,
+ * exactamente o contrário. É a mesma armadilha do filtro do dispatch na 3.10.
+ *
+ * ⚠️ **O custo, dito:** a página encolhe. Pedem-se 500 e chegam menos, porque
+ * a filtragem é depois da leitura. Com a dimensão actual (51 documentos lidos
+ * na Fase 4) não tem efeito prático; num dia em que tenha, a paginação passa a
+ * precisar de uma marca no lado do Firestore — e aí a forma é um campo
+ * positivo (`account_active: true`) escrito em todos, não uma negação.
+ */
+function withoutDeletedAccounts(documents: DocumentEntity[]): DocumentEntity[] {
+  return documents.filter(document => !isFromDeletedAccount(document))
+}
 
 export class DocumentUseCase extends BaseUseCase {
   protected readonly context = 'DocumentUseCase'
@@ -25,11 +50,12 @@ export class DocumentUseCase extends BaseUseCase {
     return this.run('getAll', async () => {
       const base = { searchTerm, filters }
       const after = await this.offsetToCursor(this.repository, base, offset ?? 0)
-      return this.repository.getAll({
+      const response = await this.repository.getAll({
         ...base,
         limit: limit ?? LEGACY_PAGE_SIZE,
         after
       })
+      return { ...response, data: withoutDeletedAccounts(response.data) }
     })
   }
 
@@ -63,7 +89,7 @@ export class DocumentUseCase extends BaseUseCase {
         after
       })
 
-      return { data, pagination }
+      return { data: withoutDeletedAccounts(data), pagination }
     })
   }
 
