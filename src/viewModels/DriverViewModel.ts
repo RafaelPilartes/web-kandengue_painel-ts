@@ -1,5 +1,6 @@
 // viewModels/DriverViewModel.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import type { SettableDriverStatus } from '@/core/interfaces/IAdminDriverRepository'
 import { driverUseCase } from '@/domain/usecases/driverUseCase'
 import { DriverEntity } from '@/core/entities/Driver'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
@@ -138,6 +139,29 @@ export function useDriversViewModel(
     }
   })
 
+  /**
+   * The status goes through the API (3.10c), not through `updateDriver`.
+   *
+   * ⚠️ **Without `withAudit`**, like the two service mutations above and for
+   * the same reason: the API writes to `auditLogs` inside its own
+   * transaction, with what was missing. Wrapping it here gave two entries for
+   * one decision, and the second knew less than the first.
+   */
+  const setDriverStatus = useMutation({
+    mutationFn: ({
+      driverId,
+      status
+    }: {
+      driverId: string
+      status: SettableDriverStatus
+    }) => driverUseCase.executeSetStatus(driverId, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [firebaseCollections.drivers.root]
+      })
+    }
+  })
+
   const removeDriverService = useMutation({
     mutationFn: ({
       driverId,
@@ -238,6 +262,7 @@ export function useDriversViewModel(
     updateDriver,
     addDriverService,
     removeDriverService,
+    setDriverStatus,
     deleteDriver,
     softDeleteDriver,
     fetchDriverById,

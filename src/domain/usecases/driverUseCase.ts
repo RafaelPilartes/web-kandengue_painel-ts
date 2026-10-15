@@ -4,7 +4,10 @@ import { AppError } from '@/domain/errors/AppError'
 import type { DriverEntity } from '@/core/entities/Driver'
 import type { ListResponseType } from '@/interfaces/IApiResponse'
 import type { FieldPath } from '@/core/interfaces/IBaseRepository'
-import type { ServiceResult } from '@/core/interfaces/IAdminDriverRepository'
+import type { ServiceResult,
+  DriverStatusResult,
+  SettableDriverStatus
+} from '@/core/interfaces/IAdminDriverRepository'
 import type { RideType } from '@/types/enum'
 
 // Defaults do DAO antigo — preservados aqui para o motor novo (que usa 50).
@@ -124,6 +127,20 @@ export class DriverUseCase extends BaseUseCase {
     confirmations: string[] = []
   ): Promise<ServiceResult> {
     return ApiRepository.adminDriver.addService(driverId, service, confirmations)
+  }
+
+  /**
+   * Sets the status, with the requirements checked on the server (3.10c).
+   *
+   * Outside `run()` for the same reason as `executeAddService`: on a refused
+   * activation the API's `details.missing` is the part that says what is
+   * missing, and the generic wrapper buries it.
+   */
+  executeSetStatus(
+    driverId: string,
+    status: SettableDriverStatus
+  ): Promise<DriverStatusResult> {
+    return ApiRepository.adminDriver.setStatus(driverId, status)
   }
 
   /** Removing is never blocked — only recorded. */

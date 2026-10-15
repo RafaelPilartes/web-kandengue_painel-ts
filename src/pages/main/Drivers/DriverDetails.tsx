@@ -35,7 +35,11 @@ import {
   missingRequirements,
   stripMarkdown
 } from '@/helpers/apiError'
-import type { MissingRequirement } from '@/core/interfaces/IAdminDriverRepository'
+import {
+  type MissingRequirement,
+  requirementDetail,
+  type SettableDriverStatus
+} from '@/core/interfaces/IAdminDriverRepository'
 import {
   type DocumentWithValidity,
   endOfDayInLuanda,
@@ -86,7 +90,8 @@ export function DriverViewPage() {
     fetchDriverById,
     updateDriver,
     addDriverService,
-    removeDriverService
+    removeDriverService,
+    setDriverStatus
   } = useDriversViewModel()
   const { fetchOneWalletByField } = useWalletsViewModel()
   const { fetchAllTransactionsByField } = useTransactionsViewModel()
@@ -507,58 +512,30 @@ export function DriverViewPage() {
   }
 
   /**
-   * What is missing to **activate the account** — which is not the same as
-   * approving a service.
+   * Sets the status through the API — sub-phase 3.10c.
    *
-   * ⚠️ **This list is the last copy of requirements living in the panel, and
-   * it is still undecided.** It does not decide services (the API does, since
-   * 4.1); it decides `drivers.status = 'active'`, which **is a dispatch
-   * filter** (`push-notification.service.ts`:
-   * `where('status','==','active')`). So there are still two versions of "this
-   * driver is ready", and the weaker one picks who gets rides. Closing it
-   * means an admin route that does not exist yet — recorded in §0AG, and it
-   * enters with the 3.10 batch.
+   * ⚠️ **The requirement list that used to live here is gone**, and that is
+   * the point of the sub-phase. It decided `drivers.status = 'active'`, which
+   * **is a dispatch filter** (`push-notification.service.ts`:
+   * `where('is_online','==',true).where('status','==','active')`) — so the
+   * weakest check in the system chose who receives rides, from a screen
+   * anyone could bypass with the browser console. The server checks it now,
+   * against the same documents, and refuses with what is missing.
    *
-   * What **is fixed already** is the part contradicting §0A: an approved
-   * document that **expired** counted as valid here. Now it counts as missing,
-   * like everywhere else in the system.
+   * The Firestore rule denies `drivers.status` to the client as of 3.10c —
+   * to the admin too — so this is no longer a choice of style.
    */
-  const validateDocumentsBeforeActivation = () => {
-    const missing: string[] = []
-    const isValid = (d: DocumentInterface | null) =>
-      !!d && d.status === 'approved' && !isExpired(d as DocumentWithValidity)
-
-    if (!isValid(docDriverLicense)) missing.push('Carta de condução')
-    if (!isValid(docIdFront)) missing.push('BI - Frente')
-    if (!isValid(docIdBack)) missing.push('BI - Verso')
-
-    return missing
-  }
   const handleStatusChange = async (valueSelected: string) => {
     if (!valueSelected || !rowDataDriver) return
 
     try {
       setUpdatingStatus(true)
 
-      if (valueSelected === 'active') {
-        const missing = validateDocumentsBeforeActivation()
-
-        if (missing.length > 0) {
-          showToast('error', `Documentos em falta: ${missing.join(', ')}`)
-          return
-        }
-      }
-
-      const dataToUpdate: Partial<DriverInterface> = {
-        status: valueSelected as DriverInterface['status']
-      }
-
-      await updateDriver.mutateAsync({
-        id: rowDataDriver.id as string,
-        driver: dataToUpdate
+      await setDriverStatus.mutateAsync({
+        driverId: rowDataDriver.id as string,
+        status: valueSelected as SettableDriverStatus
       })
 
-      // Atualizar o estado local do driver
       setRowDataDriver({
         ...rowDataDriver,
         status: valueSelected as DriverInterface['status']
@@ -571,12 +548,27 @@ export function DriverViewPage() {
         )}`
       )
     } catch (error) {
-      console.error(error)
-      showToast('error', 'Erro ao atualizar status do motorista')
+      /*
+       * The refusal carries `details.missing`, the same shape as a refused
+       * service approval — so it is shown the same way, with what is missing,
+       * instead of a generic "erro ao atualizar".
+       */
+      const missing = missingRequirements(error)
+      if (missing.length > 0) {
+        showToast(
+          'error',
+          `Falta para activar: ${missing
+            .map(r => `${r.label} (${requirementDetail(r)})`)
+            .join('; ')}`
+        )
+      } else {
+        showToast('error', mapApiError(error))
+      }
     } finally {
       setUpdatingStatus(false)
     }
   }
+
   // Function
   useEffect(() => {
     const fetchData = async () => {
@@ -1038,7 +1030,7 @@ export function DriverViewPage() {
                           {req.label}
                         </span>
                         <span className="block text-xs text-gray-600 dark:text-gray-400">
-                          {stripMarkdown(req.detalhe)} — confirmo que o vi
+                          {stripMarkdown(requirementDetail(req))} — confirmo que o vi
                         </span>
                       </span>
                     </label>
@@ -1052,7 +1044,7 @@ export function DriverViewPage() {
                           {req.label}
                         </span>
                         <span className="block text-xs text-gray-600 dark:text-gray-400">
-                          {stripMarkdown(req.detalhe)}
+                          {stripMarkdown(requirementDetail(req))}
                         </span>
                       </span>
                     </span>

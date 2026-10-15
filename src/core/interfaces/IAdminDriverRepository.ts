@@ -10,10 +10,20 @@ import type { RideType } from '@/types/enum'
  * who opened the browser console could approve themselves). The panel
  * **shows** what the server said.
  *
- * ⚠️ **`detalhe` keeps its Portuguese name because it is a wire field**, not
- * an identifier we own: it is the key the API sends today, in production.
- * Renaming it here would simply stop reading it. Both ends rename it together
- * in the 3.10 round (§0AH).
+ * ⚠️ **The detail arrives under two names, for one deploy only** (3.10f).
+ *
+ * `detalhe` is the key the API has sent since 3.7 and still sends; `detail`
+ * is the English one the 3.10 API adds. Both carry the same text.
+ *
+ * Why both instead of a swap: this panel ships by **upload**, not by deploy,
+ * so "both ends in the same deploy" is minutes rather than an instant. With
+ * one key the order would matter and the gap would show the admin a list of
+ * missing requirements with no explanation. With both, the order does not
+ * matter and there is no gap.
+ *
+ * ⚠️ **`detalhe` goes away in the round after this one**, once an API that
+ * only sends `detail` is in production. Until then it is the fallback, and
+ * `requirementDetail` below is the only place that knows about either.
  */
 export interface MissingRequirement {
   /** The stable key — this is what goes into the audit log. */
@@ -22,7 +32,39 @@ export interface MissingRequirement {
   label: string
   kind: 'document' | 'vehicle' | 'manual'
   /** Why: "não foi submetido", "aprovado mas **caducado**", "está em pending". */
-  detalhe: string
+  detail?: string
+  /** The same text, under the older Portuguese key. See the note above. */
+  detalhe?: string
+}
+
+/**
+ * The detail text, from whichever key the API sent.
+ *
+ * One function so the two-key window lives in exactly one place: removing
+ * `detalhe` later is then a two-line change here, not a hunt through screens.
+ * Returns an empty string rather than undefined so a caller can render it
+ * without a guard -- a missing detail is a requirement with no explanation,
+ * which is survivable; a crash in the approval screen is not.
+ */
+export function requirementDetail(requirement: MissingRequirement): string {
+  return requirement.detail ?? requirement.detalhe ?? ''
+}
+
+/**
+ * The statuses an admin may set — the API's enum, not `UserStatus`.
+ *
+ * `deleted` is absent because the API refuses it: it belongs to account
+ * deletion, where the status is written in the same transaction as the
+ * anonymisation. From a dropdown it would hide a driver from every listing
+ * while keeping their documents, rides and phone number.
+ */
+export type SettableDriverStatus = 'active' | 'inactive' | 'pending' | 'banned'
+
+export interface DriverStatusResult {
+  driver_id: string
+  status: SettableDriverStatus
+  /** `false` when it was already so — the call was a no-op. */
+  changed: boolean
 }
 
 export interface ServiceResult {
@@ -67,6 +109,24 @@ export interface IAdminDriverRepository {
 
   /** Removing is never blocked. What is required is the record of who did it. */
   removeService(driverId: string, service: RideType): Promise<ServiceResult>
+
+  /**
+   * Sets the driver's status, with the requirements checked on the server.
+   *
+   * ⚠️ **This panel no longer writes `drivers.status` itself**, and the
+   * Firestore rule denies it — to the admin too, as of 3.10c. The reason is
+   * that `status == 'active'` is a dispatch filter: the list that decided it
+   * lived in this screen, so the weakest check in the system chose who
+   * receives rides, and the browser console could pass it.
+   *
+   * Activation refuses with `ACTIVATION_REQUIREMENTS_NOT_MET` and
+   * `details.missing`, the same shape as service approval. Every other status
+   * goes through unconditionally.
+   */
+  setStatus(
+    driverId: string,
+    status: SettableDriverStatus
+  ): Promise<DriverStatusResult>
 
   /**
    * Approves a document, with an optional expiry date.
