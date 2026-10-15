@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { Timestamp } from 'firebase/firestore'
 import type { QueryDocumentSnapshot, SnapshotOptions } from 'firebase/firestore'
-import { documentConverter } from '@/core/entities/Document'
+import { documentConverter, isFromDeletedAccount } from '@/core/entities/Document'
 import { isExpired, validityLabel } from '@/helpers/documentValidity'
 import type { DocumentWithValidity } from '@/helpers/documentValidity'
 
@@ -78,5 +78,60 @@ describe('documentConverter.fromFirestore', () => {
       text: 'caducou 2026-01-05',
       expired: true
     })
+  })
+})
+
+/**
+ * The deleted-account flag, **through the converter** — same lesson as the
+ * expiry above.
+ *
+ * The owner decided on 2026-10-15 that a deleted driver's documents stay
+ * (licensing) and are **not reachable from the panel**. The flag is how the
+ * panel knows, and lib 3.0.0's `DocumentEntity` copies field by field: a flag
+ * the class does not declare is dropped here, silently, and the filter that
+ * depends on it would never hide anything. A test on `isFromDeletedAccount`
+ * alone would have passed while the panel kept showing the documents.
+ */
+describe('documentConverter — the deleted-account flag', () => {
+  it('carries the flag through, although the lib class drops it', () => {
+    const entity = documentConverter.fromFirestore(
+      snapshotOf('doc-del', { ...base, account_deleted: true }),
+      {} as SnapshotOptions
+    )
+
+    expect(isFromDeletedAccount(entity)).toBe(true)
+  })
+
+  it('reads a document with no flag as a live account', () => {
+    const entity = documentConverter.fromFirestore(
+      snapshotOf('doc-live', base),
+      {} as SnapshotOptions
+    )
+
+    expect(isFromDeletedAccount(entity)).toBe(false)
+  })
+
+  /** Only the literal `true`. A stray string is not a deleted account. */
+  it('does not treat a truthy value as the flag', () => {
+    for (const value of ['true', 1, {}, 'yes']) {
+      const entity = documentConverter.fromFirestore(
+        snapshotOf('doc-x', { ...base, account_deleted: value }),
+        {} as SnapshotOptions
+      )
+      expect(isFromDeletedAccount(entity), String(value)).toBe(false)
+    }
+  })
+
+  it('keeps everything else the panel renders', () => {
+    const entity = documentConverter.fromFirestore(
+      snapshotOf('doc-del', { ...base, account_deleted: true }),
+      {} as SnapshotOptions
+    )
+
+    // The document itself is untouched: it stays approved, and it stays a
+    // licence. What changes is only that the panel will not list it.
+    expect(entity.status).toBe('approved')
+    expect(entity.type).toBe('insurance')
+    expect(entity.url).toBe('https://example/policy.pdf')
   })
 })

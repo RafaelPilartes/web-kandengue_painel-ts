@@ -37,8 +37,35 @@ export interface DocumentDoc {
    * approved in any listing.
    */
   expires_at?: Timestamp | null
+  /**
+   * Marca de que o documento pertence a uma conta eliminada — escrita pela
+   * API na 3.11 (`AccountAnonymisationService`).
+   *
+   * A decisão de 2026-10-15 foi: os documentos **ficam guardados** (por causa
+   * do licenciamento) e **sem acesso pelo painel**. Esta é a marca que o
+   * painel filtra; o ficheiro e o `status` não se tocam.
+   */
+  account_deleted?: boolean
+  account_deleted_at?: Timestamp | null
   created_at?: Timestamp | null
   updated_at?: Timestamp | null
+}
+
+/**
+ * Pertence a uma conta eliminada?
+ *
+ * ⚠️ **Lê a marca com um molde, e tem de ser assim.** O `DocumentEntity` vem
+ * da lib e **só copia o que declara** — é o mesmo aviso que o `expires_at`
+ * tem em cima. A `account_deleted` não está declarada na 3.0.0, por isso não
+ * existe no tipo; o converter pendura-a à mão e esta função é a única que a
+ * lê. Quando uma versão da lib a declarar, isto passa a ser `doc.account_deleted`.
+ */
+export function isFromDeletedAccount(document: unknown): boolean {
+  return (
+    !!document &&
+    typeof document === 'object' &&
+    (document as { account_deleted?: unknown }).account_deleted === true
+  )
 }
 
 /** Fronteira única entre o documento Firestore e a aplicação. */
@@ -77,6 +104,19 @@ export const documentConverter: FirestoreDataConverter<DocumentEntity> = {
      * guarantees the field is a `Date`, whichever version it comes from.
      */
     ;(entity as DocumentInterface & { expires_at?: Date }).expires_at = expiry
+
+    /*
+     * E a marca da conta eliminada, pelo mesmo caminho e pela mesma razão.
+     *
+     * ⚠️ Sem esta linha a marca **não chega ao painel**: o construtor da lib
+     * copia campo a campo (medido na 3.0.0), logo tudo o que ela não declara
+     * desaparece aqui. E uma marca que não chega é um filtro que nunca
+     * esconde nada — o defeito seria invisível, porque a lista continuaria a
+     * aparecer como sempre apareceu.
+     */
+    ;(
+      entity as DocumentInterface & { account_deleted?: boolean }
+    ).account_deleted = d.account_deleted === true
 
     return entity
   }
