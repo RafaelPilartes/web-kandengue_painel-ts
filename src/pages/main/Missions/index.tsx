@@ -7,6 +7,13 @@ import { Plus, Target, Trophy } from 'lucide-react'
 import { Spinner } from 'phosphor-react'
 import { MissionEntity } from '@/core/entities/Mission'
 import { showToast } from '@/utils/toasts'
+import { deleteField } from 'firebase/firestore'
+import type { RideType } from '@rafaelpilartes/kandengue-shared/enums'
+import {
+  MISSION_SERVICES,
+  missionRideTypesWrite,
+  readMissionRideTypes
+} from '@/helpers/missionRideTypes'
 
 export function MissionsPage() {
   const { 
@@ -27,6 +34,22 @@ export function MissionsPage() {
     is_active: true
   })
 
+  /*
+   * The services kept apart from `formData` because they are not a field of
+   * the document: `restricted: false` means the document must carry **no**
+   * `ride_types` at all, and that is written with `deleteField()`. The
+   * decision is in `missionRideTypesWrite`.
+   */
+  const [restricted, setRestricted] = useState(false)
+  const [services, setServices] = useState<RideType[]>([])
+
+  const toggleService = (value: RideType) =>
+    setServices(current =>
+      current.includes(value)
+        ? current.filter(s => s !== value)
+        : [...current, value]
+    )
+
   const itemsBreadcrumbs = [
     { label: 'Painel', to: routsNameMain.home },
     { label: 'Missões de Produtividade' }
@@ -41,6 +64,9 @@ export function MissionsPage() {
         reward: mission.reward,
         is_active: mission.is_active
       })
+      const stored = readMissionRideTypes(mission)
+      setRestricted(stored.restricted)
+      setServices(stored.selected)
     } else {
       setEditingMission(null)
       setFormData({
@@ -49,6 +75,9 @@ export function MissionsPage() {
         reward: 1000,
         is_active: true
       })
+      // A new mission counts every service until someone says otherwise.
+      setRestricted(false)
+      setServices([])
     }
     setIsModalOpen(true)
   }
@@ -60,12 +89,40 @@ export function MissionsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    const rideTypes = missionRideTypesWrite({ restricted, selected: services })
+    if (rideTypes.kind === 'invalid') {
+      showToast('error', rideTypes.message)
+      return
+    }
+
     try {
       if (editingMission) {
-        await updateMission.mutateAsync({ id: editingMission.id, mission: formData })
+        /*
+         * ⚠️ `deleteField()` and **not** `ride_types: undefined`: Firestore is
+         * initialised with `ignoreUndefinedProperties: true`, so `undefined`
+         * is dropped from the update and a restriction that was there would
+         * survive an edit back to "every service".
+         */
+        await updateMission.mutateAsync({
+          id: editingMission.id,
+          mission: {
+            ...formData,
+            ride_types:
+              rideTypes.kind === 'all'
+                ? (deleteField() as unknown as undefined)
+                : rideTypes.ride_types
+          }
+        })
         showToast('success', 'Missão atualizada com sucesso!')
       } else {
-        await createMission.mutateAsync(formData as any)
+        // A new mission simply omits the field when it covers everything.
+        await createMission.mutateAsync({
+          ...formData,
+          ...(rideTypes.kind === 'some'
+            ? { ride_types: rideTypes.ride_types }
+            : {})
+        } as any)
         showToast('success', 'Missão criada com sucesso!')
       }
       handleCloseModal()
@@ -160,6 +217,54 @@ export function MissionsPage() {
                   <option value="weekly">Semanal</option>
                   <option value="monthly">Mensal</option>
                 </select>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Serviços que contam
+                </label>
+
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="ride_types_all"
+                    checked={!restricted}
+                    onChange={e => setRestricted(!e.target.checked)}
+                    className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500 cursor-pointer"
+                  />
+                  <label
+                    htmlFor="ride_types_all"
+                    className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer"
+                  >
+                    Todos os serviços
+                  </label>
+                </div>
+
+                {restricted && (
+                  <div className="flex flex-col gap-2 pl-6">
+                    {MISSION_SERVICES.map(service => (
+                      <div key={service.value} className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id={`ride_type_${service.value}`}
+                          checked={services.includes(service.value)}
+                          onChange={() => toggleService(service.value)}
+                          className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500 cursor-pointer"
+                        />
+                        <label
+                          htmlFor={`ride_type_${service.value}`}
+                          className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer"
+                        >
+                          {service.label}
+                        </label>
+                      </div>
+                    ))}
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Uma corrida de um serviço que não esteja marcado não conta
+                      para esta missão.
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div className="flex flex-col gap-1">

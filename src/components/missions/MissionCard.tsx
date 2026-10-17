@@ -1,8 +1,9 @@
 import React from 'react'
 import { MissionEntity } from '@/core/entities/Mission'
-import { Target, Trophy, CheckCircle2, Trash2 } from 'lucide-react'
+import { Bike, Target, Trophy, CheckCircle2, Trash2 } from 'lucide-react'
 import { Spinner } from 'phosphor-react'
 import { formatMoney } from '@/utils/number'
+import { missionServicesSummary } from '@/helpers/missionRideTypes'
 
 interface MissionCardProps {
   mission: MissionEntity
@@ -80,6 +81,17 @@ export const MissionCard: React.FC<MissionCardProps> = ({
         <span className="text-xs font-medium text-gray-500 uppercase">
           Kz de Bônus
         </span>
+      </div>
+
+      {/*
+        Always shown, including "Todos os serviços": a mission that restricts
+        the services looks exactly like one that does not, and a driver asking
+        why a ride did not count has nowhere to read the answer. The absence of
+        a line would be the restriction's only sign.
+      */}
+      <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+        <Bike size={14} className="shrink-0" />
+        <span>{missionServicesSummary(mission)}</span>
       </div>
 
       {!isAdmin && (
