@@ -72,11 +72,24 @@ export function rideContacts(input: {
       }
     | undefined
 
+  /*
+   * ⚠️ **Os recuos do passageiro, do remetente e do destinatário saíram em
+   * 2026-10-24.** A API deixa de escrever `user.phone`, `details.sender.phone`
+   * e `details.receiver.phone` no documento da corrida, e o script de remoção
+   * copia o que falta para `private/contacts` **antes** de apagar — por isso
+   * o documento privado passa a ser a única fonte, e completa.
+   *
+   * ⚠️ **O do motorista FICA.** O `ride.driver.phone` não está na lista de
+   * campos removidos: continua a ser escrito, e numa corrida reatribuída o
+   * `private/contacts` é o que está certo — daí a ordem.
+   */
+  void details
+
   return {
-    passenger: pick(contacts?.passenger_phone, ride?.user?.phone),
+    passenger: pick(contacts?.passenger_phone, undefined),
     driver: pick(contacts?.driver_phone, ride?.driver?.phone),
-    sender: pick(contacts?.sender_phone, details?.sender?.phone),
-    receiver: pick(contacts?.receiver_phone, details?.receiver?.phone)
+    sender: pick(contacts?.sender_phone, undefined),
+    receiver: pick(contacts?.receiver_phone, undefined)
   }
 }
 

@@ -50,7 +50,13 @@ const TableRow: React.FC<TableRowProps> = ({
             <span className="text-dark dark:text-light font-semibold text-sm">
               {rowItem.user.name}
             </span>
-            <span className="text-xs">{rowItem.user.phone}</span>
+            {/*
+              ⚠️ O telefone saiu daqui a 2026-10-24: a API deixou de escrever
+              `user.phone` na corrida, e o número vive em
+              `rides/{id}/private/contacts`. Numa linha de tabela isso custava
+              uma leitura por corrida listada — o número está no detalhe, que
+              já carrega esse documento.
+            */}
           </div>
         </div>
       </td>
