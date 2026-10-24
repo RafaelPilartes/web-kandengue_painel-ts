@@ -44,6 +44,54 @@ describe('PricingDAO', () => {
     expect(profiles[0].updated_at?.toISOString()).toBe('2026-09-30T08:00:00.000Z')
   })
 
+  it('listRegions reads the admin route and tolerates a missing array', async () => {
+    get.mockResolvedValue({
+      regions: [
+        {
+          code: 'AO-LUA',
+          name: 'Luanda',
+          group: 'grande-luanda',
+          provisional: false,
+          alias_count: 2
+        }
+      ]
+    })
+
+    const regions = await dao.listRegions()
+
+    expect(get).toHaveBeenCalledWith('/api/v1/admin/regions')
+    expect(regions).toHaveLength(1)
+    expect(regions[0].code).toBe('AO-LUA')
+    expect(regions[0].group).toBe('grande-luanda')
+
+    get.mockResolvedValue({})
+    expect(await dao.listRegions()).toEqual([])
+  })
+
+  /*
+   * The field is not in the lib and the API never names it: it survives
+   * because `mapProfile` on the server spreads the document and the response
+   * schema is a `z.looseObject({})`. The panel reads it strictly, so that an
+   * absent field means "reviewed" and not `undefined`.
+   */
+  it('listProfiles reads prices_need_review strictly, defaulting to false', async () => {
+    get.mockResolvedValue({
+      profiles: [
+        { id: 'a', prices_need_review: true },
+        { id: 'b' },
+        { id: 'c', prices_need_review: 'sim' }
+      ]
+    })
+
+    const profiles = await dao.listProfiles()
+
+    expect(profiles.map(p => p.prices_need_review)).toEqual([
+      true,
+      false,
+      false
+    ])
+  })
+
   it('saveProfile faz PUT do corpo tal como está e devolve o perfil gravado', async () => {
     const input = {
       region: 'AO-LUA',

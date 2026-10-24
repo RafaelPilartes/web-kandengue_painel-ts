@@ -1,11 +1,15 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, Plus, Save, Trash2 } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, Plus, Save, Trash2 } from 'lucide-react'
 import { Spinner } from 'phosphor-react'
+import { AppModal } from '@/components/modal/AppModal'
 import { Breadcrumbs } from '@/components/Breadcrumbs'
 import { routsNameMain } from '@/constants/routsName'
 import { usePricingProfilesViewModel } from '@/viewModels/PricingViewModel'
-import type { PricingProfileInput } from '@/core/interfaces/IPricingRepository'
+import type {
+  PricingProfileInput,
+  PricingProfileView
+} from '@/core/interfaces/IPricingRepository'
 import { showToast } from '@/utils/toasts'
 import {
   DEFAULT_DISCOUNT_DRIVER_SHARE_PERCENT,
@@ -24,10 +28,7 @@ import {
   validatePricingProfile,
   vehicleTypesForRide
 } from '@rafaelpilartes/kandengue-shared/functions'
-import type {
-  PricingProfileInterface,
-  RateBandInterface
-} from '@rafaelpilartes/kandengue-shared/interfaces'
+import type { RateBandInterface } from '@rafaelpilartes/kandengue-shared/interfaces'
 
 // A validação é a da lib, a correr no browser antes de gravar — as faixas a
 // cobrir as 24 h sem sobreposição, os payouts a somar 100, a combinação
@@ -78,7 +79,7 @@ const emptyState: FormState = {
   note: ''
 }
 
-function profileToForm(p: PricingProfileInterface): FormState {
+function profileToForm(p: PricingProfileView): FormState {
   return {
     region: p.region,
     ride_type: p.ride_type,
@@ -153,13 +154,22 @@ export function PricingProfileFormPage() {
     const vehicle = search.get('vehicle') as VehicleType | null
     const rideType = ride && RIDE_TYPES.includes(ride) ? ride : emptyState.ride_type
     const allowed = vehicleTypesForRide(rideType)
+    /*
+     * ⚠️ The province comes from the link that opened this form. Falling back
+     * to `DEFAULT_REGION` is what the screen did when there was only one
+     * region; now that there are 21, a profile created from Benguela's page
+     * would silently be a profile for Luanda.
+     */
+    const region = search.get('region')?.trim().toUpperCase()
     return {
       ...emptyState,
+      ...(region ? { region } : {}),
       ride_type: rideType,
       vehicle_type: vehicle && allowed.includes(vehicle) ? vehicle : (allowed[0] ?? 'motorcycle')
     }
   })
   const [submitting, setSubmitting] = useState(false)
+  const [confirmActivation, setConfirmActivation] = useState(false)
 
   const existing = useMemo(
     () => (isEdit ? profiles.find(p => p.id === profileId) ?? null : null),
@@ -169,6 +179,30 @@ export function PricingProfileFormPage() {
   useEffect(() => {
     if (existing) setForm(profileToForm(existing))
   }, [existing])
+
+  /*
+   * The seed script's mark: this profile carries Luanda's numbers and nobody
+   * has looked at them for this province yet.
+   *
+   * ⚠️ **Nothing here clears it, and nothing should.** The API's body schema
+   * is a closed `z.object`, so zod drops the field on the way in, and
+   * `saveProfile` writes with `tx.set` and no merge — the saved document
+   * simply no longer has it. Sending it back would be the one way to keep the
+   * mark alive past a review.
+   */
+  const needsReview = existing?.prices_need_review === true
+
+  /*
+   * Turning a profile with unreviewed prices ON is the move that asks for a
+   * confirmation: from that moment passengers are quoted those numbers.
+   *
+   * ⚠️ **Already-active is not an activation.** `AO-ICB_delivery_motorcycle`
+   * is born active *and* marked, because it mirrors Luanda — asking to confirm
+   * a save that changes nothing about its state would train whoever reads it
+   * to click through.
+   */
+  const requiresActivationConfirm =
+    needsReview && form.active && existing?.active !== true
 
   const allowedVehicles = vehicleTypesForRide(form.ride_type)
   const derivedId = pricingProfileId(form.region, form.ride_type, form.vehicle_type)
@@ -198,12 +232,7 @@ export function PricingProfileFormPage() {
     }))
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (errors.length > 0) {
-      showToast('error', 'O perfil tem erros. Corrige-os antes de gravar.')
-      return
-    }
+  const performSave = async () => {
     setSubmitting(true)
     try {
       const saved = await saveProfile.mutateAsync(formToInput(form))
@@ -214,6 +243,19 @@ export function PricingProfileFormPage() {
     } finally {
       setSubmitting(false)
     }
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (errors.length > 0) {
+      showToast('error', 'O perfil tem erros. Corrige-os antes de gravar.')
+      return
+    }
+    if (requiresActivationConfirm) {
+      setConfirmActivation(true)
+      return
+    }
+    void performSave()
   }
 
   if (isEdit && loading) {
@@ -258,6 +300,26 @@ export function PricingProfileFormPage() {
           <ArrowLeft size={16} /> Voltar
         </Link>
       </div>
+
+      {needsReview && (
+        <div className="p-4 rounded-xl bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800/50 flex flex-row items-start gap-2">
+          <AlertTriangle
+            size={16}
+            className="mt-0.5 text-orange-600 dark:text-orange-400 shrink-0"
+            aria-hidden
+          />
+          <div className="flex flex-col gap-1">
+            <span className="text-sm font-semibold text-orange-900 dark:text-orange-200">
+              Preços por rever
+            </span>
+            <span className="text-xs text-orange-800 dark:text-orange-300">
+              Este perfil foi criado automaticamente com os valores de Luanda e
+              ninguém os confirmou para esta província. Ao gravar, a marca
+              desaparece — grava só depois de olhar para os números.
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Identidade */}
       <section className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-5 grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -446,6 +508,90 @@ export function PricingProfileFormPage() {
           Gravar perfil
         </button>
       </div>
+
+      {/*
+       * Activating a profile whose prices nobody reviewed is the one action on
+       * this screen that cannot be undone by editing: from the moment it is
+       * saved, passengers in this province are quoted these numbers. It asks
+       * out loud.
+       */}
+      <AppModal
+        isOpen={confirmActivation}
+        onClose={() => setConfirmActivation(false)}
+        title="Activar com preços por rever?"
+        size="md"
+        variant="center"
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={() => setConfirmActivation(false)}
+              className="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-200"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              disabled={submitting}
+              onClick={() => {
+                setConfirmActivation(false)
+                void performSave()
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium disabled:opacity-50"
+            >
+              {submitting ? (
+                <Spinner size={16} className="animate-spin" />
+              ) : (
+                <AlertTriangle size={16} aria-hidden />
+              )}
+              Sim, activar
+            </button>
+          </>
+        }
+      >
+        <div className="flex flex-col gap-3 text-sm text-gray-700 dark:text-gray-200">
+          <p>
+            O perfil{' '}
+            <span className="font-mono font-semibold">{derivedId}</span> está
+            marcado como <strong>preços por rever</strong>: foi criado
+            automaticamente com os valores de Luanda e ninguém os confirmou
+            para esta província.
+          </p>
+          <p>
+            Ao activar, estes preços passam a ser os que os passageiros desta
+            província vêem nas cotações — <strong>imediatamente</strong>.
+          </p>
+          <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-700/40 flex flex-col gap-1 text-xs">
+            <span>
+              <span className="text-gray-500 dark:text-gray-400">Região:</span>{' '}
+              <span className="font-mono">{form.region}</span>
+            </span>
+            <span>
+              <span className="text-gray-500 dark:text-gray-400">Serviço:</span>{' '}
+              {RIDE_TYPE_LABELS[form.ride_type]} ·{' '}
+              {VEHICLE_TYPE_LABELS[form.vehicle_type]}
+            </span>
+            <span>
+              <span className="text-gray-500 dark:text-gray-400">
+                Tarifa mínima:
+              </span>{' '}
+              {form.min_fare} Kz
+            </span>
+            {form.rate_bands.map(band => (
+              <span key={`${band.start_time}-${band.end_time}`}>
+                <span className="text-gray-500 dark:text-gray-400">
+                  {band.start_time}–{band.end_time}:
+                </span>{' '}
+                {band.base_fare} Kz + {band.price_per_km}/km
+              </span>
+            ))}
+          </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            A marca de "preços por rever" sai com esta gravação, e a alteração
+            fica registada com o teu nome.
+          </p>
+        </div>
+      </AppModal>
     </form>
   )
 }

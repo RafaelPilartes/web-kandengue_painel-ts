@@ -3,6 +3,7 @@ import {
   Settings,
   ChevronRight,
   Banknote,
+  Globe2,
   Landmark,
   Smartphone
 } from 'lucide-react'
@@ -44,6 +45,12 @@ export function Sidebar({ selectedOption, setSelectedOption }: SidebarProps) {
       label: 'Dados bancários',
       icon: Landmark,
       description: 'IBAN dos carregamentos'
+    },
+    {
+      key: 'regions',
+      label: 'Regiões',
+      icon: Globe2,
+      description: 'Verificação de província'
     }
   ] as const
 

@@ -1,12 +1,11 @@
 // viewModels/PricingViewModel.ts
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import type {
-  PricingProfileInterface,
-  PricingRuleInterface
-} from '@rafaelpilartes/kandengue-shared/interfaces'
+import type { PricingRuleInterface } from '@rafaelpilartes/kandengue-shared/interfaces'
 import { firebaseCollections } from '@/constants/firebaseCollections'
 import type {
+  AdminRegion,
   PricingProfileInput,
+  PricingProfileView,
   PricingRuleInput
 } from '@/core/interfaces/IPricingRepository'
 import { ApiRepository } from '@/modules/Api/factory'
@@ -26,7 +25,7 @@ export function usePricingProfilesViewModel() {
     isLoading: loading,
     error,
     refetch
-  } = useQuery<PricingProfileInterface[]>({
+  } = useQuery<PricingProfileView[]>({
     queryKey: [firebaseCollections.pricingProfiles.root],
     queryFn: () => ApiRepository.pricing.listProfiles(),
     staleTime: 1000 * 30
@@ -52,6 +51,30 @@ export function usePricingProfilesViewModel() {
   })
 
   return { profiles: data ?? [], loading, error, refetch, saveProfile }
+}
+
+/**
+ * The 21 provinces, for grouping the prices page.
+ *
+ * ⚠️ **Cached for longer than the profiles, on purpose.** The province table
+ * changes when a name is corrected or a spelling is added — measured in months
+ * — while a price changes in the middle of an afternoon. Five minutes here
+ * matches the API's own cache (`REGIONS_CACHE_TTL_MS`): asking more often than
+ * the server re-reads Firestore buys nothing.
+ */
+export function useAdminRegionsViewModel() {
+  const {
+    data,
+    isLoading: loading,
+    error,
+    refetch
+  } = useQuery<AdminRegion[]>({
+    queryKey: ['admin', 'regions'],
+    queryFn: () => ApiRepository.pricing.listRegions(),
+    staleTime: 1000 * 60 * 5
+  })
+
+  return { regions: data ?? [], loading, error, refetch }
 }
 
 export function usePricingRulesViewModel() {

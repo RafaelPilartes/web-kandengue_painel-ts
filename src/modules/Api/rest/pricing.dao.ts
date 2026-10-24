@@ -1,7 +1,9 @@
 import ApiDAO from './Api.dao'
 import type {
+  AdminRegion,
   IPricingRepository,
   PricingProfileInput,
+  PricingProfileView,
   PricingRuleInput,
   WeatherOverrideInput,
   WeatherView
@@ -19,11 +21,17 @@ const toDate = (value: unknown): Date | undefined => {
   return undefined
 }
 
-function mapProfile(raw: Record<string, unknown>): PricingProfileInterface {
+function mapProfile(raw: Record<string, unknown>): PricingProfileView {
   return {
-    ...(raw as unknown as PricingProfileInterface),
+    ...(raw as unknown as PricingProfileView),
     created_at: toDate(raw.created_at),
-    updated_at: toDate(raw.updated_at)
+    updated_at: toDate(raw.updated_at),
+    /*
+     * Read as a strict `=== true`, not as truthy: the field only exists on the
+     * profiles the seed script created, and an absent one has to mean
+     * "reviewed" and not "undefined" — the badge is a boolean on screen.
+     */
+    prices_need_review: raw.prices_need_review === true
   }
 }
 
@@ -72,14 +80,23 @@ function mapWeatherState(
 }
 
 export class PricingDAO implements IPricingRepository {
-  async listProfiles(): Promise<PricingProfileInterface[]> {
+  async listRegions(): Promise<AdminRegion[]> {
+    const response = await ApiDAO.get<{ regions: AdminRegion[] }>(
+      '/api/v1/admin/regions'
+    )
+    return response.regions ?? []
+  }
+
+  async listProfiles(): Promise<PricingProfileView[]> {
     const response = await ApiDAO.get<{ profiles: Record<string, unknown>[] }>(
       '/api/v1/admin/pricing/profiles'
     )
     return (response.profiles ?? []).map(mapProfile)
   }
 
-  async saveProfile(input: PricingProfileInput): Promise<PricingProfileInterface> {
+  async saveProfile(
+    input: PricingProfileInput
+  ): Promise<PricingProfileInterface> {
     const saved = await ApiDAO.put<Record<string, unknown>>(
       '/api/v1/admin/pricing/profiles',
       input

@@ -6,6 +6,7 @@ import { GeneralSettings } from './components/GeneralSettings'
 import { ReferralSettings } from './components/ReferralSettings'
 import { AppVersionsSettings } from './components/AppVersionsSettings'
 import { WalletTopupSettings } from './components/WalletTopupSettings'
+import { RegionsSettings } from './components/RegionsSettings'
 import type { SettingsOption } from './settingsOptions'
 import { routsNameMain } from '@/constants/routsName'
 import { Breadcrumbs } from '@/components/Breadcrumbs'
@@ -36,6 +37,8 @@ export function SettingsPage() {
         return <AppVersionsSettings />
       case 'walletTopup':
         return <WalletTopupSettings />
+      case 'regions':
+        return <RegionsSettings />
       default:
         return null
     }

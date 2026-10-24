@@ -15,3 +15,4 @@ export type SettingsOption =
   | 'referral'
   | 'appVersions'
   | 'walletTopup'
+  | 'regions'
