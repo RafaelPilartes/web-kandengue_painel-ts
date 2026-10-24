@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   closedFareV2,
+  rideChargeOnScreen,
   compareQuotedToCharged,
   failedReservation,
   fareDistance,
@@ -563,5 +564,68 @@ describe('forcedCloseReason', () => {
         }
       ])
     ).toBeNull()
+  })
+})
+
+/**
+ * The figure the panel shows for a ride, in any state.
+ *
+ * ── Why it exists ──
+ * Seven panel screens read `ride.fare?.total ?? 0`, and `fare` is written only
+ * at settlement — so every in-progress ride showed **0 AOA**. Measured on
+ * `rid-1792515616580_f3a28d3d`: no `fare`, `estimated_fare.total` 5589.
+ *
+ * ⚠️ The precedence must match the two apps (`rideFareOnScreen` in the
+ * passenger, `resolveFareDisplay` in the driver). The same figures are pinned
+ * in both of their suites.
+ */
+describe('rideChargeOnScreen', () => {
+  const settled = { fare: { total: 1800 } } as unknown as RideEntity
+  const inProgress = {
+    estimated_fare: { total: 5589, gross: 5589, discount: 0 }
+  } as unknown as RideEntity
+
+  it('uses the settled total once the server has written it', () => {
+    expect(rideChargeOnScreen(settled)).toEqual({
+      total: 1800,
+      provisional: false,
+      unknown: false
+    })
+  })
+
+  it('falls back to the accepted estimate while the ride is running', () => {
+    const r = rideChargeOnScreen(inProgress)
+
+    expect(r.total).toBe(5589)
+    expect(r.provisional).toBe(true)
+    expect(r.unknown).toBe(false)
+  })
+
+  /* The regression, as the arithmetic that was on screen. */
+  it('and the old expression would have shown zero for the same ride', () => {
+    const ride = inProgress as { fare?: { total?: number } }
+
+    expect(ride.fare?.total ?? 0).toBe(0)
+    expect(rideChargeOnScreen(inProgress).total).toBe(5589)
+  })
+
+  it('a settled zero is a total, not an absence', () => {
+    const r = rideChargeOnScreen({ fare: { total: 0 } } as unknown as RideEntity)
+
+    expect(r.total).toBe(0)
+    expect(r.provisional).toBe(false)
+  })
+
+  it('with neither fare nor estimate it says so instead of asserting zero', () => {
+    expect(rideChargeOnScreen({} as RideEntity)).toEqual({
+      total: 0,
+      provisional: true,
+      unknown: true
+    })
+    expect(rideChargeOnScreen(null)).toEqual({
+      total: 0,
+      provisional: true,
+      unknown: true
+    })
   })
 })

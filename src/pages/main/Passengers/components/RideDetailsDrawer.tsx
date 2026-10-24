@@ -1,4 +1,5 @@
 import { X, MapPin, Clock, CreditCard, User as UserIcon } from 'lucide-react'
+import { rideChargeOnScreen } from '@/helpers/fareReview'
 import type { RideInterface } from '@/interfaces/IRide'
 import { formatDateTimeFromFirestore } from '@/utils/date'
 import { formatMoney } from '@/utils/number'
@@ -21,7 +22,12 @@ export function RideDetailsDrawer({ ride, isOpen, onClose }: RideDetailsDrawerPr
   if (!isOpen || !ride) return null
 
   const isCanceled = ride.status === 'canceled'
-  const fareTotal = isCanceled ? 0 : (ride.fare?.total || 0)
+  /*
+   * ⚠️ Uma corrida cancelada mostra 0 de propósito. Nas outras o número vem
+   * do `rideChargeOnScreen`: o `fare` só existe depois do fecho, e sem isto
+   * uma corrida a decorrer mostrava 0 AOA.
+   */
+  const fareTotal = isCanceled ? 0 : rideChargeOnScreen(ride).total
 
   return (
     <>

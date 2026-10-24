@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { rideChargeOnScreen } from '@/helpers/fareReview'
 import type { RideInterface } from '@/interfaces/IRide'
 import { CopyField } from '@/components/CopyField'
 import { StatusBadge } from '../components/StatusBadge'
@@ -28,6 +29,12 @@ export function RideDetailsPanel({
 }: RideDetailsPanelProps) {
   const [isMinimized, setIsMinimized] = useState(false)
 
+  /*
+   * ⚠️ O `fare` só existe depois do fecho; sem isto uma corrida a decorrer
+   * mostrava 0 AOA nos dois sítios abaixo. Ver `rideChargeOnScreen`.
+   */
+  const charge = rideChargeOnScreen(ride)
+
   return (
     <div
       className={`absolute top-4 right-4 z-10 bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-100 dark:border-gray-700 flex flex-col overflow-hidden transition-all duration-300 ${
@@ -50,8 +57,11 @@ export function RideDetailsPanel({
               <StatusBadge status={ride.status} />
               <div className="text-right">
                 <div className="text-sm font-bold text-gray-900 dark:text-white">
-                  AOA {formatMoney(ride.fare?.total || 0)}
+                  AOA {formatMoney(charge.total)}
                 </div>
+                {charge.provisional && (
+                  <div className="text-[10px] text-gray-400">a confirmar</div>
+                )}
               </div>
             </div>
           )}
@@ -88,8 +98,11 @@ export function RideDetailsPanel({
             <StatusBadge status={ride.status} />
             <div className="text-right">
               <div className="text-lg font-bold text-gray-900 dark:text-white">
-                AOA {formatMoney(ride.fare?.total || 0)}
+                AOA {formatMoney(charge.total)}
               </div>
+              {charge.provisional && (
+                <div className="text-[10px] text-gray-400">a confirmar</div>
+              )}
               <div className="text-xs text-gray-500 uppercase tracking-wide">
                 Valor Total
               </div>
