@@ -154,6 +154,19 @@ schema do Firestore; a lib é a fonte de verdade dos tipos.
 > silêncio e não escreve nada sem `auditService.setAdmin`: somá-lo a uma
 > escrita da API dá duas linhas por alteração, uma delas pior. Continua a
 > valer para o que ainda escreve directamente no Firestore.
+>
+> ⚠️ **E há uma excepção, que é os preços.** A gravação de um perfil
+> (`PUT /api/v1/admin/pricing/profiles`) audita na API, mas em
+> **`pricingAuditLogs`** — com o antes e o depois campo a campo, na mesma
+> transacção — e **não** em `auditLogs`. Como **nenhum ecrã do painel lê
+> `pricingAuditLogs`**, o `usePricingProfilesViewModel` escreve **também** a
+> linha de `auditLogs`: não é um duplicado, é a única entrada visível de quem
+> mexeu num preço, porque o ecrã de auditoria lê `auditLogs`
+> (`auditLog.dao.ts:17`).
+>
+> **Não tirar esse `withAudit`** sem primeiro haver um ecrã para
+> `pricingAuditLogs` — está nos pendentes do `progress.md`, sem prioridade.
+> Decisão de 2026-10-24, com a medição, em `decisions.md`.
 
 ---
 
