@@ -48,12 +48,20 @@ describe('rideContacts', () => {
   })
 
   // Rides older than 3.2 have no document — and are not migrated (§0A).
-  it('falls back to the ride when there is no private document', () => {
+  /*
+   * ⚠️ **Virou de sentido a 2026-10-24.** Só o motorista recua para o
+   * documento da corrida: a API deixou de escrever `user.phone`,
+   * `details.sender.phone` e `details.receiver.phone`, e o script de remoção
+   * copia o que falta para `private/contacts` antes de apagar. O
+   * `ride.driver.phone` **continua** a ser escrito, e é o único recuo que
+   * resta.
+   */
+  it('only the driver falls back to the ride; the rest come from the private doc', () => {
     const c = rideContacts({ contacts: null, ride: aRide() })
-    expect(c.passenger).toEqual({ value: '+244900000001', source: 'ride' })
     expect(c.driver).toEqual({ value: '+244900000002', source: 'ride' })
-    expect(c.sender.value).toBe('+244900000003')
-    expect(c.receiver.value).toBe('+244900000004')
+    expect(c.passenger.value).toBeNull()
+    expect(c.sender.value).toBeNull()
+    expect(c.receiver.value).toBeNull()
   })
 
   // The real case: the document exists, but no driver has accepted yet.
@@ -76,13 +84,13 @@ describe('rideContacts', () => {
   })
 
   // An empty or whitespace-only field is not a phone number.
-  it('treats an empty string as absent, and the fallback still works', () => {
+  it('treats an empty string as absent — and only the driver has a fallback', () => {
     const c = rideContacts({
       contacts: { driver_phone: '   ', passenger_phone: '' },
       ride: aRide()
     })
     expect(c.driver).toEqual({ value: '+244900000002', source: 'ride' })
-    expect(c.passenger).toEqual({ value: '+244900000001', source: 'ride' })
+    expect(c.passenger.value).toBeNull()
   })
 
   it('survives a ride with nothing in it', () => {

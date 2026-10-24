@@ -163,7 +163,14 @@ export function useRidesViewModel(
     return ridesResponse?.data.map(doc => ({
       Id: doc.id,
       'Nome do Passageiro': doc.user.name,
-      'Telefone do Passageiro': doc.user.phone,
+      /*
+       * ⚠️ **O telefone do passageiro saiu da exportação a 2026-10-24.** A API
+       * deixou de escrever `user.phone` na corrida; o número vive em
+       * `rides/{id}/private/contacts`, um documento por corrida. Numa
+       * exportação de centenas de corridas isso eram centenas de leituras — e
+       * uma coluna vazia é pior do que coluna nenhuma. Quem precisa de um
+       * número abre o detalhe da corrida, que já o carrega.
+       */
       'Nome do Motorista': doc.driver?.name,
       'Telefone do Motorista': doc.driver?.phone,
       Status: getRideStatusLabel(doc.status),
