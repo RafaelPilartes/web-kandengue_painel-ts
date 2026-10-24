@@ -1,4 +1,5 @@
 import React from 'react'
+import { rideChargeOnScreen } from '@/helpers/fareReview'
 import { motion } from 'framer-motion'
 import { FiEdit } from 'react-icons/fi'
 import { AiFillDelete } from 'react-icons/ai'
@@ -24,6 +25,8 @@ const TableRow: React.FC<TableRowProps> = ({
   openModalEditRow,
   handleDeleteRow
 }) => {
+  const charge = rideChargeOnScreen(rowItem)
+
   return (
     <motion.tr
       initial={{ opacity: 0, x: -50 }}
@@ -94,7 +97,14 @@ const TableRow: React.FC<TableRowProps> = ({
       </td>
 
       <td className="px-3 py-3 min-w-[6rem]">
-        <p>{formatMoney(rowItem.fare?.total ?? 0)} AOA</p>
+        {/*
+          ⚠️ O `fare` só existe depois do fecho; uma corrida a decorrer
+          mostrava 0 AOA. Ver `rideChargeOnScreen`.
+        */}
+        <p>{formatMoney(charge.total)} AOA</p>
+        {charge.provisional && (
+          <p className="text-[10px] text-gray-400">a confirmar</p>
+        )}
       </td>
 
       <td className="px-3 py-3 min-w-[6rem]">

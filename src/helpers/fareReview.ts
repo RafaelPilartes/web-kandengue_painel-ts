@@ -95,6 +95,55 @@ export interface FareComparison {
 }
 
 /**
+ * O que se cobra ao cliente, numa corrida em qualquer estado.
+ *
+ * ── ⚠️ Porque é que isto existe ──
+ * Sete ecrãs do painel liam `ride.fare?.total ?? 0`, e o `fare` é escrito
+ * **só no fecho** (`onRideUpdated`, com o `fare_finalized_at`). Uma corrida a
+ * decorrer não o tem, logo o painel mostrava **0 AOA** em todas elas —
+ * medido na `rid-1792515616580_f3a28d3d`, que tinha
+ * `estimated_fare.total` = 5589.
+ *
+ * ⚠️ **A precedência é a mesma das duas apps**, e tem de ser: o
+ * `rideFareOnScreen` do passageiro e o `resolveFareDisplay` do motorista
+ * decidem assim — o `fare` do servidor quando existe, a estimativa aceite
+ * enquanto não existe. Três implementações da mesma regra é o que esta
+ * entrada admite ter; o certo é uma na lib, e está nos pendentes.
+ *
+ * ⚠️ **A estimativa lê-se pelo `resolveEstimatedFare` da lib**, nunca pelo
+ * `estimated_fare.total` cru: o significado do `total` mudou na 2.10.0 (ver a
+ * nota do `compareQuotedToCharged`).
+ */
+export type RideChargeOnScreen = {
+  /** O número a mostrar. */
+  total: number
+  /** `true` enquanto o servidor não fechou a tarifa. */
+  provisional: boolean
+  /** `true` quando não há nem `fare` nem estimativa — aí o zero é honesto. */
+  unknown: boolean
+}
+
+export function rideChargeOnScreen(
+  ride: Pick<RideEntity, 'fare' | 'estimated_fare'> | null | undefined
+): RideChargeOnScreen {
+  const settled = ride?.fare?.total
+
+  if (typeof settled === 'number' && Number.isFinite(settled)) {
+    return { total: settled, provisional: false, unknown: false }
+  }
+
+  if (ride?.estimated_fare) {
+    return {
+      total: resolveEstimatedFare(ride.estimated_fare).total,
+      provisional: true,
+      unknown: false
+    }
+  }
+
+  return { total: 0, provisional: true, unknown: true }
+}
+
+/**
  * O cotado contra o cobrado, nos três números.
  *
  * ⚠️ **Lê a estimativa pelo `resolveEstimatedFare` da lib**, e não

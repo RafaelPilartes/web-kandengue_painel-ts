@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { rideChargeOnScreen } from '@/helpers/fareReview'
 import {
   useParams
   // useNavigate
@@ -231,7 +232,7 @@ export function UserViewPage() {
                               {ride.dropoff.name ?? '-'}
                             </td>
                             <td className="px-3 py-2">
-                              {formatMoney(ride.fare?.total ?? 0)}
+                              {formatMoney(rideChargeOnScreen(ride).total)}
                             </td>
                             <td className="px-3 py-2">
                               {getRideStatusLabel(ride.status)}

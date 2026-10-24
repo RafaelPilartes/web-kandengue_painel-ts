@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { rideChargeOnScreen } from '@/helpers/fareReview'
 import swal from 'sweetalert'
 import {
   useParams
@@ -1280,7 +1281,7 @@ export function DriverViewPage() {
                               {ride.dropoff.name ?? '-'}
                             </td>
                             <td className="px-3 py-2">
-                              {formatMoney(ride.fare?.total ?? 0)}
+                              {formatMoney(rideChargeOnScreen(ride).total)}
                             </td>
                             <td className="px-3 py-2">
                               {getRideStatusLabel(ride.status)}
