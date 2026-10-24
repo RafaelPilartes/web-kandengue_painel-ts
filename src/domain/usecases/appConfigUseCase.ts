@@ -1,6 +1,7 @@
 import { ApiRepository } from '@/modules/Api/factory'
 import { BaseUseCase } from './BaseUseCase'
 import type { IReferralSettings } from '@/interfaces/IPromotion'
+import type { IRegionsSettings } from '@/core/interfaces/IAppConfigRepository'
 
 export class AppConfigUseCase extends BaseUseCase {
   protected readonly context = 'AppConfigUseCase'
@@ -24,6 +25,21 @@ export class AppConfigUseCase extends BaseUseCase {
     }
     return this.run('updateReferralSettings', () =>
       this.repository.updateReferralSettings(minimum, updatedBy)
+    )
+  }
+
+  executeGetRegionsSettings(): Promise<IRegionsSettings> {
+    return this.run('getRegionsSettings', () =>
+      this.repository.getRegionsSettings()
+    )
+  }
+
+  executeUpdateRegionsEnforcement(
+    enabled: boolean,
+    updatedBy: string
+  ): Promise<void> {
+    return this.run('updateRegionsEnforcement', () =>
+      this.repository.updateRegionsEnforcement(enabled, updatedBy)
     )
   }
 }
