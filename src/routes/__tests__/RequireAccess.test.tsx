@@ -9,7 +9,7 @@ const access = vi.hoisted(() => ({
     isError: false,
     level: 'member' as string | null,
     department: null,
-    can: (_p: string): boolean => false
+    can: (() => false) as (p: string) => boolean
   }
 }))
 
