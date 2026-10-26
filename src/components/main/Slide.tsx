@@ -2,11 +2,14 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import AccordionSidBar from '../accordion/AccordionSidBar'
 import dashItem from '@/constants/dash'
+import { useAccess } from '@/hooks/useAccess'
+import { filterMenu } from '@/routes/access'
 
 export const Slide = () => {
   const [activeAccordion, setActiveAccordion] = useState<number | null>(null)
 
-  const mapLinks = dashItem.map((item, index) => {
+  const { can } = useAccess()
+  const mapLinks = filterMenu(dashItem, can).map((item, index) => {
     return (
       <div key={index}>
         {item.accordion && (

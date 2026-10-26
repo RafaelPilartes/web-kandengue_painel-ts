@@ -3,6 +3,8 @@ import { X } from 'lucide-react'
 import { AccordionMenu } from '../accordion/AccordionMenu'
 import React from 'react'
 import dashItem from '@/constants/dash'
+import { useAccess } from '@/hooks/useAccess'
+import { filterMenu } from '@/routes/access'
 
 interface ModalMenuMobileInterface {
   menuIsVisible: boolean
@@ -13,7 +15,8 @@ export function ModalMenuMobile({
   menuIsVisible,
   setMenuIsVisible
 }: ModalMenuMobileInterface) {
-  const mapLinks = dashItem.map((item, index) => {
+  const { can } = useAccess()
+  const mapLinks = filterMenu(dashItem, can).map((item, index) => {
     return (
       <React.Fragment key={index}>
         {item.accordion && <AccordionMenu items={item} />}
