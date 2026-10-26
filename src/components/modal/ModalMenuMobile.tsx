@@ -15,8 +15,8 @@ export function ModalMenuMobile({
   menuIsVisible,
   setMenuIsVisible
 }: ModalMenuMobileInterface) {
-  const { can } = useAccess()
-  const mapLinks = filterMenu(dashItem, can).map((item, index) => {
+  const { can, level } = useAccess()
+  const mapLinks = filterMenu(dashItem, can, level).map((item, index) => {
     return (
       <React.Fragment key={index}>
         {item.accordion && <AccordionMenu items={item} />}

@@ -55,6 +55,25 @@ describe('filterMenu', () => {
     ])
   })
 
+  it('shows work reports to managers and direction, not to members', () => {
+    const work = [
+      {
+        label: 'Trabalho',
+        to: '/',
+        subMenus: [
+          { label: 'Tarefas', to: '/work/tasks' },
+          { label: 'Relatórios', to: '/work/reports' }
+        ]
+      }
+    ]
+    expect(
+      filterMenu(work, () => false, 'member')[0].subMenus?.map(s => s.label)
+    ).toEqual(['Tarefas'])
+    expect(
+      filterMenu(work, () => false, 'manager')[0].subMenus?.map(s => s.label)
+    ).toEqual(['Tarefas', 'Relatórios'])
+  })
+
   it('keeps everything for someone who can do everything', () => {
     expect(filterMenu(menu, () => true)).toEqual(menu)
   })

@@ -31,7 +31,7 @@ export function Avatar({ src, alt, fallback, size = 'md' }: AvatarProps) {
   const [failed, setFailed] = useState(false)
   return (
     <div
-      className={`${sizeMap[size]} flex items-center justify-center relative rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden`}
+      className={`${sizeMap[size]} shrink-0 flex items-center justify-center relative rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden`}
     >
       {src && !failed ? (
         <img

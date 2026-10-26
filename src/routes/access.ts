@@ -1,4 +1,7 @@
-import type { AdminPermission } from '@rafaelpilartes/kandengue-shared-v4/types'
+import type {
+  AdminAccessLevel,
+  AdminPermission
+} from '@rafaelpilartes/kandengue-shared-v4/types'
 
 /*
  * The one map of which permission each screen needs. The route guard and the
@@ -44,9 +47,13 @@ type MenuItem = { to: string; subMenus?: MenuItem[] }
 /** Drops the entries the admin cannot open, and a group left with no entries. */
 export function filterMenu<T extends MenuItem>(
   items: T[],
-  can: (p: AdminPermission) => boolean
+  can: (p: AdminPermission) => boolean,
+  level: AdminAccessLevel | null = null
 ): T[] {
   const allowed = (to: string) => {
+    // Work reports follow the level, not a permission (Direction and managers).
+    if (to === '/work/reports')
+      return level === 'direction' || level === 'manager'
     const p = permissionFor(to)
     return p === null || can(p)
   }

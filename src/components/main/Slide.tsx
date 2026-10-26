@@ -8,8 +8,8 @@ import { filterMenu } from '@/routes/access'
 export const Slide = () => {
   const [activeAccordion, setActiveAccordion] = useState<number | null>(null)
 
-  const { can } = useAccess()
-  const mapLinks = filterMenu(dashItem, can).map((item, index) => {
+  const { can, level } = useAccess()
+  const mapLinks = filterMenu(dashItem, can, level).map((item, index) => {
     return (
       <div key={index}>
         {item.accordion && (

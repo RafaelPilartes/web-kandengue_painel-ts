@@ -1,7 +1,6 @@
 import {
   AlignLeft,
   AlignRight,
-  Bell,
   DoorOpen,
   Maximize,
   ScrollText,
@@ -14,8 +13,8 @@ import { useAdminStore } from '../../stores/userStore'
 import DarkModeSwitcher from './DarkModeSwitcher'
 import { Link } from 'react-router-dom'
 import { useAccess } from '@/hooks/useAccess'
+import { NotificationBell } from './NotificationBell'
 import { routsNameMain } from '../../constants/routsName'
-import { DropdownInfo } from '../DropdownInfo'
 import { Chat } from 'phosphor-react'
 import { auditService } from '@/observability/audit'
 import { useAuthViewModel } from '@/viewModels/AuthViewModel'
@@ -62,15 +61,6 @@ export const Header = () => {
     name: `${currentAdminData?.name}`,
     function: 'User'
   }
-  const notificationList = [
-    {
-      photo:
-        'https://www.shutterstock.com/image-vector/illustration-church-bell-isolated-on-600nw-2513620643.jpg',
-      title: 'Sistema iniciado com sucesso',
-      link: 'null',
-      date: '04 de Outubro 2023 - 08:30'
-    }
-  ]
 
   function toggleFullScreen() {
     if (!document.fullscreenElement) {
@@ -98,12 +88,16 @@ export const Header = () => {
             </div>
 
             <Link to={routsNameMain.home}>
-              <img src="/logo/logo.png" alt="Logo" className="max-w-[10rem] " />
+              <img
+                src="/logo/logo.png"
+                alt="Kandengue Atrevido"
+                className="max-w-[10rem] max-w-s-640:max-w-[7rem]"
+              />
             </Link>
           </div>
 
-          <div className="flex items-center justify-center gap-4">
-            <div className="flex items-center justify-center gap-4 border-r-[2px] pr-6 border-gray-200 dark:border-zinc-400/60">
+          <div className="flex items-center justify-center gap-4 max-w-s-640:gap-2">
+            <div className="flex items-center justify-center gap-4 border-r-[2px] pr-6 border-gray-200 dark:border-zinc-400/60 max-w-s-640:border-0 max-w-s-640:pr-0">
               {/* <!-- Dark Mode Toggler --> */}
               <DarkModeSwitcher />
               {/* <!-- Dark Mode Toggler --> */}
@@ -112,7 +106,7 @@ export const Header = () => {
             <div className="flex items-center justify-center gap-4">
               <Link
                 to={routsNameMain.chat.index}
-                className="w-10 h-10  bg-gray-100/40 dark:bg-gray-500/60 border border-gray-200/30 dark:border-gray-500/60 rounded-full flex items-center justify-center transition-all duration-300 hover:text-primary-200 p-2 "
+                className="max-w-s-640:hidden w-10 h-10  bg-gray-100/40 dark:bg-gray-500/60 border border-gray-200/30 dark:border-gray-500/60 rounded-full flex items-center justify-center transition-all duration-300 hover:text-primary-200 p-2 "
               >
                 <Chat size={20} />
               </Link>
@@ -121,7 +115,7 @@ export const Header = () => {
                 <Link
                   to={routsNameMain.logs.index}
                   title="Logs de Auditoria"
-                  className="w-10 h-10  bg-gray-100/40 dark:bg-gray-500/60 border border-gray-200/30 dark:border-gray-500/60 rounded-full flex items-center justify-center transition-all duration-300 hover:text-primary-200 p-2 "
+                  className="max-w-s-640:hidden w-10 h-10  bg-gray-100/40 dark:bg-gray-500/60 border border-gray-200/30 dark:border-gray-500/60 rounded-full flex items-center justify-center transition-all duration-300 hover:text-primary-200 p-2 "
                 >
                   <ScrollText size={20} />
                 </Link>
@@ -129,17 +123,12 @@ export const Header = () => {
 
               <button
                 onClick={toggleFullScreen}
-                className="w-10 h-10  bg-gray-100/40 dark:bg-gray-500/60 border border-gray-200/30 dark:border-gray-500/60 rounded-full flex items-center justify-center transition-all duration-300 hover:text-primary-200 p-2 "
+                className="max-w-s-640:hidden w-10 h-10  bg-gray-100/40 dark:bg-gray-500/60 border border-gray-200/30 dark:border-gray-500/60 rounded-full flex items-center justify-center transition-all duration-300 hover:text-primary-200 p-2 "
               >
                 <Maximize size={20} />
               </button>
 
-              <DropdownInfo
-                title="notificações"
-                icon={Bell}
-                link={`${routsNameMain.home}`}
-                options={notificationList}
-              />
+              <NotificationBell />
 
               <DropdownUser user={useInfo} options={options} />
             </div>

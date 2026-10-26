@@ -42,6 +42,15 @@ export const routsNameMain = {
   },
 
   // ============================================
+  // WORK MANAGEMENT
+  work: {
+    tasks: '/work/tasks',
+    projects: '/work/projects',
+    calendar: '/work/calendar',
+    reports: '/work/reports'
+  },
+
+  // ============================================
   // DEPARTMENTS
   departments: {
     index: '/departments'
