@@ -18,7 +18,8 @@ import {
   Calculator,
   CloudRain,
   AlertTriangle,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Building2
 } from 'lucide-react'
 import { routsNameMain } from './routsName'
 
@@ -51,6 +52,12 @@ const dashItem = [
         label: 'Admins & Operadores',
         icon: <ShieldCheck size={16} />,
         to: routsNameMain.users.admins.index,
+        notification: 0
+      },
+      {
+        label: 'Departamentos',
+        icon: <Building2 size={16} />,
+        to: routsNameMain.departments.index,
         notification: 0
       },
       {

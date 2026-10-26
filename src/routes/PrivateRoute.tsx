@@ -71,7 +71,7 @@ export function Private({ children }: Props) {
  * (`./access.ts`). The API refuses the same calls; this is what keeps the
  * admin from landing on a page full of 403s.
  */
-function RequireAccess({ children }: Props) {
+export function RequireAccess({ children }: Props) {
   const { pathname } = useLocation()
   const access = useAccess()
   const permission = permissionFor(pathname)

@@ -45,6 +45,7 @@ import { FareReviewPage } from '@/pages/main/Rides/FareReview'
 import { WeatherPage } from '@/pages/main/Pricing/Weather'
 import { BalancesPage } from '@/pages/main/Finances/Balances'
 import { SimulatorPage } from '@/pages/main/Pricing/Simulator'
+import { DepartmentsPage } from '@/pages/main/Departments'
 
 // Page
 
@@ -72,6 +73,17 @@ export function Router() {
               <React.Suspense fallback={<Loading />}>
                 <Private>
                   <AdminPage />
+                </Private>
+              </React.Suspense>
+            }
+          />
+          {/* Departments */}
+          <Route
+            path={routsNameMain.departments.index}
+            element={
+              <React.Suspense fallback={<Loading />}>
+                <Private>
+                  <DepartmentsPage />
                 </Private>
               </React.Suspense>
             }

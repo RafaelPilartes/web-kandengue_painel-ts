@@ -17,7 +17,7 @@ import { ModalEditAdmin } from './components/ModalEdit'
 
 // Data
 import { routsNameMain } from '@/constants/routsName'
-import { adminRoleOptions, rowPerPageOptions } from '@/data/selectOption'
+import { rowPerPageOptions } from '@/data/selectOption'
 
 // Interfaces
 import type { AdminInterface } from '@/interfaces/IAdmin'
@@ -25,6 +25,10 @@ import type { AdminInterface } from '@/interfaces/IAdmin'
 // ViewModel
 import { useAdminsViewModel } from '@/viewModels/AdminViewModel'
 import type { AdminEntity } from '@/core/entities/Admin'
+import {
+  useAdminDirectory,
+  useDepartments
+} from '@/viewModels/AccessViewModel'
 
 export function AdminPage() {
   const navigate = useNavigate()
@@ -45,6 +49,16 @@ export function AdminPage() {
       termForSearch,
       filters
     )
+
+  // Department and level live outside the lib 3.1 entity; read them from the API.
+  const { byId: accessById } = useAdminDirectory()
+  const { departments, byId: departmentsById } = useDepartments()
+  // The role of a migrated admin is its department id, so the old role filter
+  // filters by department.
+  const departmentOptions = departments.map(d => ({
+    value: d.id,
+    label: d.name
+  }))
 
   // Estados para modais
   const [rowSelect, setRowSelect] = useState<AdminInterface | null>(null)
@@ -121,12 +135,18 @@ export function AdminPage() {
         <TableRow
           key={item.id}
           rowItem={item}
+          access={accessById.get(item.id as string)}
+          departmentName={
+            departmentsById.get(
+              accessById.get(item.id as string)?.department_id ?? ''
+            )?.name
+          }
           openModalEditRow={openModalEditRow}
           handleDeleteRow={handleDeleteRow}
           openPageViewRow={openPageViewRow}
         />
       )),
-    [admins]
+    [admins, accessById, departmentsById]
   )
 
   return (
@@ -146,8 +166,8 @@ export function AdminPage() {
         {/* Filtro por role */}
         <SelectSearchableCustom
           name="role"
-          label="Função de administrador"
-          options={adminRoleOptions}
+          label="Departamento"
+          options={departmentOptions}
           onOptionChange={e => handleAdminRoleChange(e as string)}
         />
       </div>
@@ -192,10 +212,11 @@ export function AdminPage() {
             <thead className="text-sm font-thin bg-gray-300/40 dark:bg-gray-500/40">
               <tr className="border-b dark:border-gray-700">
                 <th className="px-3 py-3 w-[0rem]">Id</th>
-                <th className="px-3 py-3 min-w-[18rem]">Usuário</th>
+                <th className="px-3 py-3 min-w-[18rem]">Utilizador</th>
                 <th className="px-3 py-3 min-w-[8rem]">Telefone</th>
-                <th className="px-3 py-3 min-w-[8rem]">Status</th>
-                <th className="px-3 py-3 min-w-[10rem]">Tipo de Usuário</th>
+                <th className="px-3 py-3 min-w-[12rem]">Departamento</th>
+                <th className="px-3 py-3 min-w-[7rem]">Nível</th>
+                <th className="px-3 py-3 min-w-[7rem]">Estado</th>
                 <th className="px-3 py-3 min-w-[12rem]">Data de Cadastro</th>
                 <th className="px-3 py-3 min-w-[8rem]">Ação</th>
               </tr>
@@ -204,7 +225,7 @@ export function AdminPage() {
             <tbody>
               {isLoadingAdmins ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-6">
+                  <td colSpan={8} className="text-center py-6">
                     <Spinner
                       size={28}
                       className="text-primary-200 animate-spin"
@@ -215,7 +236,7 @@ export function AdminPage() {
                 rowsTable
               ) : (
                 <tr>
-                  <td colSpan={7} className="text-center py-6">
+                  <td colSpan={8} className="text-center py-6">
                     Nenhum registro encontrado.
                   </td>
                 </tr>

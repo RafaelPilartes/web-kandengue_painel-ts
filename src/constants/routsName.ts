@@ -42,6 +42,12 @@ export const routsNameMain = {
   },
 
   // ============================================
+  // DEPARTMENTS
+  departments: {
+    index: '/departments'
+  },
+
+  // ============================================
   // VIATURAS — fila de validação
   vehicles: {
     index: '/vehicles'

@@ -17,6 +17,9 @@ export default defineConfig({
     fileParallelism: false,
     testTimeout: 20000,
     hookTimeout: 20000,
-    include: ['src/**/__tests__/**/*.test.ts']
+    include: [
+      'src/**/__tests__/**/*.test.ts',
+      'src/**/__tests__/**/*.test.tsx'
+    ]
   }
 })

@@ -147,7 +147,8 @@ export function getAdminRoleLabel(role: AdminRole): string {
     finance_accounting: 'Departamento de Contabilidade e Finanças',
     technology_innovation_technical: 'Departamento de Tecnologia e Inovação (Técnico)'
   }
-  return labels[role]
+  // A department created in the panel has no legacy role label.
+  return labels[role] ?? role
 }
 
 export const getApplicationStatusLabel = (value: ApplicationStatus): string => {
