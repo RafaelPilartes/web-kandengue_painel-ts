@@ -1,3 +1,5 @@
+import { fieldControl, fieldLabel } from '@/components/ui/field'
+import { cn } from '@/lib/tailwind-merge'
 import type { ChangeEvent } from 'react'
 
 interface TextAreaLabelSimpleProps {
@@ -37,10 +39,7 @@ export function TextAreaLabelSimple({
   return (
     <>
       <div className="w-full">
-        <label
-          htmlFor={htmlFor}
-          className="block mb-2 text-sm font-medium dark:text-light text-gray-600"
-        >
+        <label htmlFor={htmlFor} className={cn(fieldLabel, 'mb-1.5 block')}>
           {label}
         </label>
 
@@ -54,7 +53,7 @@ export function TextAreaLabelSimple({
           defaultValue={defaultValue}
           cols={cols}
           rows={rows}
-          className={`w-full p-2.5 dark:bg-gray-700/60 bg-gray-100/10  dark:border-gray-500/60 border-gray-300/60 dark:placeholder-gray-400 dark:text-gray-300 placeholder-gray-500 text-gray-500 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block`}
+          className={cn(fieldControl, 'min-h-24')}
         />
 
         {error && (

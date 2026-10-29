@@ -5,12 +5,14 @@ import {
 } from '@rafaelpilartes/kandengue-shared-v4/constants'
 import type { WorkTaskStatus } from '@rafaelpilartes/kandengue-shared-v4/types'
 import { useState, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
 import { AppModal } from '@/components/modal/AppModal'
 import { Avatar } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { SelectField, TextAreaField } from '@/components/ui/field'
 import type { WorkTask } from '@/modules/Api/rest/work.dao'
+import { routsNameMain } from '@/constants/routsName'
 import { showToast } from '@/utils/toasts'
 import {
   useTaskComments,
@@ -18,6 +20,7 @@ import {
   useWorkProjects
 } from '@/viewModels/WorkViewModel'
 import { formatDay, isOverdue, PRIORITY_TONE, useWorkContext } from '../shared'
+import { TaskChecklist } from './TaskChecklist'
 import { TaskFormModal } from './TaskFormModal'
 
 const formatWhen = (iso: string | null) =>
@@ -111,7 +114,7 @@ export function TaskDrawer({
         )
       }
     >
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-5">
         <div className="flex flex-wrap gap-2">
           <Badge tone={PRIORITY_TONE[task.priority]}>
             {WORK_TASK_PRIORITY_LABELS[task.priority]}
@@ -130,20 +133,48 @@ export function TaskDrawer({
           onChange={e => changeStatus(e.target.value as WorkTaskStatus)}
         />
 
-        <dl className="grid grid-cols-[8rem_1fr] gap-x-4 gap-y-3 text-sm">
-          <dt className="text-gray-500 dark:text-gray-400">Responsável</dt>
-          <dd className="flex items-center gap-2 text-dark dark:text-light">
-            {task.assignee_id && (
-              <Avatar alt={ctx.adminName(task.assignee_id)} size="sm" />
-            )}
-            {ctx.adminName(task.assignee_id)}
-          </dd>
+        <div className="flex flex-col gap-2">
+          <h3 className="text-sm font-semibold text-dark dark:text-light">
+            Pessoas
+          </h3>
+          {task.assignee_ids.length === 0 ? (
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Ainda ninguém. {ctx.canEdit(task) && 'Junte pessoas em Editar.'}
+            </p>
+          ) : (
+            <ul className="flex flex-wrap gap-2">
+              {task.assignee_ids.map(id => (
+                <li
+                  key={id}
+                  className="inline-flex items-center gap-2 rounded-full bg-gray-100 py-1 pl-1 pr-3 text-sm text-dark dark:bg-gray-700/60 dark:text-light"
+                >
+                  <Avatar alt={ctx.adminName(id)} size="xs" />
+                  {ctx.adminName(id)}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <dl className="grid grid-cols-[7rem_1fr] gap-x-4 gap-y-2.5 text-sm">
           <dt className="text-gray-500 dark:text-gray-400">Departamento</dt>
           <dd className="text-dark dark:text-light">
             {ctx.departmentName(task.department_id)}
           </dd>
           <dt className="text-gray-500 dark:text-gray-400">Projecto</dt>
-          <dd className="text-dark dark:text-light">{project?.name ?? '—'}</dd>
+          <dd className="text-dark dark:text-light">
+            {project ? (
+              <Link
+                to={`${routsNameMain.work.projectStr}${project.id}`}
+                onClick={onClose}
+                className="font-medium text-dark underline decoration-gray-300 underline-offset-4 hover:text-primary-200 hover:decoration-primary-200 dark:text-light dark:decoration-gray-500"
+              >
+                {project.name}
+              </Link>
+            ) : (
+              '—'
+            )}
+          </dd>
           <dt className="text-gray-500 dark:text-gray-400">Prazo</dt>
           <dd
             className={
@@ -166,7 +197,11 @@ export function TaskDrawer({
           </p>
         )}
 
-        <section className="flex flex-col gap-3 border-t border-gray-200 pt-4 dark:border-gray-600">
+        <div className="border-t border-gray-200 pt-5 dark:border-gray-600">
+          <TaskChecklist task={task} />
+        </div>
+
+        <section className="flex flex-col gap-3 border-t border-gray-200 pt-5 dark:border-gray-600">
           <h3 className="text-sm font-semibold text-dark dark:text-light">
             Comentários
           </h3>

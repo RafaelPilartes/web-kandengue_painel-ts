@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button'
 import {
   ADMIN_ACCESS_LEVEL_LABELS,
   ADMIN_ACCESS_LEVELS
@@ -10,7 +11,6 @@ import { AppModal } from '@/components/modal/AppModal'
 import { useState } from 'react'
 
 // Lib
-import { BeatLoader } from 'react-spinners'
 
 // Form
 import { useForm } from 'react-hook-form'
@@ -277,9 +277,20 @@ export function ModalCreateAdmin({
       <AppModal
       isOpen={modalCreateRowIsOpen}
       onClose={closeModal}
+      footer={
+        <>
+          <Button variant="secondary" onClick={closeModal}>
+            Cancelar
+          </Button>
+          <Button type="submit" form="admin-create" loading={isUploading || createAdmin.isPending || isRegistering || setAccess.isPending}>
+            Guardar
+          </Button>
+        </>
+      }
       title={`Criar ${namePageSingular}`}
     >
             <form
+              id="admin-create"
               onSubmit={handleSubmit(handleSubmitForm)}
               className="w-full flex flex-col justify-center items-center gap-6"
             >
@@ -287,7 +298,7 @@ export function ModalCreateAdmin({
                 <div className="w-full max-w-[14rem] flex items-start justify-start ">
                   <label
                     htmlFor="dropzone-file"
-                    className="w-full h-40 flex flex-col items-center justify-center border-2 border-dashed rounded-lg cursor-pointer bg-gray-70 relative overflow-hidden"
+                    className="w-full h-40 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-50 transition-colors hover:border-primary-200/60 dark:border-gray-600 dark:bg-baseBgDark/50 dark:hover:border-primary-200/60 relative overflow-hidden"
                   >
                     {!imagePreview && (
                       <div className="flex flex-col items-center justify-center pt-5 pb-6">
@@ -307,11 +318,11 @@ export function ModalCreateAdmin({
                           />
                         </svg>
                         <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                          <span className="font-semibold">Click to upload</span>{' '}
+                          <span className="font-semibold">Carregar a foto</span>{' '}
                           {/* or drag and drop */}
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          PNG, JPG or JPEG (MAX. 6Mb)
+                          PNG, JPG ou JPEG (máx. 6 MB)
                         </p>
                       </div>
                     )}
@@ -408,24 +419,6 @@ export function ModalCreateAdmin({
                   control={control}
                   error={errors.confirm_password}
                 />
-              </div>
-
-              <div className="w-full pt-4 flex flex-row justify-between items-center border-t-[1px] border-gray-600 ">
-                <button
-                  type="submit"
-                  disabled={
-                    isUploading || createAdmin.isPending || isRegistering || setAccess.isPending
-                  }
-                  className="text-white bg-primary-200 hover:bg-primary-300 focus:ring-2 focus:outline-none focus:ring-primary-100 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-primary-200 dark:hover:bg-primary-300 dark:focus:ring-primary-500"
-                >
-                  {isUploading || createAdmin.isPending ? (
-                    <div className="flex items-center gap-2">
-                      <BeatLoader color="white" size={10} />
-                    </div>
-                  ) : (
-                    <span>Salvar</span>
-                  )}
-                </button>
               </div>
             </form>
       </AppModal>

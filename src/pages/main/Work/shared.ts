@@ -2,7 +2,8 @@ import type { WorkTaskPriority } from '@rafaelpilartes/kandengue-shared-v4/types
 import { useMemo } from 'react'
 import type { BadgeTone } from '@/components/ui/badge'
 import { useAccess } from '@/hooks/useAccess'
-import type { WorkTask } from '@/modules/Api/rest/work.dao'
+import { routsNameMain } from '@/constants/routsName'
+import type { WorkProject, WorkTask } from '@/modules/Api/rest/work.dao'
 import { useAdminStore } from '@/stores/userStore'
 import { useAdminDirectory, useDepartments } from '@/viewModels/AccessViewModel'
 
@@ -12,6 +13,20 @@ export const PRIORITY_TONE: Record<WorkTaskPriority, BadgeTone> = {
   high: 'warning',
   urgent: 'danger'
 }
+
+export const PROJECT_STATUS_TONE = {
+  active: 'info',
+  completed: 'success',
+  archived: 'neutral'
+} as const
+
+export const projectPath = (id: string) =>
+  `${routsNameMain.work.projectStr}${id}`
+
+/** Owner first, then everyone on the project's tasks, without repeats. */
+export const projectPeople = (project: WorkProject, tasks: WorkTask[]) => [
+  ...new Set([project.owner_id, ...tasks.flatMap(t => t.assignee_ids)])
+]
 
 /** A due date picked as a day is the end of that day in Angola (UTC+1). */
 export const dueDateToIso = (day: string) =>
@@ -32,6 +47,12 @@ export const formatDay = (iso: string | null) =>
         timeZone: 'Africa/Luanda'
       }).format(new Date(iso))
     : '—'
+
+/** Ticked steps over all steps; total 0 means the task has no checklist. */
+export const stepProgress = (t: Pick<WorkTask, 'checklist'>) => ({
+  done: t.checklist.filter(i => i.done).length,
+  total: t.checklist.length
+})
 
 export const isOverdue = (
   t: Pick<WorkTask, 'due_date' | 'status'>,
@@ -64,6 +85,8 @@ export function useWorkContext() {
     adminName: (id: string | null) =>
       id ? (adminName.get(id) ?? 'Desconhecido') : 'Sem responsável',
     departmentName: (id: string) => departmentName.get(id) ?? id,
+    peopleNames: (ids: string[]) =>
+      ids.map(id => adminName.get(id) ?? 'Desconhecido'),
     /** Mirrors the API's canEditTask; the API decides, this only hides buttons. */
     canEdit: (t: WorkTask) =>
       level === 'direction' ||

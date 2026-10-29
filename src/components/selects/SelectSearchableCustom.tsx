@@ -1,6 +1,8 @@
+import { fieldControl, fieldLabel } from '@/components/ui/field'
+import { cn } from '@/lib/tailwind-merge'
 import { useState } from 'react'
 import Select from 'react-select'
-import type { StylesConfig } from 'react-select'
+import type { ClassNamesConfig } from 'react-select'
 
 interface OptionSelect {
   value: string
@@ -30,55 +32,35 @@ export function SelectSearchableCustom({
     options.find(option => option.value === defaultValue) || null
   )
 
-  const customStyles: StylesConfig<OptionSelect, false> = {
-    control: (base: any) => ({
-      ...base,
-      padding: '2px',
-      borderRadius: '8px',
-      color: '#d1d5db', // Cor do texto digitado
-      outline: 'none',
-      backgroundColor: 'transparent', // Fundo transparente no controle
-      borderColor: 'rgba(156, 163, 175, 0.2)', // Cor da borda no modo claro
-      '&:hover': {
-        borderColor: '#a5b4fc' // Quando o controle estiver em foco
-      },
-      '@media (prefers-color-scheme: dark)': {
-        borderColor: '#4b5563' // Cor da borda no modo escuro
-      }
-    }),
-    menu: (base: any) => ({
-      ...base,
-      color: '#d1d5db', // Cor do texto do menu
-      backgroundColor: '#1f2937', // Fundo do menu em modo escuro
-      outline: 'none',
-      '@media (prefers-color-scheme: dark)': {
-        backgroundColor: '#2d3748' // Cor de fundo do menu em modo escuro
-      }
-    }),
-    input: (base: any) => ({
-      ...base,
-      color: '#9ca3af', // Cor do texto digitado
-      backgroundColor: 'transparent' // Fundo transparente
-    }),
-    singleValue: (base: any) => ({
-      ...base,
-      color: '#9ca3af' // Cor do valor selecionado
-    }),
-    placeholder: (base: any) => ({
-      ...base,
-      color: '#9ca3af' // Cor do placeholder
-    }),
-    option: (base: any, state: any) => ({
-      ...base,
-      padding: '4px 12px',
-      borderRadius: '4px 4px 0px 0px',
-      backgroundColor: state.isFocused
-        ? '#929292' // Cor de fundo quando está em foco/hover
-        : 'transparent', // Fundo transparente quando não está em foco
-      '@media (prefers-color-scheme: dark)': {
-        backgroundColor: state.isFocused ? '#4b5563' : 'transparent' // Foco no modo escuro
-      }
-    })
+  /*
+   * Styled with the panel's classes, not react-select's inline styles: those
+   * followed prefers-color-scheme, and this panel's theme is a class on the
+   * page, so the menu stayed dark in the light theme.
+   */
+  const classNames: ClassNamesConfig<OptionSelect, false> = {
+    control: state =>
+      cn(
+        fieldControl,
+        'flex min-h-10 !py-0.5 cursor-pointer',
+        state.isFocused &&
+          'border-primary-200 ring-2 ring-primary-200/30 dark:border-primary-200'
+      ),
+    placeholder: () => 'text-gray-400',
+    singleValue: () => 'text-dark dark:text-light',
+    input: () => 'text-dark dark:text-light',
+    indicatorsContainer: () => 'gap-1 text-gray-500 dark:text-gray-400',
+    clearIndicator: () => 'rounded p-0.5 hover:text-dark dark:hover:text-light',
+    dropdownIndicator: () => 'p-0.5',
+    indicatorSeparator: () => 'my-1 w-px bg-gray-300 dark:bg-gray-600',
+    menu: () =>
+      'mt-1 overflow-hidden rounded-lg border border-gray-200 bg-light py-1 shadow-lg shadow-gray-900/10 dark:border-gray-600 dark:bg-dark dark:shadow-black/40',
+    option: state =>
+      cn(
+        'cursor-pointer px-3 py-2 text-sm text-dark dark:text-light',
+        state.isFocused && 'bg-gray-100 dark:bg-gray-700',
+        state.isSelected && 'font-medium text-primary-200 dark:text-primary-100'
+      ),
+    noOptionsMessage: () => 'px-3 py-2 text-sm text-gray-500 dark:text-gray-400'
   }
 
   const handleChange = (option: OptionSelect | null) => {
@@ -89,10 +71,7 @@ export function SelectSearchableCustom({
   return (
     <div className="w-full">
       {label && (
-        <label
-          htmlFor={name}
-          className="block mb-2 text-sm font-medium dark:text-light text-gray-400"
-        >
+        <label htmlFor={name} className={cn(fieldLabel, 'mb-1.5 block')}>
           {label}
         </label>
       )}
@@ -106,7 +85,9 @@ export function SelectSearchableCustom({
         isSearchable
         isClearable
         value={selectedOption}
-        styles={customStyles}
+        unstyled
+        classNames={classNames}
+        noOptionsMessage={() => 'Sem resultados'}
         onChange={handleChange}
       />
 

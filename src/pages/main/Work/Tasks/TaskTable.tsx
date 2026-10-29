@@ -2,9 +2,11 @@ import {
   WORK_TASK_PRIORITY_LABELS,
   WORK_TASK_STATUS_LABELS
 } from '@rafaelpilartes/kandengue-shared-v4/constants'
+import { AvatarStack } from '@/components/ui/avatar-stack'
 import { Badge } from '@/components/ui/badge'
 import type { WorkTask } from '@/modules/Api/rest/work.dao'
 import { formatDay, isOverdue, PRIORITY_TONE, useWorkContext } from '../shared'
+import { StepCount } from './TaskBoard'
 
 export function TaskTable({
   tasks,
@@ -21,7 +23,8 @@ export function TaskTable({
           <tr>
             <th className="px-3 py-3 font-semibold">Tarefa</th>
             <th className="px-3 py-3 font-semibold">Departamento</th>
-            <th className="px-3 py-3 font-semibold">Responsável</th>
+            <th className="px-3 py-3 font-semibold">Pessoas</th>
+            <th className="px-3 py-3 font-semibold">Passos</th>
             <th className="px-3 py-3 font-semibold">Prioridade</th>
             <th className="px-3 py-3 font-semibold">Estado</th>
             <th className="px-3 py-3 font-semibold">Prazo</th>
@@ -45,7 +48,16 @@ export function TaskTable({
               <td className="px-3 py-3">
                 {ctx.departmentName(t.department_id)}
               </td>
-              <td className="px-3 py-3">{ctx.adminName(t.assignee_id)}</td>
+              <td className="px-3 py-3">
+                {t.assignee_ids.length ? (
+                  <AvatarStack names={ctx.peopleNames(t.assignee_ids)} />
+                ) : (
+                  <span className="text-gray-400">—</span>
+                )}
+              </td>
+              <td className="px-3 py-3">
+                <StepCount task={t} />
+              </td>
               <td className="px-3 py-3">
                 <Badge tone={PRIORITY_TONE[t.priority]}>
                   {WORK_TASK_PRIORITY_LABELS[t.priority]}

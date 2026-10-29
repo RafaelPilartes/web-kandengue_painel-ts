@@ -46,6 +46,8 @@ export const routsNameMain = {
   work: {
     tasks: '/work/tasks',
     projects: '/work/projects',
+    project: '/work/projects/:id',
+    projectStr: '/work/projects/',
     calendar: '/work/calendar',
     reports: '/work/reports'
   },

@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button'
 import { AppModal } from '@/components/modal/AppModal'
 // src/components/modals/ModalSendNotification.tsx
 import { useEffect, useState } from 'react'
@@ -188,7 +189,20 @@ export function ModalSendNotification({
     <AppModal
       isOpen={isOpen}
       onClose={handleCloseModal}
-      title="Enviar Notificação"
+      title="Enviar notificação"
+      footer={
+        <>
+          <Button variant="secondary" onClick={handleCloseModal}>
+            Cancelar
+          </Button>
+          <Button
+            onClick={handleSendNotification}
+            loading={createNotification.isPending}
+          >
+            Enviar
+          </Button>
+        </>
+      }
     >
           <div className="w-full flex flex-col justify-center items-center gap-6">
             {/* Título */}
@@ -239,7 +253,7 @@ export function ModalSendNotification({
                 onChange={() => {
                   handleSpecificUserChange(!specificUser)
                 }}
-                className="h-4 w-4"
+                className="h-4 w-4 cursor-pointer rounded border-gray-400 text-primary-200 focus:ring-2 focus:ring-primary-200 dark:border-gray-500 dark:bg-baseBgDark"
               />
               <label
                 htmlFor="specificUser"
@@ -266,23 +280,6 @@ export function ModalSendNotification({
                 )}
               </div>
             )}
-
-            {/* Botões */}
-            <div className="mt-6 flex gap-4 justify-end w-full">
-              <button
-                className="py-2 px-4 rounded-lg bg-gray-400 text-white hover:bg-gray-500"
-                onClick={handleCloseModal}
-              >
-                Cancelar
-              </button>
-              <button
-                className="py-2 px-4 rounded-lg bg-primary-200 text-white hover:bg-primary-500 disabled:opacity-60"
-                onClick={handleSendNotification}
-                disabled={createNotification.isPending}
-              >
-                {createNotification.isPending ? 'Enviando...' : 'Enviar'}
-              </button>
-            </div>
           </div>
     </AppModal>
   )

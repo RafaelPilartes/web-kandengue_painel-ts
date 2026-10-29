@@ -120,6 +120,16 @@
   }
 }
 
+/* A modal or drawer open: the page behind does not scroll under the wheel or
+   the finger. The gutter keeps the layout from jumping sideways when the
+   scrollbar goes away. */
+html {
+  scrollbar-gutter: stable;
+}
+body.ReactModal__Body--open {
+  overflow: hidden;
+}
+
 .modal-overlay {
   animation: modal-overlay-in 180ms ease-out both;
 }

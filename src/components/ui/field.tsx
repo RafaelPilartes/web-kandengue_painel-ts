@@ -8,11 +8,14 @@ import {
 } from 'react'
 import { cn } from '@/lib/tailwind-merge'
 
-const control =
+/** The panel's control look: also used by the older inputs and selects. */
+export const fieldControl =
   'w-full rounded-lg border border-gray-300 bg-light px-3 py-2 text-sm text-dark placeholder:text-gray-400 transition-colors ' +
   'focus:border-primary-200 focus:outline-none focus:ring-2 focus:ring-primary-200/30 ' +
   'disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-600 dark:bg-baseBgDark dark:text-light ' +
   'aria-[invalid=true]:border-red-500'
+
+export const fieldLabel = 'text-sm font-medium text-gray-700 dark:text-gray-200'
 
 /** Label, control and message, wired for screen readers. */
 function FieldShell({
@@ -30,10 +33,7 @@ function FieldShell({
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label
-        htmlFor={id}
-        className="text-sm font-medium text-gray-700 dark:text-gray-200"
-      >
+      <label htmlFor={id} className={fieldLabel}>
         {label}
       </label>
       {children}
@@ -68,7 +68,7 @@ export const TextField = forwardRef<
         id={fieldId}
         aria-invalid={!!error}
         aria-describedby={error || hint ? `${fieldId}-msg` : undefined}
-        className={cn(control, className)}
+        className={cn(fieldControl, className)}
         {...props}
       />
     </FieldShell>
@@ -89,7 +89,7 @@ export const TextAreaField = forwardRef<
         id={fieldId}
         aria-invalid={!!error}
         aria-describedby={error || hint ? `${fieldId}-msg` : undefined}
-        className={cn(control, 'min-h-24', className)}
+        className={cn(fieldControl, 'min-h-24', className)}
         {...props}
       />
     </FieldShell>
@@ -118,7 +118,7 @@ export const SelectField = forwardRef<
           id={fieldId}
           aria-invalid={!!error}
           aria-describedby={error || hint ? `${fieldId}-msg` : undefined}
-          className={cn(control, className)}
+          className={cn(fieldControl, className)}
           {...props}
         >
           {placeholder !== undefined && <option value="">{placeholder}</option>}

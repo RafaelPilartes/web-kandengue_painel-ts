@@ -6,6 +6,7 @@ import {
 import type { AdminPermission } from '@rafaelpilartes/kandengue-shared-v4/types'
 import { useState, type FormEvent } from 'react'
 import { AppModal } from '@/components/modal/AppModal'
+import { cn } from '@/lib/tailwind-merge'
 import { Button } from '@/components/ui/button'
 import { TextField } from '@/components/ui/field'
 import type { DepartmentRow } from '@/modules/Api/rest/adminAccess.dao'
@@ -71,8 +72,22 @@ export function DepartmentModal({
       size="lg"
       title={department ? `Editar ${department.name}` : 'Novo departamento'}
       description="As permissões dizem o que os Gestores e Colaboradores deste departamento podem abrir no painel. A Direcção tem sempre todas."
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button type="submit" form="department-form" loading={saving}>
+            {department ? 'Guardar alterações' : 'Criar departamento'}
+          </Button>
+        </>
+      }
     >
-      <form onSubmit={submit} className="flex flex-col gap-6">
+      <form
+        id="department-form"
+        onSubmit={submit}
+        className="flex flex-col gap-6"
+      >
         <TextField
           label="Nome"
           placeholder="Ex.: Marketing"
@@ -90,18 +105,23 @@ export function DepartmentModal({
           </legend>
           {GROUPS.map(group => (
             <div key={group.label} className="flex flex-col gap-2">
-              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              <p className="text-sm font-semibold text-dark dark:text-light">
                 {group.label}
               </p>
               <div className="grid gap-2 sm:grid-cols-2">
                 {group.permissions.map(p => (
                   <label
                     key={p}
-                    className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700/50"
+                    className={cn(
+                      'flex cursor-pointer items-center gap-2.5 rounded-lg border px-3 py-2 text-sm text-dark transition-colors dark:text-light',
+                      permissions.includes(p)
+                        ? 'border-primary-200/60 bg-primary-50/60 dark:border-primary-200/50 dark:bg-primary-900/30'
+                        : 'border-gray-200 hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700/50'
+                    )}
                   >
                     <input
                       type="checkbox"
-                      className="h-4 w-4 rounded border-gray-300"
+                      className="h-4 w-4 rounded border-gray-400 text-primary-200 focus:ring-2 focus:ring-primary-200 dark:border-gray-500 dark:bg-baseBgDark"
                       checked={permissions.includes(p)}
                       onChange={() => toggle(p)}
                     />
@@ -112,15 +132,6 @@ export function DepartmentModal({
             </div>
           ))}
         </fieldset>
-
-        <div className="flex justify-end gap-2 border-t border-gray-200 pt-4 dark:border-gray-600">
-          <Button variant="secondary" onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button type="submit" loading={saving}>
-            {department ? 'Guardar alterações' : 'Criar departamento'}
-          </Button>
-        </div>
       </form>
     </AppModal>
   )

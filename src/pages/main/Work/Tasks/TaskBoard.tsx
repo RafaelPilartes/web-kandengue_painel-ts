@@ -4,13 +4,39 @@ import {
   WORK_TASK_STATUSES
 } from '@rafaelpilartes/kandengue-shared-v4/constants'
 import type { WorkTaskStatus } from '@rafaelpilartes/kandengue-shared-v4/types'
-import { CalendarClock } from 'lucide-react'
+import { CalendarClock, ListChecks } from 'lucide-react'
 import { useState, type DragEvent } from 'react'
-import { Avatar } from '@/components/ui/avatar'
+import { AvatarStack } from '@/components/ui/avatar-stack'
 import { Badge } from '@/components/ui/badge'
 import type { WorkTask } from '@/modules/Api/rest/work.dao'
 import { cn } from '@/lib/tailwind-merge'
-import { formatDay, isOverdue, PRIORITY_TONE, useWorkContext } from '../shared'
+import {
+  formatDay,
+  isOverdue,
+  PRIORITY_TONE,
+  stepProgress,
+  useWorkContext
+} from '../shared'
+
+/** "2/5" steps done; green once all are. Nothing when the task has no checklist. */
+export function StepCount({ task }: { task: WorkTask }) {
+  const { done, total } = stepProgress(task)
+  if (!total) return null
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1 text-xs tabular-nums',
+        done === total
+          ? 'text-emerald-700 dark:text-emerald-300'
+          : 'text-gray-500 dark:text-gray-400'
+      )}
+      aria-label={`${done} de ${total} passos feitos`}
+    >
+      <ListChecks size={12} aria-hidden />
+      {done}/{total}
+    </span>
+  )
+}
 
 /**
  * Four columns, cards dragged with the browser's own drag and drop. Dropping
@@ -126,10 +152,9 @@ export function TaskBoard({
                         {formatDay(task.due_date)}
                       </span>
                     )}
+                    <StepCount task={task} />
                   </div>
-                  {task.assignee_id && (
-                    <Avatar alt={ctx.adminName(task.assignee_id)} size="sm" />
-                  )}
+                  <AvatarStack names={ctx.peopleNames(task.assignee_ids)} />
                 </div>
               </button>
             </article>

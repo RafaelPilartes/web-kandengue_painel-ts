@@ -44,8 +44,9 @@ export interface AppModalProps {
   description?: string
   size?: keyof typeof sizes
   /**
-   * `center` é a caixa ao meio; `drawer` entra da direita e ocupa a altura
-   * toda — assenta melhor em ecrãs de consulta, onde se lê de cima a baixo.
+   * `drawer` (the default) slides in from the right at full height: forms
+   * and details read top to bottom and the page stays in view. `center` is
+   * for a short confirmation that must stop the admin.
    */
   variant?: ModalVariant
   /** Rodapé fixo, fora da área que faz scroll. */
@@ -69,8 +70,8 @@ export function AppModal({
   onClose,
   title,
   description,
-  size = 'lg',
-  variant = 'center',
+  size = 'md',
+  variant = 'drawer',
   footer,
   children,
   className
@@ -81,11 +82,20 @@ export function AppModal({
 
 
   const painel = cn(
-    'flex w-full flex-col overflow-hidden bg-white shadow-2xl outline-none dark:bg-dark',
+    'flex w-full flex-col overflow-hidden bg-light outline-none dark:bg-dark',
     // A animação de entrada vive em `global.css` — ver a nota lá.
     isDrawer
-      ? ['modal-panel--drawer h-full max-h-full rounded-l-xl', sizes[size]]
-      : ['modal-panel--center max-h-[85vh] rounded-xl', sizes[size]],
+      ? [
+          'modal-panel--drawer h-full max-h-full border-l border-gray-200 shadow-[-16px_0_48px_-12px_rgba(15,23,42,0.25)]',
+          'dark:border-gray-700 dark:shadow-[-16px_0_48px_-12px_rgba(0,0,0,0.6)]',
+          'sm:rounded-l-xl',
+          sizes[size]
+        ]
+      : [
+          'modal-panel--center max-h-[min(85vh,48rem)] rounded-xl border border-gray-200 shadow-xl shadow-gray-900/20',
+          'dark:border-gray-700 dark:shadow-black/50',
+          sizes[size]
+        ],
     className
   )
 
@@ -95,10 +105,12 @@ export function AppModal({
       onRequestClose={onClose}
       shouldCloseOnOverlayClick
       shouldCloseOnEsc
+      // The page behind stops scrolling: see `.ReactModal__Body--open` in global.css.
+      bodyOpenClassName="ReactModal__Body--open"
       overlayClassName={cn(
-        'modal-overlay fixed inset-0 flex bg-black/60',
+        'modal-overlay fixed inset-0 flex bg-gray-950/40 dark:bg-black/60',
         Z_INDEX,
-        isDrawer ? 'justify-end' : 'items-center justify-center p-4',
+        isDrawer ? 'justify-end' : 'items-center justify-center p-4'
       )}
       className={painel}
       aria={{
@@ -106,18 +118,18 @@ export function AppModal({
         describedby: description ? descriptionId : undefined
       }}
     >
-      <header className="flex shrink-0 flex-row items-start justify-between gap-4 border-b border-gray-200 px-5 py-4 dark:border-gray-600">
-        <div className="min-w-0">
+      <header className="flex shrink-0 flex-row items-start justify-between gap-4 border-b border-gray-200 px-6 py-4 dark:border-gray-700">
+        <div className="min-w-0 py-0.5">
           <h2
             id={titleId}
-            className="truncate text-xl font-medium text-dark dark:text-light"
+            className="text-lg font-semibold leading-snug text-dark [text-wrap:balance] dark:text-light"
           >
             {title}
           </h2>
           {description && (
             <p
               id={descriptionId}
-              className="mt-1 text-sm text-gray-500 dark:text-gray-400"
+              className="mt-1 max-w-[60ch] text-sm text-gray-600 dark:text-gray-300"
             >
               {description}
             </p>
@@ -128,18 +140,18 @@ export function AppModal({
           type="button"
           onClick={onClose}
           aria-label="Fechar"
-          className="shrink-0 rounded-lg p-2 text-dark transition-colors hover:bg-gray-200 dark:text-light dark:hover:bg-gray-500/20"
+          className="-mr-2 shrink-0 rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-light"
         >
           <X size={20} aria-hidden />
         </button>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden scroll-smooth p-6">
+      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain px-6 py-5">
         {children}
       </div>
 
       {footer && (
-        <footer className="flex shrink-0 flex-wrap items-center justify-end gap-3 border-t border-gray-200 px-6 py-4 dark:border-gray-600">
+        <footer className="flex shrink-0 flex-wrap items-center justify-end gap-3 border-t border-gray-200 bg-gray-50 px-6 py-4 dark:border-gray-700 dark:bg-baseBgDark/40">
           {footer}
         </footer>
       )}

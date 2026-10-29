@@ -1,3 +1,5 @@
+import { fieldControl, fieldLabel } from '@/components/ui/field'
+import { cn } from '@/lib/tailwind-merge'
 import { useState, useEffect } from 'react'
 import type { ChangeEvent } from 'react'
 
@@ -50,10 +52,7 @@ export function InputLabelSimple({
 
   return (
     <div className="w-full">
-      <label
-        htmlFor={htmlFor}
-        className="block mb-2 text-sm font-medium dark:text-light text-gray-600"
-      >
+      <label htmlFor={htmlFor} className={cn(fieldLabel, 'mb-1.5 block')}>
         {label}
       </label>
       <input
@@ -63,7 +62,7 @@ export function InputLabelSimple({
         value={inputValue} // Agora controlado apenas pelo inputValue
         disabled={isDisabled}
         onChange={handleInputChange}
-        className="w-full p-2.5 border dark:bg-gray-700/60 bg-gray-100/10 dark:border-gray-500/60 border-gray-300/60 dark:text-gray-300 text-gray-500 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block"
+        className={fieldControl}
         placeholder={placeholder || ''}
         required={required}
       />

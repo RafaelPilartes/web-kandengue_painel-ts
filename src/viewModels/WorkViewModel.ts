@@ -110,6 +110,72 @@ export function useTaskMutations() {
   return { create, update, archive, move }
 }
 
+/** Puts the task the API returned into every cached list, so the drawer and the board agree at once. */
+function replaceTask(tasks: WorkTask[] | undefined, next: WorkTask) {
+  return tasks?.map(t => (t.id === next.id ? next : t))
+}
+
+/**
+ * The checklist of one task. Ticking is optimistic, like the board's drag:
+ * the box turns at once and turns back if the API refuses.
+ */
+export function useTaskSteps(taskId: string | null) {
+  const queryClient = useQueryClient()
+  const settle = (task: WorkTask) => {
+    queryClient.setQueriesData<WorkTask[]>({ queryKey: TASKS }, data =>
+      replaceTask(data, task)
+    )
+    queryClient.invalidateQueries({ queryKey: TASKS })
+    queryClient.invalidateQueries({ queryKey: PROJECTS })
+  }
+  const add = useMutation({
+    mutationFn: (v: { text: string; assignee_id: string | null }) =>
+      workDAO.addStep(taskId as string, v),
+    onSuccess: settle
+  })
+  const edit = useMutation({
+    mutationFn: (v: {
+      itemId: string
+      values: Partial<{ text: string; assignee_id: string | null }>
+    }) => workDAO.updateStep(taskId as string, v.itemId, v.values),
+    onSuccess: settle
+  })
+  const remove = useMutation({
+    mutationFn: (itemId: string) =>
+      workDAO.removeStep(taskId as string, itemId),
+    onSuccess: settle
+  })
+  const toggle = useMutation({
+    mutationFn: (v: { itemId: string; done: boolean }) =>
+      workDAO.updateStep(taskId as string, v.itemId, { done: v.done }),
+    onMutate: async v => {
+      await queryClient.cancelQueries({ queryKey: TASKS })
+      const snapshots = queryClient.getQueriesData<WorkTask[]>({
+        queryKey: TASKS
+      })
+      queryClient.setQueriesData<WorkTask[]>({ queryKey: TASKS }, data =>
+        data?.map(t =>
+          t.id === taskId
+            ? {
+                ...t,
+                checklist: t.checklist.map(i =>
+                  i.id === v.itemId ? { ...i, done: v.done } : i
+                )
+              }
+            : t
+        )
+      )
+      return { snapshots }
+    },
+    onError: (_err, _v, context) => {
+      for (const [key, data] of context?.snapshots ?? [])
+        queryClient.setQueryData(key, data)
+    },
+    onSuccess: settle
+  })
+  return { add, edit, remove, toggle }
+}
+
 export function useTaskComments(taskId: string | null) {
   const queryClient = useQueryClient()
   const key = ['work-comments', taskId]

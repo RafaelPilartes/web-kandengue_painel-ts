@@ -5,9 +5,9 @@ import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { SelectField } from '@/components/ui/field'
 import { PageHeader } from '@/components/ui/page-header'
+import { Segmented } from '@/components/ui/segmented'
 import { Panel } from '@/components/ui/panel'
 import type { WorkTask } from '@/modules/Api/rest/work.dao'
-import { cn } from '@/lib/tailwind-merge'
 import { showToast } from '@/utils/toasts'
 import {
   useTaskMutations,
@@ -94,34 +94,23 @@ export function WorkTasksPage() {
         }
         actions={
           <>
-            <div
-              role="group"
-              aria-label="Vista"
-              className="inline-flex rounded-lg border border-gray-300 p-0.5 dark:border-gray-600"
-            >
-              {(
-                [
-                  ['board', 'Quadro', <Columns3 key="b" size={16} />],
-                  ['list', 'Lista', <List key="l" size={16} />]
-                ] as const
-              ).map(([v, label, icon]) => (
-                <button
-                  key={v}
-                  type="button"
-                  aria-pressed={view === v}
-                  onClick={() => changeView(v)}
-                  className={cn(
-                    'inline-flex h-8 items-center gap-1.5 rounded-md px-3 text-sm',
-                    view === v
-                      ? 'bg-primary-200 text-white'
-                      : 'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700'
-                  )}
-                >
-                  {icon}
-                  {label}
-                </button>
-              ))}
-            </div>
+            <Segmented
+              label="Vista"
+              value={view}
+              onChange={changeView}
+              options={[
+                {
+                  value: 'board',
+                  label: 'Quadro',
+                  icon: <Columns3 size={16} aria-hidden />
+                },
+                {
+                  value: 'list',
+                  label: 'Lista',
+                  icon: <List size={16} aria-hidden />
+                }
+              ]}
+            />
             <Button icon={<Plus size={16} />} onClick={() => setCreating(true)}>
               Nova tarefa
             </Button>
@@ -153,7 +142,7 @@ export function WorkTasksPage() {
             onChange={e => setProjectId(e.target.value)}
           />
           <SelectField
-            label="Responsável"
+            label="Pessoa"
             value={assigneeId}
             placeholder="Todos"
             options={ctx.admins
@@ -193,7 +182,7 @@ export function WorkTasksPage() {
             description={
               filtered
                 ? 'Limpe um dos filtros para ver mais.'
-                : 'Crie a primeira tarefa: um título, um responsável e um prazo chegam para começar.'
+                : 'Crie a primeira tarefa: um título, as pessoas e um prazo chegam para começar.'
             }
             action={
               !filtered && (

@@ -12,16 +12,27 @@ export type WorkTask = {
   description: string
   department_id: string
   project_id: string | null
-  assignee_id: string | null
+  assignee_ids: string[]
   priority: WorkTaskPriority
   status: WorkTaskStatus
   due_date: string | null
   position: number
   completed_at: string | null
+  checklist: WorkChecklistItem[]
   archived: boolean
   created_by: string
   created_at: string | null
   updated_at: string | null
+}
+
+/** One step of a task, for one of its people or (assignee_id null) anyone. */
+export type WorkChecklistItem = {
+  id: string
+  text: string
+  assignee_id: string | null
+  done: boolean
+  done_by: string | null
+  done_at: string | null
 }
 
 export type WorkTaskInput = {
@@ -29,7 +40,7 @@ export type WorkTaskInput = {
   description?: string
   department_id: string
   project_id?: string | null
-  assignee_id?: string | null
+  assignee_ids?: string[]
   priority?: WorkTaskPriority
   due_date?: string | null
 }
@@ -88,6 +99,8 @@ export type WorkReport = {
     name: string
     open: number
     overdue: number
+    /** Their unticked checklist steps on open tasks. */
+    open_steps: number
   }[]
 }
 
@@ -98,6 +111,7 @@ export type WorkNotification = {
     | 'task_status_changed'
     | 'task_commented'
     | 'task_due_soon'
+    | 'checklist_assigned'
   task_id: string
   task_title: string
   actor_id: string
@@ -128,6 +142,23 @@ export const workDAO = {
     taskId: string,
     body: { status: WorkTaskStatus; before_id: string | null }
   ) => ApiDAO.post<WorkTask>(`${BASE}/tasks/${id(taskId)}/move`, body),
+  addStep: (
+    taskId: string,
+    body: { text: string; assignee_id: string | null }
+  ) => ApiDAO.post<WorkTask>(`${BASE}/tasks/${id(taskId)}/checklist`, body),
+  updateStep: (
+    taskId: string,
+    itemId: string,
+    body: Partial<{ text: string; assignee_id: string | null; done: boolean }>
+  ) =>
+    ApiDAO.patch<WorkTask>(
+      `${BASE}/tasks/${id(taskId)}/checklist/${id(itemId)}`,
+      body
+    ),
+  removeStep: (taskId: string, itemId: string) =>
+    ApiDAO.delete<WorkTask>(
+      `${BASE}/tasks/${id(taskId)}/checklist/${id(itemId)}`
+    ),
   comments: (taskId: string) =>
     ApiDAO.get<WorkComment[]>(`${BASE}/tasks/${id(taskId)}/comments`),
   addComment: (taskId: string, body: string) =>

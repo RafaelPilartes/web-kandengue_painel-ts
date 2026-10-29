@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button'
 import { useMemo, useState } from 'react'
 
 // Lib
@@ -155,7 +156,6 @@ export function ModalCreateWallet({
 
   return (
     <AppModal
-      variant="drawer"
       isOpen={modalCreateRowIsOpen}
       onClose={closeModal}
       title="Criar carteira"
@@ -163,25 +163,13 @@ export function ModalCreateWallet({
       size="md"
       footer={
         <>
-          <button
-            type="button"
-            onClick={closeModal}
-            disabled={isSending}
-            className="rounded-lg px-5 py-2.5 text-sm font-medium text-gray-500 transition-colors hover:bg-gray-100 disabled:opacity-50 dark:text-gray-300 dark:hover:bg-gray-500/20"
-          >
+          <Button variant="secondary" onClick={closeModal} disabled={isSending}>
             Cancelar
-          </button>
-
-          {/* O botão vive no rodapé do modal, e por isso submete o
-              formulário pelo atributo `form`. */}
-          <button
-            type="submit"
-            form="form-criar-carteira"
-            disabled={isSending}
-            className="flex items-center justify-center gap-2 rounded-lg bg-primary-200 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-300 disabled:opacity-50"
-          >
-            {isSending ? <BeatLoader size={8} color="white" /> : 'Criar carteira'}
-          </button>
+          </Button>
+          {/* The button lives in the footer, so it submits the form through `form`. */}
+          <Button type="submit" form="form-criar-carteira" loading={isSending}>
+            Criar carteira
+          </Button>
         </>
       }
     >

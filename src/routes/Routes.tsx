@@ -48,6 +48,7 @@ import { SimulatorPage } from '@/pages/main/Pricing/Simulator'
 import { DepartmentsPage } from '@/pages/main/Departments'
 import { WorkTasksPage } from '@/pages/main/Work/Tasks'
 import { WorkProjectsPage } from '@/pages/main/Work/Projects'
+import { WorkProjectPage } from '@/pages/main/Work/Projects/ProjectPage'
 import { WorkCalendarPage } from '@/pages/main/Work/Calendar'
 import { WorkReportsPage } from '@/pages/main/Work/Reports'
 
@@ -98,6 +99,16 @@ export function Router() {
               <React.Suspense fallback={<Loading />}>
                 <Private>
                   <WorkProjectsPage />
+                </Private>
+              </React.Suspense>
+            }
+          />
+          <Route
+            path={routsNameMain.work.project}
+            element={
+              <React.Suspense fallback={<Loading />}>
+                <Private>
+                  <WorkProjectPage />
                 </Private>
               </React.Suspense>
             }

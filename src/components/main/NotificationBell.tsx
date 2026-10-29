@@ -11,7 +11,8 @@ const VERB: Record<WorkNotification['kind'], string> = {
   task_assigned: 'atribuiu-lhe',
   task_status_changed: 'mudou o estado de',
   task_commented: 'comentou',
-  task_due_soon: 'lembra o prazo de'
+  task_due_soon: 'lembra o prazo de',
+  checklist_assigned: 'deu-lhe um passo em'
 }
 
 const ago = (iso: string | null) => {
