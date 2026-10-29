@@ -4,6 +4,7 @@ import { MissionCard } from '../missions/MissionCard'
 import { Spinner } from 'phosphor-react'
 import { RefreshCw } from 'lucide-react'
 import { showToast } from '@/utils/toasts'
+import { useAccess } from '@/hooks/useAccess'
 
 interface DriverProgressTrackerProps {
   driver_id: string
@@ -19,6 +20,9 @@ export const DriverProgressTracker: React.FC<DriverProgressTrackerProps> = ({
     recalculateProgress,
     payMissionProgress
   } = useMissionViewModel()
+  // Recalculating needs manage_missions and paying needs manage_wallet; a
+  // driver page is open to manage_drivers, which may have neither.
+  const { can } = useAccess()
 
   const {
     data: progressList = [],
@@ -101,6 +105,7 @@ export const DriverProgressTracker: React.FC<DriverProgressTrackerProps> = ({
         <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-100">
           Progresso das Missões Ativas
         </h4>
+        {can('manage_missions') && (
         <button
           onClick={handleRecalculate}
           disabled={recalculateProgress.isPending}
@@ -112,6 +117,7 @@ export const DriverProgressTracker: React.FC<DriverProgressTrackerProps> = ({
           />
           Recalcular Progresso
         </button>
+        )}
       </div>
 
       {activeMissions.length === 0 ? (
@@ -137,12 +143,10 @@ export const DriverProgressTracker: React.FC<DriverProgressTrackerProps> = ({
                 isPaid={progress?.is_paid || false}
                 isPaying={isPaying}
                 typePaid={progress?.type_paid}
-                onPay={type =>
-                  handlePay(
-                    driver_id,
-                    mission.id!,
-                    type
-                  )
+                onPay={
+                  can('manage_wallet')
+                    ? type => handlePay(driver_id, mission.id!, type)
+                    : undefined
                 }
               />
             )

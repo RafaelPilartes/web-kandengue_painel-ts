@@ -10,13 +10,13 @@ const task = (
 ) => ({ id, status, position, department_id }) as WorkTask
 
 describe('moveLocally (the optimistic board move)', () => {
-  it('inserts the card at the target position and renumbers the column', () => {
+  it('inserts the card before the target card and renumbers the column', () => {
     const tasks = [
       task('a', 'todo', 0),
       task('b', 'in_progress', 0),
       task('c', 'in_progress', 1)
     ]
-    const result = moveLocally(tasks, 'a', 'in_progress', 1)
+    const result = moveLocally(tasks, 'a', 'in_progress', 'c')
     const column = result
       .filter(t => t.status === 'in_progress')
       .sort((x, y) => x.position - y.position)
@@ -27,12 +27,12 @@ describe('moveLocally (the optimistic board move)', () => {
     ])
   })
 
-  it('clamps a position past the end', () => {
+  it('puts the card at the end when there is no card to go before', () => {
     const result = moveLocally(
       [task('a', 'todo', 0), task('b', 'done', 0)],
       'a',
       'done',
-      99
+      null
     )
     expect(result.find(t => t.id === 'a')).toMatchObject({
       status: 'done',
@@ -42,7 +42,7 @@ describe('moveLocally (the optimistic board move)', () => {
 
   it("leaves another department's column alone", () => {
     const tasks = [task('a', 'todo', 0), task('x', 'done', 0, 'it')]
-    const result = moveLocally(tasks, 'a', 'done', 0)
+    const result = moveLocally(tasks, 'a', 'done', null)
     expect(result.find(t => t.id === 'x')?.position).toBe(0)
     expect(result.find(t => t.id === 'a')?.position).toBe(0)
   })

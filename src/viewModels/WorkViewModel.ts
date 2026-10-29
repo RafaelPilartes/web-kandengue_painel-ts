@@ -28,12 +28,12 @@ export function useWorkTasks(filters: WorkTaskFilters = {}) {
   }
 }
 
-/** Places `task` at `position` of `status`, renumbering like the server does. */
+/** Places `task` before `beforeId` (null: at the end) of `status`, renumbering like the server does. */
 export function moveLocally(
   tasks: WorkTask[],
   taskId: string,
   status: WorkTaskStatus,
-  position: number
+  beforeId: string | null
 ): WorkTask[] {
   const task = tasks.find(t => t.id === taskId)
   if (!task) return tasks
@@ -45,7 +45,8 @@ export function moveLocally(
         t.department_id === task.department_id
     )
     .sort((a, b) => a.position - b.position)
-  const at = Math.max(0, Math.min(position, column.length))
+  const index = beforeId ? column.findIndex(t => t.id === beforeId) : -1
+  const at = index === -1 ? column.length : index
   const ordered = [
     ...column.slice(0, at),
     { ...task, status },
@@ -80,8 +81,11 @@ export function useTaskMutations() {
 
   /** Optimistic: the card lands at once and goes back if the API refuses. */
   const move = useMutation({
-    mutationFn: (v: { id: string; status: WorkTaskStatus; position: number }) =>
-      workDAO.moveTask(v.id, { status: v.status, position: v.position }),
+    mutationFn: (v: {
+      id: string
+      status: WorkTaskStatus
+      beforeId: string | null
+    }) => workDAO.moveTask(v.id, { status: v.status, before_id: v.beforeId }),
     onMutate: async v => {
       await queryClient.cancelQueries({ queryKey: TASKS })
       const snapshots = queryClient.getQueriesData<WorkTask[]>({
@@ -91,7 +95,7 @@ export function useTaskMutations() {
         if (data)
           queryClient.setQueryData(
             key,
-            moveLocally(data, v.id, v.status, v.position)
+            moveLocally(data, v.id, v.status, v.beforeId)
           )
       }
       return { snapshots }
@@ -176,7 +180,8 @@ export function useWorkNotifications() {
   const notifications = query.data ?? []
   return {
     notifications,
-    unread: notifications.filter(n => !n.read).length,
+    // The API returns only the unread: the bell is an inbox.
+    unread: notifications.length,
     markRead
   }
 }

@@ -78,3 +78,24 @@ describe('filterMenu', () => {
     expect(filterMenu(menu, () => true)).toEqual(menu)
   })
 })
+
+describe('every screen has a rule (review #10)', () => {
+  // Open on purpose: the login, the work module (the level decides inside),
+  // and two names with no screen behind them.
+  const OPEN = ['/login', '/admin', '/chat']
+  const paths = (node: unknown): string[] =>
+    typeof node === 'string'
+      ? [node]
+      : node && typeof node === 'object'
+        ? Object.values(node).flatMap(paths)
+        : []
+
+  it('fails when a path in routsNameMain has no permission rule', async () => {
+    const { routsNameMain } = await import('@/constants/routsName')
+    const unruled = paths(routsNameMain)
+      .filter(p => !p.endsWith('/')) // the `…Str` prefixes used to build links
+      .filter(p => !OPEN.includes(p) && !p.startsWith('/work/'))
+      .filter(p => permissionFor(p) === null)
+    expect(unruled).toEqual([])
+  })
+})

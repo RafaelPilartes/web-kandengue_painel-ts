@@ -79,6 +79,7 @@ import { useFileUploadViewModel } from '@/viewModels/FileUploadViewModel'
 import { userStatusOptions } from '@/data/selectOption'
 import { SelectCustom } from '@/components/selects/SelectCustom'
 import { DriverProgressTracker } from '@/components/drivers/DriverProgressTracker'
+import { useAccess } from '@/hooks/useAccess'
 import { WalletStatement } from '@/components/wallet/WalletStatement'
 
 export function DriverViewPage() {
@@ -98,6 +99,7 @@ export function DriverViewPage() {
   const { fetchAllTransactionsByField } = useTransactionsViewModel()
   const { fetchAllRidesByField, calculateDriverEarnings } = useRidesViewModel()
   const { fetchAllVehiclesByField, reviewVehicle } = useVehiclesViewModel()
+  const { can } = useAccess()
   const {
     fetchAllDocumentsByField,
     filterDocsBy,
@@ -732,7 +734,8 @@ export function DriverViewPage() {
     }
 
     // Adiciona as ações de "Aprovar" e "Rejeitar" se o veículo estiver "under_analysis"
-    if (isUnderAnalysis) {
+    // Reviewing a vehicle needs manage_vehicles; this page only needs manage_drivers.
+    if (isUnderAnalysis && can('manage_vehicles')) {
       actions.push(
         {
           icon: <Check size={16} />,

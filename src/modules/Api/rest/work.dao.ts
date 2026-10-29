@@ -99,8 +99,8 @@ export type WorkNotification = {
     | 'task_commented'
     | 'task_due_soon'
   task_id: string
+  task_title: string
   actor_id: string
-  read: boolean
   created_at: string | null
 }
 
@@ -123,9 +123,10 @@ export const workDAO = {
     ApiDAO.patch<WorkTask>(`${BASE}/tasks/${id(taskId)}`, body),
   archiveTask: (taskId: string) =>
     ApiDAO.post<null>(`${BASE}/tasks/${id(taskId)}/archive`, {}),
+  /** `before_id` null puts the task at the end of the column. */
   moveTask: (
     taskId: string,
-    body: { status: WorkTaskStatus; position: number }
+    body: { status: WorkTaskStatus; before_id: string | null }
   ) => ApiDAO.post<WorkTask>(`${BASE}/tasks/${id(taskId)}/move`, body),
   comments: (taskId: string) =>
     ApiDAO.get<WorkComment[]>(`${BASE}/tasks/${id(taskId)}/comments`),

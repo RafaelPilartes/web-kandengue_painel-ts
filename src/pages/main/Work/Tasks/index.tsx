@@ -71,9 +71,13 @@ export function WorkTasksPage() {
     }
   }
 
-  const onMove = (id: string, status: WorkTask['status'], position: number) =>
+  const onMove = (
+    id: string,
+    status: WorkTask['status'],
+    beforeId: string | null
+  ) =>
     move.mutate(
-      { id, status, position },
+      { id, status, beforeId },
       { onError: err => showToast('error', (err as Error).message) }
     )
 

@@ -5,7 +5,7 @@ import { Avatar } from '@/components/ui/avatar'
 import { cn } from '@/lib/tailwind-merge'
 import type { WorkNotification } from '@/modules/Api/rest/work.dao'
 import { useAdminDirectory } from '@/viewModels/AccessViewModel'
-import { useWorkNotifications, useWorkTasks } from '@/viewModels/WorkViewModel'
+import { useWorkNotifications } from '@/viewModels/WorkViewModel'
 
 const VERB: Record<WorkNotification['kind'], string> = {
   task_assigned: 'atribuiu-lhe',
@@ -26,7 +26,6 @@ const ago = (iso: string | null) => {
 /** The work module's notifications: who did what to which task. */
 export function NotificationBell() {
   const { notifications, unread, markRead } = useWorkNotifications()
-  const { tasks } = useWorkTasks()
   const { byId } = useAdminDirectory()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -45,9 +44,6 @@ export function NotificationBell() {
       document.removeEventListener('keydown', esc)
     }
   }, [open])
-
-  const title = (taskId: string) =>
-    tasks.find(t => t.id === taskId)?.title ?? 'uma tarefa'
 
   return (
     <div ref={ref} className="relative">
@@ -96,15 +92,14 @@ export function NotificationBell() {
                     <button
                       type="button"
                       onClick={() => {
-                        if (!n.read) markRead.mutate([n.id])
+                        markRead.mutate([n.id])
                         setOpen(false)
                         navigate(
                           `/work/tasks?task=${encodeURIComponent(n.task_id)}`
                         )
                       }}
                       className={cn(
-                        'flex w-full gap-3 px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700/60',
-                        !n.read && 'bg-primary-50/60 dark:bg-primary-900/20'
+                        'flex w-full gap-3 px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700/60'
                       )}
                     >
                       <Avatar alt={actor} size="sm" />
@@ -115,7 +110,7 @@ export function NotificationBell() {
                           </strong>{' '}
                           {VERB[n.kind]}{' '}
                           <span className="font-medium">
-                            «{title(n.task_id)}»
+                            «{n.task_title || 'uma tarefa'}»
                           </span>
                         </span>
                         <span className="text-xs text-gray-500 dark:text-gray-400">

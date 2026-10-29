@@ -24,7 +24,11 @@ export function TaskBoard({
 }: {
   tasks: WorkTask[]
   onOpen: (task: WorkTask) => void
-  onMove: (taskId: string, status: WorkTaskStatus, position: number) => void
+  onMove: (
+    taskId: string,
+    status: WorkTaskStatus,
+    beforeId: string | null
+  ) => void
 }) {
   const ctx = useWorkContext()
   const [dragging, setDragging] = useState<string | null>(null)
@@ -37,25 +41,16 @@ export function TaskBoard({
       .sort((a, b) => a.position - b.position)
   }))
 
-  // Positions are per department column on the server; place relative to the
-  // card dropped on, within the dragged task's own department.
+  // The server places by card id, not by index: the board may show only part
+  // of the column (a member's own tasks, a filter), so an index counted here
+  // would land among cards this admin cannot see.
   const drop = (e: DragEvent, status: WorkTaskStatus, before?: WorkTask) => {
     e.preventDefault()
     e.stopPropagation()
     setOver(null)
     const id = e.dataTransfer.getData('text/plain')
-    const task = tasks.find(t => t.id === id)
-    if (!task) return
-    const sameDept = tasks
-      .filter(
-        t =>
-          t.status === status &&
-          t.department_id === task.department_id &&
-          t.id !== id
-      )
-      .sort((a, b) => a.position - b.position)
-    const index = before ? sameDept.findIndex(t => t.id === before.id) : -1
-    onMove(id, status, index === -1 ? sameDept.length : index)
+    if (!id || id === before?.id) return
+    onMove(id, status, before?.id ?? null)
   }
 
   return (

@@ -50,7 +50,7 @@ export function TaskDrawer({
       await move.mutateAsync({
         id: task.id,
         status,
-        position: Number.MAX_SAFE_INTEGER
+        beforeId: null
       })
     } catch (err) {
       showToast('error', (err as Error).message)
