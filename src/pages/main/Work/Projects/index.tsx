@@ -1,5 +1,5 @@
-import { WORK_PROJECT_STATUS_LABELS } from '@rafaelpilartes/kandengue-shared-v4/constants'
-import type { WorkProjectStatus } from '@rafaelpilartes/kandengue-shared-v4/types'
+import { WORK_PROJECT_STATUS_LABELS } from '@rafaelpilartes/kandengue-shared/constants'
+import type { WorkProjectStatus } from '@rafaelpilartes/kandengue-shared/types'
 import { AlertTriangle, ChevronRight, FolderKanban, Plus } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'

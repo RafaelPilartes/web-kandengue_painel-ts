@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button'
 import {
   ADMIN_ACCESS_LEVEL_LABELS,
   ADMIN_ACCESS_LEVELS
-} from '@rafaelpilartes/kandengue-shared-v4/constants'
+} from '@rafaelpilartes/kandengue-shared/constants'
 import { useAdminStore } from '@/stores/userStore'
 import {
   useAdminDirectory,

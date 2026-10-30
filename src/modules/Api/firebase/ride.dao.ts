@@ -41,9 +41,11 @@ export class FirebaseRideDAO
 
   constructor() {
     // `RideEntity` não tem campo de texto de topo útil para um admin
-    // procurar uma corrida — os únicos são `status`, `type`, `otp_code` e
-    // `cancel_reason`. `driver.email` é aninhado (ver `SearchField<T>` em
-    // `BaseFirebaseDAO`) e é por onde o admin procura: pelo motorista.
+    // procurar uma corrida — os únicos são `status`, `type` e `cancel_reason`.
+    // (O `otp_code` estava nesta lista e saiu do documento da corrida com a
+    // API 2.0.0; nunca foi o campo de pesquisa, mas era um candidato citado.)
+    // `driver.email` é aninhado (ver `SearchField<T>` em `BaseFirebaseDAO`) e
+    // é por onde o admin procura: pelo motorista.
     super(firebaseCollections.rides.root, rideConverter, 'rid', 'driver.email')
   }
 }

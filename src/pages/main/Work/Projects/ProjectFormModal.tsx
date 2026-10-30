@@ -1,8 +1,8 @@
 import {
   WORK_PROJECT_STATUS_LABELS,
   WORK_PROJECT_STATUSES
-} from '@rafaelpilartes/kandengue-shared-v4/constants'
-import type { WorkProjectStatus } from '@rafaelpilartes/kandengue-shared-v4/types'
+} from '@rafaelpilartes/kandengue-shared/constants'
+import type { WorkProjectStatus } from '@rafaelpilartes/kandengue-shared/types'
 import { useId, useState, type FormEvent } from 'react'
 import { AppModal } from '@/components/modal/AppModal'
 import { Button } from '@/components/ui/button'

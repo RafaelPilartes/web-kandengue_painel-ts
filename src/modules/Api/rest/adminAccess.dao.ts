@@ -1,7 +1,7 @@
 import type {
   AdminAccessLevel,
   AdminPermission
-} from '@rafaelpilartes/kandengue-shared-v4/types'
+} from '@rafaelpilartes/kandengue-shared/types'
 import ApiDAO from './Api.dao'
 
 export type MyAccess = {

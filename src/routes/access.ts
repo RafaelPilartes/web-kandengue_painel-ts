@@ -1,7 +1,7 @@
 import type {
   AdminAccessLevel,
   AdminPermission
-} from '@rafaelpilartes/kandengue-shared-v4/types'
+} from '@rafaelpilartes/kandengue-shared/types'
 
 /*
  * The one map of which permission each screen needs. The route guard and the
