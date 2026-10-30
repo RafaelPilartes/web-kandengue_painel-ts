@@ -1,3 +1,4 @@
+import { Avatar } from '@/components/ui/avatar'
 import { useEffect, useRef, useState, type JSX } from 'react'
 
 interface DropdownUserItem {
@@ -49,13 +50,7 @@ export function DropdownUser({ user, options }: DropdownUserProps) {
           onClick={toggleDropdownUser}
           className="flex flex-row items-start justify-center gap-0 space-x-4"
         >
-          <div className="relative w-10 h-10 overflow-hidden">
-            <img
-              className=" w-full h-full object-cover rounded-full absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 transition-transform duration-300"
-              src={user.photo}
-              alt={user.name}
-            />
-          </div>
+          <Avatar src={user.photo} alt={user.name} size="base" />
         </button>
       </div>
 

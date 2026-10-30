@@ -1,3 +1,5 @@
+import { fieldControl, fieldLabel } from '@/components/ui/field'
+import { cn } from '@/lib/tailwind-merge'
 import type { ChangeEvent } from 'react'
 
 interface SelectProps {
@@ -32,7 +34,7 @@ export function SelectCustom({
             {label && (
               <label
                 htmlFor={htmlFor}
-                className="block mb-2 text-sm font-medium dark:text-light text-gray-400"
+                className={cn(fieldLabel, 'mb-1.5 block')}
               >
                 {label}
               </label>
@@ -46,9 +48,12 @@ export function SelectCustom({
         ) : (
           <select
             id="countries"
-            className={`sm:w-auto p-${
-              padding ? padding : '3'
-            }  text-xs font-medium text-dark rounded-lg bg-gray-50 border-[1px] border-gray-200 focus:ring-blue-500 focus:border-blue-500 block w-full dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500`}
+            className={cn(
+              fieldControl,
+              'sm:w-auto',
+              padding === '1' && 'py-1',
+              padding === '2' && 'py-1.5'
+            )}
             value={selectedValue}
             onChange={handleSelectChange}
           >

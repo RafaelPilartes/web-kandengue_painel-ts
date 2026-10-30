@@ -43,7 +43,19 @@
 
 @layer base {
   body {
-    @apply bg-baseBgLight dark:bg-baseBgDark leading-relaxed font-poppins text-sm overflow-x-hidden;
+    @apply bg-baseBgLight dark:bg-baseBgDark leading-relaxed font-sans text-sm overflow-x-hidden;
+    -webkit-font-smoothing: antialiased;
+    accent-color: theme('colors.primary.200');
+  }
+
+  /* Figures in tables line up: amounts, counts and dates read down a column. */
+  td,
+  th {
+    font-variant-numeric: tabular-nums;
+  }
+
+  ::selection {
+    @apply bg-primary-100 text-primary-800;
   }
 
   .container {
@@ -106,6 +118,16 @@
   to {
     transform: translateX(0);
   }
+}
+
+/* A modal or drawer open: the page behind does not scroll under the wheel or
+   the finger. The gutter keeps the layout from jumping sideways when the
+   scrollbar goes away. */
+html {
+  scrollbar-gutter: stable;
+}
+body.ReactModal__Body--open {
+  overflow: hidden;
 }
 
 .modal-overlay {

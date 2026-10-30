@@ -9,6 +9,9 @@ import { Spinner, Star } from 'phosphor-react'
 
 // Components do teu projeto (ajusta imports conforme necessário)
 import { Avatar } from '@/components/ui/avatar'
+import { AppModal } from '@/components/modal/AppModal'
+import { Button } from '@/components/ui/button'
+import { TextAreaField, TextField } from '@/components/ui/field'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import {
   Car,
@@ -79,6 +82,7 @@ import { useFileUploadViewModel } from '@/viewModels/FileUploadViewModel'
 import { userStatusOptions } from '@/data/selectOption'
 import { SelectCustom } from '@/components/selects/SelectCustom'
 import { DriverProgressTracker } from '@/components/drivers/DriverProgressTracker'
+import { useAccess } from '@/hooks/useAccess'
 import { WalletStatement } from '@/components/wallet/WalletStatement'
 
 export function DriverViewPage() {
@@ -98,6 +102,7 @@ export function DriverViewPage() {
   const { fetchAllTransactionsByField } = useTransactionsViewModel()
   const { fetchAllRidesByField, calculateDriverEarnings } = useRidesViewModel()
   const { fetchAllVehiclesByField, reviewVehicle } = useVehiclesViewModel()
+  const { can } = useAccess()
   const {
     fetchAllDocumentsByField,
     filterDocsBy,
@@ -732,7 +737,8 @@ export function DriverViewPage() {
     }
 
     // Adiciona as ações de "Aprovar" e "Rejeitar" se o veículo estiver "under_analysis"
-    if (isUnderAnalysis) {
+    // Reviewing a vehicle needs manage_vehicles; this page only needs manage_drivers.
+    if (isUnderAnalysis && can('manage_vehicles')) {
       actions.push(
         {
           icon: <Check size={16} />,
@@ -1619,81 +1625,58 @@ export function DriverViewPage() {
         exists to do.
       */}
       {documentDecision && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-xl bg-white p-5 shadow-xl dark:bg-gray-800">
-            <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">
-              {documentDecision.decision === 'approved'
-                ? 'Aprovar'
-                : 'Recusar'}{' '}
-              {getDocumentTypeLabel(documentDecision.document.type)}
-            </h3>
-
-            {documentDecision.decision === 'approved' ? (
-              <div className="mt-4 flex flex-col gap-2">
-                <label className="text-sm text-gray-700 dark:text-gray-200">
-                  Validade (opcional)
-                </label>
-                <input
-                  type="date"
-                  value={chosenExpiry}
-                  onChange={e => setChosenExpiry(e.target.value)}
-                  className="rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
-                />
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Guarda-se o <strong>fim desse dia</strong>, na hora de Luanda
-                  — a apólice cobre o dia inteiro. Deixa vazio se o documento
-                  não caduca.
-                </p>
-              </div>
-            ) : (
-              <div className="mt-4 flex flex-col gap-2">
-                <label className="text-sm text-gray-700 dark:text-gray-200">
-                  Motivo (obrigatório)
-                </label>
-                <textarea
-                  value={rejectionReason}
-                  onChange={e => setRejectionReason(e.target.value)}
-                  rows={3}
-                  placeholder="O que é que o motorista tem de corrigir?"
-                  className="rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
-                />
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  ⚠️ <strong>É isto que o motorista vê</strong> — vai para o
-                  `feedback` do documento. Sem motivo, ele volta a submeter o
-                  mesmo.
-                </p>
-              </div>
-            )}
-
-            <div className="mt-5 flex justify-end gap-2">
-              <button
-                type="button"
+        <AppModal
+          isOpen
+          onClose={() => setDocumentDecision(null)}
+          variant="center"
+          size="sm"
+          title={`${documentDecision.decision === 'approved' ? 'Aprovar' : 'Recusar'} ${getDocumentTypeLabel(documentDecision.document.type)}`}
+          footer={
+            <>
+              <Button
+                variant="secondary"
                 onClick={() => setDocumentDecision(null)}
-                className="rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
               >
                 Cancelar
-              </button>
-              <button
-                type="button"
+              </Button>
+              <Button
+                variant={
+                  documentDecision.decision === 'approved' ? 'primary' : 'danger'
+                }
+                loading={isDecidingDocument}
                 disabled={
-                  isDecidingDocument ||
-                  (documentDecision.decision === 'rejected' &&
-                    rejectionReason.trim().length < 5)
+                  documentDecision.decision === 'rejected' &&
+                  rejectionReason.trim().length < 5
                 }
                 onClick={handleDecideDocument}
-                className={`rounded-lg px-3 py-2 text-sm font-medium text-white disabled:opacity-50 ${
-                  documentDecision.decision === 'approved'
-                    ? 'bg-green-600'
-                    : 'bg-red-600'
-                }`}
               >
                 {documentDecision.decision === 'approved'
                   ? 'Aprovar'
                   : 'Recusar'}
-              </button>
-            </div>
-          </div>
-        </div>
+              </Button>
+            </>
+          }
+        >
+          {documentDecision.decision === 'approved' ? (
+            <TextField
+              label="Validade (opcional)"
+              type="date"
+              value={chosenExpiry}
+              onChange={e => setChosenExpiry(e.target.value)}
+              hint="Guarda-se o fim desse dia, na hora de Luanda: a apólice cobre o dia inteiro. Deixe vazio se o documento não caduca."
+            />
+          ) : (
+            <TextAreaField
+              label="Motivo (obrigatório)"
+              value={rejectionReason}
+              onChange={e => setRejectionReason(e.target.value)}
+              rows={3}
+              autoFocus
+              placeholder="O que é que o motorista tem de corrigir?"
+              hint="É isto que o motorista vê, no documento. Sem motivo, volta a submeter o mesmo."
+            />
+          )}
+        </AppModal>
       )}
     </div>
   )

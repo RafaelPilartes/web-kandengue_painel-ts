@@ -1,6 +1,16 @@
+import { Button } from '@/components/ui/button'
+import {
+  ADMIN_ACCESS_LEVEL_LABELS,
+  ADMIN_ACCESS_LEVELS
+} from '@rafaelpilartes/kandengue-shared-v4/constants'
+import { useAdminStore } from '@/stores/userStore'
+import {
+  useAdminDirectory,
+  useDepartments,
+  useSetAdminAccess
+} from '@/viewModels/AccessViewModel'
 import { AppModal } from '@/components/modal/AppModal'
 import { useState, useEffect } from 'react'
-import { BeatLoader } from 'react-spinners'
 
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -8,7 +18,7 @@ import { z } from 'zod'
 
 import { useFileUploadViewModel } from '@/viewModels/FileUploadViewModel'
 import { useAdminsViewModel } from '@/viewModels/AdminViewModel'
-import { adminRoleOptions, statusOptions } from '@/data/selectOption'
+import { statusOptions } from '@/data/selectOption'
 
 import { CustomInput } from '@/components/input/InputLabel'
 import { SelectCustomZod } from '@/components/selects/SelectCustomZod'
@@ -18,11 +28,13 @@ import type { AdminInterface } from '@/interfaces/IAdmin'
 import { showToast } from '@/utils/toasts'
 import { validationFileImage } from '@/utils/file'
 import { mapFirebaseError } from '@/helpers/mapFirebaseError'
-import { SelectMultiSelectionZod } from '@/components/selects/SelectMultiSelectionZod'
-import type { OptionType } from '@/types/option'
-import { getPermissionsByRole } from '@/utils/gettersObjectInMap'
 
 // Schema para edição (sem senha)
+const accessLevelOptions = ADMIN_ACCESS_LEVELS.map(level => ({
+  value: level,
+  label: ADMIN_ACCESS_LEVEL_LABELS[level]
+}))
+
 const formSchema = z.object({
   name: z.string().min(3, 'O nome é obrigatório'),
   email: z.string().email('E-mail inválido'),
@@ -30,35 +42,8 @@ const formSchema = z.object({
   status: z.enum(['active', 'inactive', 'pending'], {
     error: () => ({ message: "Selecione 'Ativo', 'Inativo' ou 'Pendente'" })
   }),
-  role: z.enum(
-    [
-      'general_management',
-      'operations_quality',
-      'finance_administration',
-      'technology_innovation',
-      'operational_safety_quality',
-      'business_institutional_image',
-      'human_capital',
-      'finance_accounting',
-      'technology_innovation_technical'
-    ],
-    {
-      error: () => ({
-        message: 'Selecione uma função válida para o administrador.'
-      })
-    }
-  ),
-  permissions: z
-    .array(
-      z.object({
-        value: z.string(),
-        label: z.string()
-      }),
-      {
-        error: 'Selecione pelo menos uma permissão.'
-      }
-    )
-    .min(1, 'Selecione pelo menos uma permissão.')
+  department_id: z.string().optional(),
+  access_level: z.enum(['direction', 'manager', 'member']).optional()
 })
 type formType = z.infer<typeof formSchema>
 
@@ -70,7 +55,15 @@ export function ModalEditAdmin({
   const { updateAdmin } = useAdminsViewModel()
   const { uploadSimple, isUploading, uploadError } = useFileUploadViewModel()
 
-  const [permissionsOptions, setPermissionsOptions] = useState<OptionType[]>([])
+  const { departments } = useDepartments()
+  const { byId: accessById } = useAdminDirectory()
+  const setAccess = useSetAdminAccess()
+  const current = accessById.get(baseInfo.id as string)
+  // The API refuses changing one's own access; say so instead of failing on save.
+  const isSelf = useAdminStore(s => s.currentAdminData?.id) === baseInfo.id
+  const departmentOptions = departments
+    .filter(d => d.active || d.id === current?.department_id)
+    .map(d => ({ value: d.id, label: d.name }))
 
   const [selectedFile, setSelectedFile] = useState<File | undefined>()
   const [imagePreview, setImagePreview] = useState<string>(
@@ -83,7 +76,6 @@ export function ModalEditAdmin({
     control,
     handleSubmit,
     formState: { errors },
-    setValue,
     reset
   } = useForm<formType>({
     resolver: zodResolver(formSchema),
@@ -92,8 +84,8 @@ export function ModalEditAdmin({
       email: baseInfo?.email || '',
       phone: baseInfo?.phone || '',
       status: (baseInfo?.status as any) || 'active',
-      role: baseInfo.role || '',
-      permissions: baseInfo.permissions || []
+      department_id: current?.department_id ?? undefined,
+      access_level: current?.access_level ?? undefined
     }
   })
 
@@ -104,12 +96,12 @@ export function ModalEditAdmin({
         email: baseInfo.email,
         phone: baseInfo.phone,
         status: baseInfo.status as any,
-        role: baseInfo.role,
-        permissions: baseInfo.permissions
+        department_id: current?.department_id ?? undefined,
+        access_level: current?.access_level ?? undefined
       })
       setImagePreview(baseInfo.photo || '')
     }
-  }, [baseInfo, reset])
+  }, [baseInfo, current, reset])
 
   function closeModal() {
     setModalEditRowIsOpen(false)
@@ -129,19 +121,6 @@ export function ModalEditAdmin({
       setSelectedFile(file)
       setImagePreview(URL.createObjectURL(file))
     }
-  }
-
-  // Select
-  const handleAdminPermissionChange = (valueSelected: string[]) => {
-    console.log(`Selected: ${valueSelected}`)
-  }
-  const handleAdminRoleChange = (valueSelected: string) => {
-    const perms = getPermissionsByRole(valueSelected)
-    setValue('permissions', []) // limpa permissões quando muda de role
-
-    setPermissionsOptions(perms)
-
-    console.log(`Selected: ${perms}`)
   }
 
   async function handleUploadPhoto(): Promise<string> {
@@ -168,9 +147,10 @@ export function ModalEditAdmin({
         imageUploaded = await handleUploadPhoto()
       }
 
+      const { department_id, access_level, ...profile } = dataForm
       const dataToUpdate: Partial<AdminInterface> = {
         ...baseInfo,
-        ...dataForm,
+        ...profile,
         photo: imageUploaded
       }
 
@@ -181,10 +161,26 @@ export function ModalEditAdmin({
         admin: dataToUpdate
       })
 
+      const accessChanged =
+        department_id !== (current?.department_id ?? undefined) ||
+        access_level !== (current?.access_level ?? undefined)
+      if (!isSelf && accessChanged) {
+        if (!department_id || !access_level) {
+          showToast('error', 'Escolha o departamento e o nível de acesso.')
+          return
+        }
+        // Through the API, audited there.
+        await setAccess.mutateAsync({
+          adminId: baseInfo.id as string,
+          department_id,
+          access_level
+        })
+      }
+
       if (updateAdmin.isError) {
-        showToast('error', 'Erro ao atualizar motorista')
+        showToast('error', 'Erro ao actualizar o administrador')
       } else {
-        showToast('success', 'Motorista atualizado com sucesso!')
+        showToast('success', 'Administrador actualizado com sucesso!')
         setTimeout(() => {
           closeModal()
         }, 2000)
@@ -199,9 +195,20 @@ export function ModalEditAdmin({
     <AppModal
       isOpen={modalEditRowIsOpen}
       onClose={closeModal}
+      footer={
+        <>
+          <Button variant="secondary" onClick={closeModal}>
+            Cancelar
+          </Button>
+          <Button type="submit" form="admin-edit" loading={isUploading || updateAdmin.isPending || setAccess.isPending}>
+            Guardar
+          </Button>
+        </>
+      }
       title={`Editar ${namePageSingular}`}
     >
           <form
+            id="admin-edit"
             onSubmit={handleSubmit(handleSubmitForm)}
             className="w-full flex flex-col justify-center items-center gap-6"
           >
@@ -210,7 +217,7 @@ export function ModalEditAdmin({
               <div className="w-full max-w-[14rem]">
                 <label
                   htmlFor="edit-file"
-                  className="w-full h-40 flex flex-col items-center justify-center border-2 border-dashed rounded-lg cursor-pointer bg-gray-70 relative overflow-hidden"
+                  className="w-full h-40 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-50 transition-colors hover:border-primary-200/60 dark:border-gray-600 dark:bg-baseBgDark/50 dark:hover:border-primary-200/60 relative overflow-hidden"
                 >
                   {!imagePreview && (
                     <div className="flex flex-col items-center justify-center pt-5 pb-6">
@@ -230,11 +237,11 @@ export function ModalEditAdmin({
                         />
                       </svg>
                       <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                        <span className="font-semibold">Click to upload</span>{' '}
+                        <span className="font-semibold">Carregar a foto</span>{' '}
                         {/* or drag and drop */}
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
-                        PNG, JPG or JPEG (MAX. 6Mb)
+                        PNG, JPG ou JPEG (máx. 6 MB)
                       </p>
                     </div>
                   )}
@@ -293,41 +300,33 @@ export function ModalEditAdmin({
               onOptionChange={() => null}
             />
 
-            <SelectCustomZod
-              name="role"
-              label="Função de administrador"
-              control={control}
-              error={errors.role}
-              options={adminRoleOptions}
-              onOptionChange={handleAdminRoleChange}
-            />
-
-            <SelectMultiSelectionZod
-              name="permissions"
-              label="Permissões do Administrador"
-              control={control}
-              error={errors.permissions}
-              options={permissionsOptions}
-              defaultValue={[]} // opcional
-              onOptionChange={handleAdminPermissionChange}
-            />
-
-            <div className="w-full pt-4 flex justify-between items-center border-t border-gray-600">
-              <button
-                type="submit"
-                disabled={isUploading || updateAdmin.isPending}
-                className="text-white bg-primary-200 hover:bg-primary-300 focus:ring-2 focus:outline-none focus:ring-primary-100 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-primary-200 dark:hover:bg-primary-300 dark:focus:ring-primary-500"
-              >
-                {isUploading || updateAdmin.isPending ? (
-                  <div className="flex items-center gap-2">
-                    <BeatLoader color="white" size={10} />
-                  </div>
-                ) : (
-                  <span>Salvar</span>
-                )}
-              </button>
+            <div className="w-full grid gap-6 md:grid-cols-2">
+              <SelectCustomZod
+                name="department_id"
+                label="Departamento"
+                control={control}
+                error={errors.department_id}
+                options={departmentOptions}
+                isDisabled={isSelf}
+                onOptionChange={() => null}
+              />
+              <SelectCustomZod
+                name="access_level"
+                label="Nível de acesso"
+                control={control}
+                error={errors.access_level}
+                options={accessLevelOptions}
+                isDisabled={isSelf}
+                onOptionChange={() => null}
+              />
             </div>
-          </form>
+            {isSelf && (
+              <p className="w-full text-xs text-gray-500 dark:text-gray-400">
+                Não pode alterar o seu próprio departamento nem o seu nível. Peça a
+                outra pessoa da Direcção.
+              </p>
+            )}
+            </form>
     </AppModal>
   )
 }

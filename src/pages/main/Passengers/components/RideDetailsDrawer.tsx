@@ -1,10 +1,11 @@
-import { X, MapPin, Clock, CreditCard, User as UserIcon } from 'lucide-react'
+import { MapPin, Clock, CreditCard, User as UserIcon } from 'lucide-react'
 import { rideChargeOnScreen } from '@/helpers/fareReview'
 import type { RideInterface } from '@/interfaces/IRide'
 import { formatDateTimeFromFirestore } from '@/utils/date'
 import { formatMoney } from '@/utils/number'
 import { getRideStatusLabel } from '@/utils/gettersLabels'
 import { Avatar } from '@/components/ui/avatar'
+import { AppModal } from '@/components/modal/AppModal'
 
 const formatFullDate = (timestamp: any) => {
   if (!timestamp) return '-'
@@ -30,28 +31,10 @@ export function RideDetailsDrawer({ ride, isOpen, onClose }: RideDetailsDrawerPr
   const fareTotal = isCanceled ? 0 : rideChargeOnScreen(ride).total
 
   return (
-    <>
-      {/* Overlay */}
-      <div 
-        className="fixed inset-0 bg-black/40 z-40 transition-opacity" 
-        onClick={onClose}
-      />
-      
-      {/* Drawer */}
-      <div className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-white dark:bg-gray-900 shadow-2xl z-50 overflow-y-auto transform transition-transform duration-300 translate-x-0">
-        <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-900 z-10">
-          <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Detalhes da Corrida</h3>
-          <button 
-            onClick={onClose}
-            className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-          >
-            <X size={20} className="text-gray-500" />
-          </button>
-        </div>
-
-        <div className="p-6 flex flex-col gap-6">
+    <AppModal isOpen onClose={onClose} title="Detalhes da corrida">
+        <div className="flex flex-col gap-6">
           {/* Status & Valor */}
-          <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+          <div className="flex justify-between items-center bg-gray-50 dark:bg-baseBgDark/60 p-4 rounded-lg">
             <div>
               <span className="text-sm text-gray-500 dark:text-gray-400 block mb-1">Status</span>
               <span className="font-medium">{getRideStatusLabel(ride.status)}</span>
@@ -134,7 +117,7 @@ export function RideDetailsDrawer({ ride, isOpen, onClose }: RideDetailsDrawerPr
               <UserIcon size={18} /> Motorista
             </h4>
             {ride.driver ? (
-              <div className="flex items-center gap-3 bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+              <div className="flex items-center gap-3 bg-gray-50 dark:bg-baseBgDark/60 p-3 rounded-lg">
                 <Avatar src={ride.driver.photo} alt={ride.driver.name} fallback={ride.driver.name?.substring(0,2) || 'MO'} size="md" />
                 <div>
                   <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{ride.driver.name}</p>
@@ -215,7 +198,6 @@ export function RideDetailsDrawer({ ride, isOpen, onClose }: RideDetailsDrawerPr
             </>
           )}
         </div>
-      </div>
-    </>
+    </AppModal>
   )
 }

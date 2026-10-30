@@ -1,3 +1,5 @@
+import { fieldControl, fieldLabel } from '@/components/ui/field'
+import { cn } from '@/lib/tailwind-merge'
 import { Controller } from 'react-hook-form'
 
 interface OptionOption {
@@ -31,10 +33,7 @@ export function SelectCustomZod({
     <>
       <div className="w-full">
         {label && (
-          <label
-            htmlFor={name}
-            className="block mb-2 text-sm font-medium dark:text-light text-gray-400"
-          >
+          <label htmlFor={name} className={cn(fieldLabel, 'mb-1.5 block')}>
             {label}
           </label>
         )}
@@ -51,22 +50,21 @@ export function SelectCustomZod({
               id={name}
               value={field.value ?? ''}
               disabled={isDisabled}
-              className={`p-2.5 text-sm font-light rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full dark:bg-gray-700/60 bg-gray-100/10  dark:border-gray-500/60 border-gray-300/60 dark:placeholder-gray-400 dark:text-gray-400 placeholder-gray-600
-text-gray-400`}
+              className={fieldControl}
               onChange={e => {
                 field.onChange(e.target.value) // Atualiza o valor do form
                 onOptionChange(e.target.value) // Chama a função handleTypeMaterialChange
               }}
             >
               <option
-                className="dark:bg-gray-700 bg-gray-100 dark:text-gray-300 text-gray-400"
+                className="bg-light text-dark dark:bg-baseBgDark dark:text-light"
                 value=""
               >
                 Selecione uma opção
               </option>
               {options.map((option, index) => (
                 <option
-                  className="dark:bg-gray-700 bg-gray-100 dark:text-gray-300 text-gray-400"
+                  className="bg-light text-dark dark:bg-baseBgDark dark:text-light"
                   key={index}
                   value={option.value}
                 >

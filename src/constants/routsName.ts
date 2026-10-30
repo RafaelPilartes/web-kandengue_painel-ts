@@ -42,6 +42,23 @@ export const routsNameMain = {
   },
 
   // ============================================
+  // WORK MANAGEMENT
+  work: {
+    tasks: '/work/tasks',
+    projects: '/work/projects',
+    project: '/work/projects/:id',
+    projectStr: '/work/projects/',
+    calendar: '/work/calendar',
+    reports: '/work/reports'
+  },
+
+  // ============================================
+  // DEPARTMENTS
+  departments: {
+    index: '/departments'
+  },
+
+  // ============================================
   // VIATURAS — fila de validação
   vehicles: {
     index: '/vehicles'

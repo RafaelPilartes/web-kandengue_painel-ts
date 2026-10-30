@@ -1,8 +1,16 @@
+import { Button } from '@/components/ui/button'
+import {
+  ADMIN_ACCESS_LEVEL_LABELS,
+  ADMIN_ACCESS_LEVELS
+} from '@rafaelpilartes/kandengue-shared-v4/constants'
+import {
+  useDepartments,
+  useSetAdminAccess
+} from '@/viewModels/AccessViewModel'
 import { AppModal } from '@/components/modal/AppModal'
 import { useState } from 'react'
 
 // Lib
-import { BeatLoader } from 'react-spinners'
 
 // Form
 import { useForm } from 'react-hook-form'
@@ -14,7 +22,7 @@ import { useFileUploadViewModel } from '@/viewModels/FileUploadViewModel'
 import { useAdminsViewModel } from '@/viewModels/AdminViewModel'
 
 // Data
-import { adminRoleOptions, statusOptions } from '@/data/selectOption'
+import { statusOptions } from '@/data/selectOption'
 
 // Component
 import { CustomInput } from '@/components/input/InputLabel'
@@ -33,9 +41,6 @@ import { showToast } from '@/utils/toasts'
 import { validationFileImage } from '@/utils/file'
 import { useAuthViewModel } from '@/viewModels/AuthViewModel'
 import { mapFirebaseError } from '@/helpers/mapFirebaseError'
-import { SelectMultiSelectionZod } from '@/components/selects/SelectMultiSelectionZod'
-import type { OptionType } from '@/types/option'
-import { getPermissionsByRole } from '@/utils/gettersObjectInMap'
 
 const requiredStringField = (message = 'Campo obrigatório') =>
   z
@@ -44,6 +49,11 @@ const requiredStringField = (message = 'Campo obrigatório') =>
     .refine(value => value, {
       message: 'Por favor, preencha este campo'
     })
+
+const accessLevelOptions = ADMIN_ACCESS_LEVELS.map(level => ({
+  value: level,
+  label: ADMIN_ACCESS_LEVEL_LABELS[level]
+}))
 
 const formSchema = z.object({
   name: requiredStringField('O nome é obrigatório!'),
@@ -54,35 +64,12 @@ const formSchema = z.object({
       message: "Selecione 'Ativo', 'Inativo' ou 'Pendente' "
     })
   }),
-  role: z.enum(
-    [
-      'general_management',
-      'operations_quality',
-      'finance_administration',
-      'technology_innovation',
-      'operational_safety_quality',
-      'business_institutional_image',
-      'human_capital',
-      'finance_accounting',
-      'technology_innovation_technical'
-    ],
-    {
-      error: () => ({
-        message: 'Selecione uma função válida para o administrador.'
-      })
-    }
-  ),
-  permissions: z
-    .array(
-      z.object({
-        value: z.string(),
-        label: z.string()
-      }),
-      {
-        error: 'Selecione pelo menos uma permissão.'
-      }
-    )
-    .min(1, 'Selecione pelo menos uma permissão.'),
+  department_id: z
+    .string('Escolha o departamento.')
+    .min(1, 'Escolha o departamento.'),
+  access_level: z.enum(['direction', 'manager', 'member'], {
+    error: () => ({ message: 'Escolha o nível de acesso.' })
+  }),
   password: z
     .string('A palavra-passe é obrigatório!')
     .min(6, 'A palavra-passe tem de no mínimo 6 caracteres')
@@ -103,12 +90,16 @@ export function ModalCreateAdmin({
   const { createAdmin, fetchOneAdminByField } = useAdminsViewModel()
   const { uploadSimple, isUploading, uploadError } = useFileUploadViewModel()
   const { register, isRegistering, registerError } = useAuthViewModel()
+  const { departments } = useDepartments()
+  const setAccess = useSetAdminAccess()
+  const departmentOptions = departments
+    .filter(d => d.active)
+    .map(d => ({ value: d.id, label: d.name }))
 
   // Image
   const [selectedFile, setSelectedFile] = useState<File | undefined>()
   const [imagePreview, setImagePreview] = useState<string>('')
 
-  const [permissionsOptions, setPermissionsOptions] = useState<OptionType[]>([])
 
   // Const
   const namePageSingular = 'Usuário'
@@ -117,7 +108,6 @@ export function ModalCreateAdmin({
   const {
     control,
     handleSubmit,
-    setValue,
     formState: { errors }
   } = useForm<formType>({
     resolver: zodResolver(formSchema)
@@ -150,19 +140,6 @@ export function ModalCreateAdmin({
     if (valueSelected) {
       console.log = () => {}
     }
-  }
-
-  // Select
-  const handleAdminPermissionChange = (valueSelected: string[]) => {
-    console.log(`Selected: ${valueSelected}`)
-  }
-  const handleAdminRoleChange = (valueSelected: string) => {
-    const perms = getPermissionsByRole(valueSelected)
-    setValue('permissions', []) // limpa permissões quando muda de role
-
-    setPermissionsOptions(perms)
-
-    console.log(`Selected: ${perms}`)
   }
 
   // Function Upload Photo
@@ -251,8 +228,13 @@ export function ModalCreateAdmin({
         imageUploaded = urlFile
       }
 
+      const { department_id, access_level, ...profile } = dataForm
       const dataToSave: Omit<any, 'id'> = {
-        ...dataForm,
+        ...profile,
+        // `role` stays as a legacy field (audit labels read it); access no
+        // longer comes from it, nor from per-admin permissions.
+        role: department_id,
+        permissions: [],
         photo: imageUploaded,
         firebase_uid: authResult?.user?.uid
       }
@@ -263,9 +245,24 @@ export function ModalCreateAdmin({
       delete (dataToSave as any).password
       delete (dataToSave as any).confirm_password
 
-      await createAdmin.mutateAsync(dataToSave)
+      const created = await createAdmin.mutateAsync(dataToSave)
 
-      showToast('success', 'Motorista criado com sucesso!')
+      // Department and level go through the API, audited there.
+      try {
+        await setAccess.mutateAsync({
+          adminId: created.id,
+          department_id,
+          access_level
+        })
+      } catch (accessError) {
+        showToast(
+          'error',
+          `Administrador criado, mas o acesso não foi gravado: ${(accessError as Error).message}. Edite-o para tentar outra vez.`
+        )
+        return
+      }
+
+      showToast('success', 'Administrador criado com sucesso!')
       setTimeout(() => {
         closeModal()
       }, 3000)
@@ -280,9 +277,20 @@ export function ModalCreateAdmin({
       <AppModal
       isOpen={modalCreateRowIsOpen}
       onClose={closeModal}
+      footer={
+        <>
+          <Button variant="secondary" onClick={closeModal}>
+            Cancelar
+          </Button>
+          <Button type="submit" form="admin-create" loading={isUploading || createAdmin.isPending || isRegistering || setAccess.isPending}>
+            Guardar
+          </Button>
+        </>
+      }
       title={`Criar ${namePageSingular}`}
     >
             <form
+              id="admin-create"
               onSubmit={handleSubmit(handleSubmitForm)}
               className="w-full flex flex-col justify-center items-center gap-6"
             >
@@ -290,7 +298,7 @@ export function ModalCreateAdmin({
                 <div className="w-full max-w-[14rem] flex items-start justify-start ">
                   <label
                     htmlFor="dropzone-file"
-                    className="w-full h-40 flex flex-col items-center justify-center border-2 border-dashed rounded-lg cursor-pointer bg-gray-70 relative overflow-hidden"
+                    className="w-full h-40 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-50 transition-colors hover:border-primary-200/60 dark:border-gray-600 dark:bg-baseBgDark/50 dark:hover:border-primary-200/60 relative overflow-hidden"
                   >
                     {!imagePreview && (
                       <div className="flex flex-col items-center justify-center pt-5 pb-6">
@@ -310,11 +318,11 @@ export function ModalCreateAdmin({
                           />
                         </svg>
                         <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                          <span className="font-semibold">Click to upload</span>{' '}
+                          <span className="font-semibold">Carregar a foto</span>{' '}
                           {/* or drag and drop */}
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          PNG, JPG or JPEG (MAX. 6Mb)
+                          PNG, JPG ou JPEG (máx. 6 MB)
                         </p>
                       </div>
                     )}
@@ -375,24 +383,24 @@ export function ModalCreateAdmin({
                 />
               </div>
 
-              <SelectCustomZod
-                name="role"
-                label="Função de administrador"
-                control={control}
-                error={errors.role}
-                options={adminRoleOptions}
-                onOptionChange={handleAdminRoleChange}
-              />
-
-              <SelectMultiSelectionZod
-                name="permissions"
-                label="Permissões do Administrador"
-                control={control}
-                error={errors.permissions}
-                options={permissionsOptions}
-                defaultValue={[]} // opcional
-                onOptionChange={handleAdminPermissionChange}
-              />
+              <div className="w-full grid gap-6 md:grid-cols-2">
+                <SelectCustomZod
+                  name="department_id"
+                  label="Departamento"
+                  control={control}
+                  error={errors.department_id}
+                  options={departmentOptions}
+                  onOptionChange={() => {}}
+                />
+                <SelectCustomZod
+                  name="access_level"
+                  label="Nível de acesso"
+                  control={control}
+                  error={errors.access_level}
+                  options={accessLevelOptions}
+                  onOptionChange={() => {}}
+                />
+              </div>
 
               <div className="w-full grid gap-6 md:grid-cols-2">
                 <CustomInput
@@ -411,24 +419,6 @@ export function ModalCreateAdmin({
                   control={control}
                   error={errors.confirm_password}
                 />
-              </div>
-
-              <div className="w-full pt-4 flex flex-row justify-between items-center border-t-[1px] border-gray-600 ">
-                <button
-                  type="submit"
-                  disabled={
-                    isUploading || createAdmin.isPending || isRegistering
-                  }
-                  className="text-white bg-primary-200 hover:bg-primary-300 focus:ring-2 focus:outline-none focus:ring-primary-100 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-primary-200 dark:hover:bg-primary-300 dark:focus:ring-primary-500"
-                >
-                  {isUploading || createAdmin.isPending ? (
-                    <div className="flex items-center gap-2">
-                      <BeatLoader color="white" size={10} />
-                    </div>
-                  ) : (
-                    <span>Salvar</span>
-                  )}
-                </button>
               </div>
             </form>
       </AppModal>

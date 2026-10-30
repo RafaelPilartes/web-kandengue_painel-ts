@@ -122,10 +122,29 @@ module.exports = {
         'spin-slow': 'spin 6s linear infinite'
       }
     },
+    // Barlow is the brand's body face (the public site uses it too); it is
+    // self-hosted from @fontsource in main.tsx. This replaces Tailwind's
+    // families, so `mono` has to be declared here as well.
     fontFamily: {
-      poppins: ['Poppins'],
-      damion: ['Damion'],
-      dancingScript: ['Dancing Script']
+      sans: [
+        'Barlow',
+        'ui-sans-serif',
+        'system-ui',
+        '-apple-system',
+        'Segoe UI',
+        'Roboto',
+        'Helvetica Neue',
+        'Arial',
+        'sans-serif'
+      ],
+      mono: [
+        'ui-monospace',
+        'SFMono-Regular',
+        'Menlo',
+        'Consolas',
+        'Liberation Mono',
+        'monospace'
+      ]
     }
   },
   plugins: [require('flowbite/plugin')]

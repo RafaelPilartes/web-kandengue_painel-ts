@@ -111,7 +111,8 @@ export const MissionCard: React.FC<MissionCardProps> = ({
         </div>
       )}
 
-      {isCompleted && !isPaid && (
+      {/* No `onPay`: the admin's department cannot pay bonuses, so no buttons. */}
+      {isCompleted && !isPaid && onPay && (
         <div className="flex flex-col gap-2 mt-2 p-3 bg-primary-50 dark:bg-primary-900/10 rounded-lg border border-primary-100 dark:border-primary-900/30">
           <p className="text-xs font-semibold text-primary-700 dark:text-primary-300 flex items-center gap-1">
             <Trophy size={14} /> Missão Atingida! Escolha o pagamento:

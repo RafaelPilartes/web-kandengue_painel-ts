@@ -45,6 +45,12 @@ import { FareReviewPage } from '@/pages/main/Rides/FareReview'
 import { WeatherPage } from '@/pages/main/Pricing/Weather'
 import { BalancesPage } from '@/pages/main/Finances/Balances'
 import { SimulatorPage } from '@/pages/main/Pricing/Simulator'
+import { DepartmentsPage } from '@/pages/main/Departments'
+import { WorkTasksPage } from '@/pages/main/Work/Tasks'
+import { WorkProjectsPage } from '@/pages/main/Work/Projects'
+import { WorkProjectPage } from '@/pages/main/Work/Projects/ProjectPage'
+import { WorkCalendarPage } from '@/pages/main/Work/Calendar'
+import { WorkReportsPage } from '@/pages/main/Work/Reports'
 
 // Page
 
@@ -72,6 +78,68 @@ export function Router() {
               <React.Suspense fallback={<Loading />}>
                 <Private>
                   <AdminPage />
+                </Private>
+              </React.Suspense>
+            }
+          />
+          {/* Work */}
+          <Route
+            path={routsNameMain.work.tasks}
+            element={
+              <React.Suspense fallback={<Loading />}>
+                <Private>
+                  <WorkTasksPage />
+                </Private>
+              </React.Suspense>
+            }
+          />
+          <Route
+            path={routsNameMain.work.projects}
+            element={
+              <React.Suspense fallback={<Loading />}>
+                <Private>
+                  <WorkProjectsPage />
+                </Private>
+              </React.Suspense>
+            }
+          />
+          <Route
+            path={routsNameMain.work.project}
+            element={
+              <React.Suspense fallback={<Loading />}>
+                <Private>
+                  <WorkProjectPage />
+                </Private>
+              </React.Suspense>
+            }
+          />
+          <Route
+            path={routsNameMain.work.calendar}
+            element={
+              <React.Suspense fallback={<Loading />}>
+                <Private>
+                  <WorkCalendarPage />
+                </Private>
+              </React.Suspense>
+            }
+          />
+          <Route
+            path={routsNameMain.work.reports}
+            element={
+              <React.Suspense fallback={<Loading />}>
+                <Private>
+                  <WorkReportsPage />
+                </Private>
+              </React.Suspense>
+            }
+          />
+          {/* Departments */}
+          <Route
+            path={routsNameMain.departments.index}
+            element={
+              <React.Suspense fallback={<Loading />}>
+                <Private>
+                  <DepartmentsPage />
                 </Private>
               </React.Suspense>
             }

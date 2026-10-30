@@ -1,6 +1,6 @@
+import { Button } from '@/components/ui/button'
 import { AppModal } from '@/components/modal/AppModal'
 import { useState, useEffect } from 'react'
-import { BeatLoader } from 'react-spinners'
 
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -140,9 +140,20 @@ export function ModalEditDriver({
     <AppModal
       isOpen={modalEditRowIsOpen}
       onClose={closeModal}
+      footer={
+        <>
+          <Button variant="secondary" onClick={closeModal}>
+            Cancelar
+          </Button>
+          <Button type="submit" form="driver-edit" loading={isUploading || updateDriver.isPending}>
+            Guardar
+          </Button>
+        </>
+      }
       title={`Editar ${namePageSingular}`}
     >
           <form
+            id="driver-edit"
             onSubmit={handleSubmit(handleSubmitForm)}
             className="w-full flex flex-col justify-center items-center gap-6"
           >
@@ -151,7 +162,7 @@ export function ModalEditDriver({
               <div className="w-full max-w-[14rem]">
                 <label
                   htmlFor="edit-file"
-                  className="w-full h-40 flex flex-col items-center justify-center border-2 border-dashed rounded-lg cursor-pointer bg-gray-70 relative overflow-hidden"
+                  className="w-full h-40 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-50 transition-colors hover:border-primary-200/60 dark:border-gray-600 dark:bg-baseBgDark/50 dark:hover:border-primary-200/60 relative overflow-hidden"
                 >
                   {!imagePreview && (
                     <div className="flex flex-col items-center justify-center pt-5 pb-6">
@@ -171,11 +182,11 @@ export function ModalEditDriver({
                         />
                       </svg>
                       <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                        <span className="font-semibold">Click to upload</span>{' '}
+                        <span className="font-semibold">Carregar a foto</span>{' '}
                         {/* or drag and drop */}
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
-                        PNG, JPG or JPEG (MAX. 6Mb)
+                        PNG, JPG ou JPEG (máx. 6 MB)
                       </p>
                     </div>
                   )}
@@ -224,23 +235,7 @@ export function ModalEditDriver({
                 error={errors.phone}
               />
             </div>
-
-            <div className="w-full pt-4 flex justify-between items-center border-t border-gray-600">
-              <button
-                type="submit"
-                disabled={isUploading || updateDriver.isPending}
-                className="text-white bg-primary-200 hover:bg-primary-300 focus:ring-2 focus:outline-none focus:ring-primary-100 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-primary-200 dark:hover:bg-primary-300 dark:focus:ring-primary-500"
-              >
-                {isUploading || updateDriver.isPending ? (
-                  <div className="flex items-center gap-2">
-                    <BeatLoader color="white" size={10} />
-                  </div>
-                ) : (
-                  <span>Salvar</span>
-                )}
-              </button>
-            </div>
-          </form>
+            </form>
     </AppModal>
   )
 }

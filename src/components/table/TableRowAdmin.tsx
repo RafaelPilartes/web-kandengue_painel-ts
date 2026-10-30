@@ -11,19 +11,28 @@ import {
 import { ActionsMenu } from '../ActionsMenu'
 import { Eye } from 'lucide-react'
 import { formatDateTimeFromFirestore } from '@/utils/date'
+import { Avatar } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
+import { ADMIN_ACCESS_LEVEL_LABELS } from '@rafaelpilartes/kandengue-shared-v4/constants'
+import type { AdminRow } from '@/modules/Api/rest/adminAccess.dao'
 
 interface TableRowProps {
   rowItem: AdminInterface
   openPageViewRow?: (id: string) => void
   handleDeleteRow: (action: string) => void
   openModalEditRow: (action: any) => void
+  /** Department and level come from the API directory, not the Firestore entity. */
+  access?: AdminRow
+  departmentName?: string
 }
 
 const TableRow: React.FC<TableRowProps> = ({
   rowItem,
   openPageViewRow,
   openModalEditRow,
-  handleDeleteRow
+  handleDeleteRow,
+  access,
+  departmentName
 }) => {
   return (
     <motion.tr
@@ -37,13 +46,7 @@ const TableRow: React.FC<TableRowProps> = ({
       </td>
       <td className="px-3 py-3 min-w-[6rem]">
         <div className="flex flex-row justify-start items-center gap-2">
-          <div className="relative w-9 h-9 overflow-hidden">
-            <img
-              className="w-full h-full object-cover rounded-full"
-              src={rowItem.photo || '/default-avatar.png'}
-              alt={rowItem.name}
-            />
-          </div>
+          <Avatar src={rowItem.photo} alt={rowItem.name} size="base" />
           <div className="flex flex-col justify-center items-start">
             <span className="text-dark dark:text-light font-semibold text-sm">
               {rowItem.name}
@@ -57,7 +60,18 @@ const TableRow: React.FC<TableRowProps> = ({
       </td>
 
       <td className="px-3 py-3 min-w-[6rem]">
-        <p>{getAdminRoleLabel(rowItem.role)}</p>
+        <p>{departmentName ?? getAdminRoleLabel(rowItem.role)}</p>
+      </td>
+      <td className="px-3 py-3 min-w-[6rem]">
+        {access?.access_level ? (
+          <Badge
+            tone={access.access_level === 'direction' ? 'brand' : 'neutral'}
+          >
+            {ADMIN_ACCESS_LEVEL_LABELS[access.access_level]}
+          </Badge>
+        ) : (
+          <Badge tone="warning">Sem nível</Badge>
+        )}
       </td>
       <td className="px-3 py-3 min-w-[6rem]">
         <BadgeSimple
@@ -65,8 +79,8 @@ const TableRow: React.FC<TableRowProps> = ({
             rowItem.status == 'active'
               ? 'blue'
               : rowItem.status == 'inactive'
-              ? 'yellow'
-              : 'red'
+                ? 'yellow'
+                : 'red'
           }
           label={getUserStatusLabel(rowItem.status)}
         />

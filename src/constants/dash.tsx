@@ -18,7 +18,12 @@ import {
   Calculator,
   CloudRain,
   AlertTriangle,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Building2,
+  KanbanSquare,
+  FolderKanban,
+  CalendarDays,
+  BarChart3
 } from 'lucide-react'
 import { routsNameMain } from './routsName'
 
@@ -29,6 +34,39 @@ const dashItem = [
     to: routsNameMain.dashboard,
     notification: 0,
     accordion: false
+  },
+  {
+    label: 'Trabalho',
+    icon: <KanbanSquare size={16} />,
+    to: '/',
+    subMenus: [
+      {
+        label: 'Tarefas',
+        icon: <KanbanSquare size={16} />,
+        to: routsNameMain.work.tasks,
+        notification: 0
+      },
+      {
+        label: 'Projectos',
+        icon: <FolderKanban size={16} />,
+        to: routsNameMain.work.projects,
+        notification: 0
+      },
+      {
+        label: 'Calendário',
+        icon: <CalendarDays size={16} />,
+        to: routsNameMain.work.calendar,
+        notification: 0
+      },
+      {
+        label: 'Relatórios',
+        icon: <BarChart3 size={16} />,
+        to: routsNameMain.work.reports,
+        notification: 0
+      }
+    ],
+    notification: 0,
+    accordion: true
   },
   {
     label: 'Usuários',
@@ -51,6 +89,12 @@ const dashItem = [
         label: 'Admins & Operadores',
         icon: <ShieldCheck size={16} />,
         to: routsNameMain.users.admins.index,
+        notification: 0
+      },
+      {
+        label: 'Departamentos',
+        icon: <Building2 size={16} />,
+        to: routsNameMain.departments.index,
         notification: 0
       },
       {

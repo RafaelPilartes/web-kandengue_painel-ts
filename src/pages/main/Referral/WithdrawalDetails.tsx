@@ -1,3 +1,6 @@
+import { AppModal } from '@/components/modal/AppModal'
+import { Button } from '@/components/ui/button'
+import { TextAreaField } from '@/components/ui/field'
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Check, X, DollarSign } from 'lucide-react'
@@ -290,51 +293,37 @@ export function WithdrawalDetailsPage() {
         </div>
       </div>
 
-      {/* Modal de rejeição */}
-      {rejectModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-700">
-            <div className="p-6 border-b border-gray-100 dark:border-gray-700">
-              <h3 className="text-xl font-bold text-gray-800 dark:text-white">
-                Rejeitar saque
-              </h3>
-              <p className="text-sm text-gray-500 mt-1">
-                Os ganhos serão revertidos para "pendente".
-              </p>
-            </div>
-            <div className="p-6 flex flex-col gap-4">
-              <div>
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Motivo da rejeição{' '}
-                  <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  value={rejectReason}
-                  onChange={e => setRejectReason(e.target.value)}
-                  rows={4}
-                  className="mt-1 w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-4 py-2 text-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-red-500"
-                  placeholder="Ex: dados bancários inválidos…"
-                />
-              </div>
-              <div className="flex justify-end gap-2">
-                <button
-                  onClick={() => setRejectModalOpen(false)}
-                  className="px-4 py-2 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={handleConfirmReject}
-                  disabled={submitting}
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg disabled:opacity-50"
-                >
-                  Confirmar rejeição
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <AppModal
+        isOpen={rejectModalOpen}
+        onClose={() => setRejectModalOpen(false)}
+        variant="center"
+        size="sm"
+        title="Rejeitar saque"
+        description='Os ganhos voltam a "pendente".'
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setRejectModalOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleConfirmReject}
+              loading={submitting}
+              disabled={!rejectReason.trim()}
+            >
+              Confirmar rejeição
+            </Button>
+          </>
+        }
+      >
+        <TextAreaField
+          label="Motivo da rejeição"
+          value={rejectReason}
+          onChange={e => setRejectReason(e.target.value)}
+          rows={4}
+          autoFocus
+          placeholder="Ex.: dados bancários inválidos…"
+        />
+      </AppModal>
     </div>
   )
 }
