@@ -2,8 +2,8 @@ import {
   WORK_TASK_PRIORITY_LABELS,
   WORK_TASK_STATUS_LABELS,
   WORK_TASK_STATUSES
-} from '@rafaelpilartes/kandengue-shared-v4/constants'
-import type { WorkTaskStatus } from '@rafaelpilartes/kandengue-shared-v4/types'
+} from '@rafaelpilartes/kandengue-shared/constants'
+import type { WorkTaskStatus } from '@rafaelpilartes/kandengue-shared/types'
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { AppModal } from '@/components/modal/AppModal'

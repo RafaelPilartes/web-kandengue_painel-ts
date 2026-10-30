@@ -1,4 +1,4 @@
-import type { WorkTaskStatus } from '@rafaelpilartes/kandengue-shared-v4/types'
+import type { WorkTaskStatus } from '@rafaelpilartes/kandengue-shared/types'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   workDAO,

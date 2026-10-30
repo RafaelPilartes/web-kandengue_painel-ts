@@ -13,7 +13,7 @@ import { Eye } from 'lucide-react'
 import { formatDateTimeFromFirestore } from '@/utils/date'
 import { Avatar } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
-import { ADMIN_ACCESS_LEVEL_LABELS } from '@rafaelpilartes/kandengue-shared-v4/constants'
+import { ADMIN_ACCESS_LEVEL_LABELS } from '@rafaelpilartes/kandengue-shared/constants'
 import type { AdminRow } from '@/modules/Api/rest/adminAccess.dao'
 
 interface TableRowProps {

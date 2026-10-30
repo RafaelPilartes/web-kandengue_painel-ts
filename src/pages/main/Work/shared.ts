@@ -1,4 +1,4 @@
-import type { WorkTaskPriority } from '@rafaelpilartes/kandengue-shared-v4/types'
+import type { WorkTaskPriority } from '@rafaelpilartes/kandengue-shared/types'
 import { useMemo } from 'react'
 import type { BadgeTone } from '@/components/ui/badge'
 import { useAccess } from '@/hooks/useAccess'

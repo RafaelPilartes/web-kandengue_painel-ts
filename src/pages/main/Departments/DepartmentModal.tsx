@@ -2,8 +2,8 @@ import {
   ADMIN_PERMISSION_GROUPS,
   ADMIN_PERMISSION_LABELS,
   DIRECTION_ONLY_PERMISSIONS
-} from '@rafaelpilartes/kandengue-shared-v4/constants'
-import type { AdminPermission } from '@rafaelpilartes/kandengue-shared-v4/types'
+} from '@rafaelpilartes/kandengue-shared/constants'
+import type { AdminPermission } from '@rafaelpilartes/kandengue-shared/types'
 import { useState, type FormEvent } from 'react'
 import { AppModal } from '@/components/modal/AppModal'
 import { cn } from '@/lib/tailwind-merge'

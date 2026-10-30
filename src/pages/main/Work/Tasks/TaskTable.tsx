@@ -1,7 +1,7 @@
 import {
   WORK_TASK_PRIORITY_LABELS,
   WORK_TASK_STATUS_LABELS
-} from '@rafaelpilartes/kandengue-shared-v4/constants'
+} from '@rafaelpilartes/kandengue-shared/constants'
 import { AvatarStack } from '@/components/ui/avatar-stack'
 import { Badge } from '@/components/ui/badge'
 import type { WorkTask } from '@/modules/Api/rest/work.dao'

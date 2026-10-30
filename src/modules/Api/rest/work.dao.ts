@@ -2,7 +2,7 @@ import type {
   WorkProjectStatus,
   WorkTaskPriority,
   WorkTaskStatus
-} from '@rafaelpilartes/kandengue-shared-v4/types'
+} from '@rafaelpilartes/kandengue-shared/types'
 import ApiDAO from './Api.dao'
 
 /** Dates are ISO strings: the API serialises Firestore timestamps. */
