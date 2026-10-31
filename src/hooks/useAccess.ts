@@ -8,6 +8,13 @@ import { useAdminStore } from '@/stores/userStore'
 
 export const ACCESS_QUERY_KEY = ['admin-access'] as const
 
+/*
+ * One array, not a new `[]` per render: the menu memoises on this reference,
+ * and a fresh literal would rebuild and re-measure the navigation on every
+ * single render while the access is still loading.
+ */
+const NO_PERMISSIONS: AdminPermission[] = []
+
 /**
  * The signed-in admin's level, department and permissions, from the API.
  * `can` is false while loading: a screen never flashes open and then closes.
@@ -20,7 +27,7 @@ export function useAccess() {
     enabled: !!adminId,
     staleTime: 60_000
   })
-  const permissions = query.data?.permissions ?? []
+  const permissions = query.data?.permissions ?? NO_PERMISSIONS
   /*
    * The same shape the API resolves, so the guards in the shared library can be
    * called with it as they are — `canEditAdminAccount` and

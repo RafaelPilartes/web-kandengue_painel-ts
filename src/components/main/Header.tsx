@@ -72,7 +72,13 @@ export const Header = () => {
 
   return (
     <>
-      <header className="fixed z-20 h-20 top-0 left-0 w-full font-semibold bg-light dark:bg-dark border-b-[1px] border-gray-200 dark:border-gray-700">
+      {/*
+       * Not `fixed` any more: `RootLayout` pins the header and the navigation
+       * together, as one bar, and reserves its MEASURED height. Two separately
+       * fixed elements plus a constant margin is what let the navigation grow
+       * over the page.
+       */}
+      <header className="h-20 w-full font-semibold bg-light dark:bg-dark border-b-[1px] border-gray-200 dark:border-gray-700">
         {/* Container */}
         <div className="h-20 py-4 container flex items-center justify-between ">
           <div className="flex items-center justify-center gap-4">
