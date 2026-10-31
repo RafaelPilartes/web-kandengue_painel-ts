@@ -21,6 +21,7 @@ import { useFileUploadViewModel } from '@/viewModels/FileUploadViewModel'
 
 // Data
 import { statusOptions } from '@/data/selectOption'
+import { genderOptions } from './genderOptions'
 
 // Component
 import { CustomInput } from '@/components/input/InputLabel'
@@ -60,6 +61,8 @@ const formSchema = z.object({
     .string('Escolha o departamento.')
     .min(1, 'Escolha o departamento.'),
   profile_id: z.string('Escolha o perfil.').min(1, 'Escolha o perfil.'),
+  // Empty is a real answer: the greeting stays neutral.
+  gender: z.enum(['female', 'male']).optional(),
   password: z
     .string('A palavra-passe é obrigatório!')
     .min(6, 'A palavra-passe tem de no mínimo 6 caracteres')
@@ -223,7 +226,8 @@ export function ModalCreateAdmin({
         status: dataForm.status,
         photo: imageUploaded,
         department_id: dataForm.department_id,
-        profile_id: dataForm.profile_id
+        profile_id: dataForm.profile_id,
+        gender: dataForm.gender
       })
 
       showToast('success', 'Administrador criado com sucesso!')
@@ -348,6 +352,14 @@ export function ModalCreateAdmin({
                   error={errors.status}
                   options={statusOptions}
                   onOptionChange={handleStatusChange}
+                />
+                <SelectCustomZod
+                  name="gender"
+                  label="Tratamento na saudação"
+                  control={control}
+                  error={errors.gender}
+                  options={genderOptions}
+                  onOptionChange={() => {}}
                 />
               </div>
 

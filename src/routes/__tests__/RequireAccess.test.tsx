@@ -67,10 +67,15 @@ describe('RequireAccess', () => {
     expect(screen.queryByText('conteúdo')).toBeNull()
   })
 
-  it('sends someone without view_dashboard from the home page to their tasks', () => {
+  /*
+   * This used to bounce to /work/tasks. The home page is open now, because it
+   * carries the greeting and the admin's own tasks and deadlines — being sent
+   * somewhere else told them nothing.
+   */
+  it('opens the home page for an admin with no permission at all', () => {
     access.current = { ...access.current, can: () => false }
     at('/')
-    expect(screen.getByText('tarefas')).toBeTruthy()
+    expect(screen.getByText('conteúdo')).toBeTruthy()
   })
 
   it('tells an admin with no mark and no profile that no access was assigned, even on open pages', () => {

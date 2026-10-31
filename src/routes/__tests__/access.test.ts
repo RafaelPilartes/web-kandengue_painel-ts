@@ -3,7 +3,11 @@ import { filterMenu, permissionFor } from '../access'
 
 describe('permissionFor', () => {
   it('maps each screen to its permission, specific paths first', () => {
-    expect(permissionFor('/')).toBe('view_dashboard')
+    /*
+     * The home page is open: it carries the greeting and the admin's own work,
+     * and the operation's numbers on it check `view_dashboard` themselves.
+     */
+    expect(permissionFor('/')).toBeNull()
     expect(permissionFor('/rides')).toBe('view_rides')
     expect(permissionFor('/rides/view/abc')).toBe('view_rides')
     expect(permissionFor('/rides/realtime')).toBe('view_realtime_map')
@@ -43,9 +47,11 @@ describe('filterMenu', () => {
     { label: 'Trabalho', to: '/work/tasks' }
   ]
 
-  it('keeps only what a member with view_rides can open', () => {
+  it('keeps only what an admin with view_rides can open', () => {
     const can = (p: string) => p === 'view_rides'
     expect(filterMenu(menu, can)).toEqual([
+      // The home page needs no permission since 2026-10-31.
+      { label: 'Dashboard', to: '/' },
       {
         label: 'Corridas',
         to: '/',

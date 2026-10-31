@@ -35,7 +35,13 @@ const RULES: [prefix: string, permission: AdminPermission][] = [
 ]
 
 export function permissionFor(pathname: string): AdminPermission | null {
-  if (pathname === '/') return 'view_dashboard'
+  /*
+   * The home page is open to every admin since 2026-10-31. It carries the
+   * greeting and the admin's own tasks and deadlines, which are worth opening
+   * without any operational permission; the OPERATION's numbers on it are
+   * still behind `view_dashboard`, checked where they are drawn.
+   */
+  if (pathname === '/') return null
   const rule = RULES.find(
     ([prefix]) => pathname === prefix || pathname.startsWith(`${prefix}/`)
   )

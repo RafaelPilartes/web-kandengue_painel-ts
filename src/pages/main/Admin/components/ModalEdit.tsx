@@ -25,6 +25,7 @@ import { z } from 'zod'
 
 import { useFileUploadViewModel } from '@/viewModels/FileUploadViewModel'
 import { statusOptions } from '@/data/selectOption'
+import { genderOptions } from './genderOptions'
 
 import { CustomInput } from '@/components/input/InputLabel'
 import { SelectCustomZod } from '@/components/selects/SelectCustomZod'
@@ -44,7 +45,9 @@ const formSchema = z.object({
     error: () => ({ message: "Selecione 'Ativo', 'Inativo' ou 'Pendente'" })
   }),
   department_id: z.string().optional(),
-  profile_id: z.string().optional()
+  profile_id: z.string().optional(),
+  // Empty is a real answer: the greeting stays neutral.
+  gender: z.enum(['female', 'male']).optional()
 })
 type formType = z.infer<typeof formSchema>
 
@@ -62,7 +65,9 @@ export function ModalEditAdmin({
   const setAccess = useSetAdminAccess()
   const current = accessById.get(baseInfo.id as string)
   // The API refuses changing one's own access; say so instead of failing on save.
-  const isSelf = useAdminStore(s => s.currentAdminData?.id) === baseInfo.id
+  const currentAdminData = useAdminStore(s => s.currentAdminData)
+  const addAdmin = useAdminStore(s => s.addAdmin)
+  const isSelf = currentAdminData?.id === baseInfo.id
 
   /*
    * The panel only HIDES; the API is what refuses. Both call the same guards
@@ -119,7 +124,8 @@ export function ModalEditAdmin({
       phone: baseInfo?.phone || '',
       status: (baseInfo?.status as any) || 'active',
       department_id: current?.department_id ?? undefined,
-      profile_id: current?.profile_id ?? undefined
+      profile_id: current?.profile_id ?? undefined,
+      gender: baseInfo?.gender ?? undefined
     }
   })
 
@@ -131,7 +137,8 @@ export function ModalEditAdmin({
         phone: baseInfo.phone,
         status: baseInfo.status as any,
         department_id: current?.department_id ?? undefined,
-        profile_id: current?.profile_id ?? undefined
+        profile_id: current?.profile_id ?? undefined,
+        gender: baseInfo.gender ?? undefined
       })
       setDepartmentId(current?.department_id ?? undefined)
       setIsDirectionMark(current?.is_direction === true)
@@ -183,7 +190,7 @@ export function ModalEditAdmin({
         imageUploaded = await handleUploadPhoto()
       }
 
-      const { department_id, profile_id, name, phone, status } = dataForm
+      const { department_id, profile_id, name, phone, status, gender } = dataForm
 
       /*
        * The profile goes through the API, audited there — `/admins/{id}` is
@@ -202,6 +209,7 @@ export function ModalEditAdmin({
       if (phone !== baseInfo?.phone) values.phone = phone
       if (status !== baseInfo?.status) values.status = status
       if (imageUploaded !== (baseInfo?.photo || '')) values.photo = imageUploaded
+      if (gender && gender !== baseInfo?.gender) values.gender = gender
 
       if (mayEditFields && Object.keys(values).length > 0) {
         await updateProfile.mutateAsync({
@@ -235,6 +243,16 @@ export function ModalEditAdmin({
           adminId: baseInfo.id as string,
           isDirection: isDirectionMark
         })
+      }
+
+      /*
+       * Editing one's OWN account has to reach the store, or the screen keeps
+       * showing what was persisted at login — the greeting on the home page
+       * would go on using the old name or the old form of address until the
+       * next sign-in.
+       */
+      if (isSelf && currentAdminData) {
+        addAdmin({ ...currentAdminData, ...values })
       }
 
       showToast('success', 'Administrador actualizado com sucesso!')
@@ -357,14 +375,24 @@ export function ModalEditAdmin({
               />
             </div>
 
-            <SelectCustomZod
-              name="status"
-              label="Estado da conta"
-              control={control}
-              error={errors.status}
-              options={statusOptions}
-              onOptionChange={() => null}
-            />
+            <div className="w-full grid gap-6 md:grid-cols-2">
+              <SelectCustomZod
+                name="status"
+                label="Estado da conta"
+                control={control}
+                error={errors.status}
+                options={statusOptions}
+                onOptionChange={() => null}
+              />
+              <SelectCustomZod
+                name="gender"
+                label="Tratamento na saudação"
+                control={control}
+                error={errors.gender}
+                options={genderOptions}
+                onOptionChange={() => null}
+              />
+            </div>
 
             <div className="w-full grid gap-6 md:grid-cols-2">
               <SelectCustomZod

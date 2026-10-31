@@ -1,4 +1,5 @@
 import type {
+  AdminGender,
   AdminPermission,
   AdminProfile
 } from '@rafaelpilartes/kandengue-shared/types'
@@ -30,6 +31,7 @@ export type CreateAdminBody = {
   password: string
   status: AdminStatus
   photo?: string
+  gender?: AdminGender
   department_id: string
   profile_id: string
 }
@@ -39,6 +41,7 @@ export type UpdateAdminBody = Partial<{
   phone: string
   status: AdminStatus
   photo: string
+  gender: AdminGender
 }>
 
 export type AdminRow = {
