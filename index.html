@@ -5,6 +5,21 @@
     <link rel="icon" type="image/svg+xml" href="/logo/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Kandengue - Painel</title>
+
+    <!--
+      Manifesto da app web.
+
+      ⚠️ Está aqui pelo push no iPhone: o Safari só entrega notificações a um
+      site que tenha sido INSTALADO no ecrã principal, e só se deixa instalar
+      com um manifesto `display: standalone` e um ícone. Sem isto, o botão de
+      notificações do painel nunca funciona num iPhone, por mais certo que o
+      resto esteja.
+    -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#e24222" />
+    <link rel="apple-touch-icon" href="/logo/icon-192.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Painel" />
   </head>
   <body>
     <div id="root"></div>

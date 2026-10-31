@@ -100,6 +100,14 @@ export const adminAccessDAO = {
       `/api/v1/admin/admins/${encodeURIComponent(adminId)}/direction`,
       { is_direction: isDirection }
     ),
+  /*
+   * This browser, for push. The admin id is the authenticated one, server
+   * side: there is nothing in the body to get wrong.
+   */
+  registerDevice: (token: string) =>
+    ApiDAO.post<{ registered: boolean }>('/api/v1/admin/devices', { token }),
+  unregisterDevice: (token: string) =>
+    ApiDAO.delete<null>('/api/v1/admin/devices', { token }),
   profiles: (departmentId: string) =>
     ApiDAO.get<ProfileRow[]>(
       `/api/v1/admin/departments/${encodeURIComponent(departmentId)}/profiles`

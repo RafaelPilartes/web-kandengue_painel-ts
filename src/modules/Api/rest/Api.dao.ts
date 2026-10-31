@@ -112,11 +112,18 @@ class ApiDAO {
     return this.request<T>('PUT', url, data, headers)
   }
 
+  /*
+   * `data` is optional and almost always absent. It exists for
+   * `DELETE /api/v1/admin/devices`, which identifies the browser by its push
+   * token: the token is long and opaque, and a query string would put it in
+   * every proxy log on the way.
+   */
   public async delete<T>(
     url: string,
+    data?: any,
     headers?: Record<string, string>
   ): Promise<T> {
-    return this.request<T>('DELETE', url, undefined, headers)
+    return this.request<T>('DELETE', url, data, headers)
   }
 
   public async patch<T>(

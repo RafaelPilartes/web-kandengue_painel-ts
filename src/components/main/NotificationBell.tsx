@@ -1,10 +1,11 @@
-import { Bell } from 'lucide-react'
+import { Bell, BellOff, BellRing } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Avatar } from '@/components/ui/avatar'
 import { cn } from '@/lib/tailwind-merge'
 import type { WorkNotification } from '@/modules/Api/rest/work.dao'
 import { useAdminDirectory } from '@/viewModels/AccessViewModel'
+import { useWebPush } from '@/hooks/useWebPush'
 import { useWorkNotifications } from '@/viewModels/WorkViewModel'
 
 const VERB: Record<WorkNotification['kind'], string> = {
@@ -27,6 +28,7 @@ const ago = (iso: string | null) => {
 /** The work module's notifications: who did what to which task. */
 export function NotificationBell() {
   const { notifications, unread, markRead } = useWorkNotifications()
+  const push = useWebPush()
   const { byId } = useAdminDirectory()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -124,8 +126,62 @@ export function NotificationBell() {
               })}
             </ul>
           )}
+
+          {/*
+           * The permission is asked for HERE, from a click, and never on load:
+           * a prompt without a gesture is refused by default and stays
+           * refused — Chrome does not ask again and the person has to go into
+           * the site settings.
+           */}
+          <PushRow push={push} />
         </div>
       )}
     </div>
+  )
+}
+
+/**
+ * The bottom row of the bell: turn browser notifications on for THIS device.
+ *
+ * Says what the state is instead of offering a button that cannot work — a
+ * browser without push, a panel without the VAPID key, a permission the person
+ * already blocked. Each of those needs a different thing done about it, and
+ * none of them is a click here.
+ */
+function PushRow({ push }: { push: ReturnType<typeof useWebPush> }) {
+  if (push.state === 'unsupported') return null
+
+  if (push.state === 'unconfigured') {
+    return (
+      <p className="border-t border-gray-200 px-4 py-3 text-xs text-gray-500 dark:border-gray-700 dark:text-gray-400">
+        As notificações do browser ainda não estão configuradas neste painel.
+      </p>
+    )
+  }
+
+  if (push.state === 'denied') {
+    return (
+      <p className="border-t border-gray-200 px-4 py-3 text-xs text-gray-500 dark:border-gray-700 dark:text-gray-400">
+        Este browser está a bloquear as notificações deste site. Só se desbloqueia
+        nas definições do browser.
+      </p>
+    )
+  }
+
+  const on = push.isRegistered
+  return (
+    <button
+      type="button"
+      disabled={push.isWorking}
+      onClick={() => (on ? push.disable() : push.enable())}
+      className="flex w-full items-center gap-2 border-t border-gray-200 px-4 py-3 text-left text-xs text-gray-600 transition-colors hover:bg-gray-100 disabled:opacity-60 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700/60"
+    >
+      {on ? <BellOff size={14} /> : <BellRing size={14} />}
+      {push.isWorking
+        ? 'Um momento…'
+        : on
+          ? 'Desligar as notificações neste dispositivo'
+          : 'Receber notificações neste dispositivo'}
+    </button>
   )
 }
