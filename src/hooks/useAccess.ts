@@ -35,15 +35,17 @@ export function useAccess() {
    * exactly what the API refuses.
    */
   const access: AdminAccess = {
-    level: query.data?.level ?? null,
+    isDirection: query.data?.is_direction === true,
     departmentId: query.data?.department?.id ?? null,
+    profileId: query.data?.profile?.id ?? null,
     permissions
   }
   return {
     isLoading: query.isLoading,
     isError: query.isError,
-    level: access.level,
+    isDirection: access.isDirection,
     department: query.data?.department ?? null,
+    profile: query.data?.profile ?? null,
     access,
     can: (permission: AdminPermission) => permissions.includes(permission)
   }

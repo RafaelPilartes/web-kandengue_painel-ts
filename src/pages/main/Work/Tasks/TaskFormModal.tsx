@@ -47,7 +47,7 @@ export function TaskFormModal({
     task?.project_id ?? defaultProjectId ?? ''
   )
   const [people, setPeople] = useState<string[]>(
-    task?.assignee_ids ?? (ctx.level === 'member' ? [ctx.meId] : [])
+    task?.assignee_ids ?? (ctx.workScope === 'own' ? [ctx.meId] : [])
   )
   const [priority, setPriority] = useState<WorkTaskPriority>(
     task?.priority ?? 'medium'
@@ -59,15 +59,15 @@ export function TaskFormModal({
 
   const departmentOptions = ctx.departments
     .filter(
-      d => d.active && (ctx.level === 'direction' || d.id === ctx.myDepartment)
+      d => d.active && (ctx.workScope === 'all' || d.id === ctx.myDepartment)
     )
     .map(d => ({ value: d.id, label: d.name }))
   // Direction gathers anyone; a manager, their department; a member, only themselves.
   const peopleOptions = ctx.admins
     .filter(a =>
-      ctx.level === 'direction'
+      ctx.workScope === 'all'
         ? true
-        : ctx.level === 'manager'
+        : ctx.workScope === 'department'
           ? a.department_id === departmentId
           : a.id === ctx.meId
     )
@@ -177,12 +177,12 @@ export function TaskFormModal({
           options={peopleOptions}
           value={people}
           onChange={choosePeople}
-          disabled={ctx.level === 'member'}
+          disabled={ctx.workScope === 'own'}
           max={WORK_TASK_MAX_ASSIGNEES}
           hint={
-            ctx.level === 'member'
+            ctx.workScope === 'own'
               ? 'Como colaborador, cria tarefas só para si.'
-              : ctx.level === 'manager'
+              : ctx.workScope === 'department'
                 ? 'Pessoas do seu departamento.'
                 : 'Pode juntar pessoas de vários departamentos.'
           }
@@ -193,11 +193,11 @@ export function TaskFormModal({
             label="Departamento"
             value={departmentId}
             options={departmentOptions}
-            disabled={ctx.level !== 'direction'}
+            disabled={ctx.workScope !== 'all'}
             onChange={e => {
               setDepartmentId(e.target.value)
               setProjectId('')
-              if (ctx.level === 'manager') choosePeople([])
+              if (ctx.workScope === 'department') choosePeople([])
             }}
           />
           <SelectField

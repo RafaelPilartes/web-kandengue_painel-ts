@@ -99,7 +99,8 @@ export function RequireAccess({ children }: Props) {
       </div>
     )
   }
-  if (access.level === null) return <NoAccess unassigned />
+  // No mark and no profile: the account exists but nothing reaches it yet.
+  if (!access.isDirection && !access.profile) return <NoAccess unassigned />
   if (permission && !access.can(permission)) {
     // The dashboard is the default landing page; send whoever cannot see it to their tasks.
     if (pathname === '/') return <Navigate to="/work/tasks" replace />

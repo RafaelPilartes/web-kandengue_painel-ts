@@ -66,11 +66,23 @@ describe('filterMenu', () => {
         ]
       }
     ]
+    // Work reports follow `view_department_reports` now, or the mark.
     expect(
-      filterMenu(work, () => false, 'member')[0].subMenus?.map(s => s.label)
+      filterMenu(work, () => false, { isDirection: false })[0].subMenus?.map(
+        s => s.label
+      )
     ).toEqual(['Tarefas'])
     expect(
-      filterMenu(work, () => false, 'manager')[0].subMenus?.map(s => s.label)
+      filterMenu(
+        work,
+        p => p === 'view_department_reports',
+        { isDirection: false }
+      )[0].subMenus?.map(s => s.label)
+    ).toEqual(['Tarefas', 'Relatórios'])
+    expect(
+      filterMenu(work, () => false, { isDirection: true })[0].subMenus?.map(
+        s => s.label
+      )
     ).toEqual(['Tarefas', 'Relatórios'])
   })
 

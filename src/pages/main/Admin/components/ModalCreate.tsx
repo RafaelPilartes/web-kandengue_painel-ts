@@ -1,14 +1,11 @@
 import { Button } from '@/components/ui/button'
 import {
-  ADMIN_ACCESS_LEVEL_LABELS,
-  ADMIN_ACCESS_LEVELS
-} from '@rafaelpilartes/kandengue-shared/constants'
-import {
   useCreateAdmin,
+  useDepartmentProfiles,
   useDepartments
 } from '@/viewModels/AccessViewModel'
 import { useAccess } from '@/hooks/useAccess'
-import { canAssignAccessLevel } from '@rafaelpilartes/kandengue-shared/functions'
+import { canAssignProfile } from '@rafaelpilartes/kandengue-shared/functions'
 import { AppModal } from '@/components/modal/AppModal'
 import { useState } from 'react'
 
@@ -50,11 +47,6 @@ const requiredStringField = (message = 'Campo obrigatório') =>
       message: 'Por favor, preencha este campo'
     })
 
-const allAccessLevelOptions = ADMIN_ACCESS_LEVELS.map(level => ({
-  value: level,
-  label: ADMIN_ACCESS_LEVEL_LABELS[level]
-}))
-
 const formSchema = z.object({
   name: requiredStringField('O nome é obrigatório!'),
   email: z.string('O email é obrigatório!').toLowerCase().trim(),
@@ -67,9 +59,7 @@ const formSchema = z.object({
   department_id: z
     .string('Escolha o departamento.')
     .min(1, 'Escolha o departamento.'),
-  access_level: z.enum(['direction', 'manager', 'member'], {
-    error: () => ({ message: 'Escolha o nível de acesso.' })
-  }),
+  profile_id: z.string('Escolha o perfil.').min(1, 'Escolha o perfil.'),
   password: z
     .string('A palavra-passe é obrigatório!')
     .min(6, 'A palavra-passe tem de no mínimo 6 caracteres')
@@ -95,14 +85,21 @@ export function ModalCreateAdmin({
     .map(d => ({ value: d.id, label: d.name }))
 
   /*
+   * The profile list follows the chosen department: a profile only exists
+   * inside one, and the API refuses a profile that belongs to another.
+   */
+  const [departmentId, setDepartmentId] = useState<string>('')
+  const { profiles } = useDepartmentProfiles(departmentId || null)
+
+  /*
    * The panel only HIDES; the API is what refuses. The same guard from the
-   * shared library decides both, so the levels on offer here are exactly the
-   * ones the API would accept.
+   * shared library decides both, so the profiles on offer here are exactly
+   * the ones the API would accept.
    */
   const { access } = useAccess()
-  const accessLevelOptions = allAccessLevelOptions.filter(option =>
-    canAssignAccessLevel(access, option.value)
-  )
+  const profileOptions = profiles
+    .filter(p => p.active && canAssignProfile(access, p))
+    .map(p => ({ value: p.id, label: p.name }))
 
   // Image
   const [selectedFile, setSelectedFile] = useState<File | undefined>()
@@ -116,7 +113,8 @@ export function ModalCreateAdmin({
   const {
     control,
     handleSubmit,
-    formState: { errors }
+    formState: { errors },
+    setValue
   } = useForm<formType>({
     resolver: zodResolver(formSchema)
   })
@@ -225,7 +223,7 @@ export function ModalCreateAdmin({
         status: dataForm.status,
         photo: imageUploaded,
         department_id: dataForm.department_id,
-        access_level: dataForm.access_level
+        profile_id: dataForm.profile_id
       })
 
       showToast('success', 'Administrador criado com sucesso!')
@@ -360,14 +358,20 @@ export function ModalCreateAdmin({
                   control={control}
                   error={errors.department_id}
                   options={departmentOptions}
-                  onOptionChange={() => {}}
+                  onOptionChange={value => {
+                    setDepartmentId(value)
+                    // The profile that was chosen belongs to the department
+                    // that was chosen before: it cannot stay selected.
+                    setValue('profile_id', '')
+                  }}
                 />
                 <SelectCustomZod
-                  name="access_level"
-                  label="Nível de acesso"
+                  name="profile_id"
+                  label="Perfil"
                   control={control}
-                  error={errors.access_level}
-                  options={accessLevelOptions}
+                  error={errors.profile_id}
+                  options={profileOptions}
+                  isDisabled={!departmentId}
                   onOptionChange={() => {}}
                 />
               </div>

@@ -1,7 +1,4 @@
-import type {
-  AdminAccessLevel,
-  AdminPermission
-} from '@rafaelpilartes/kandengue-shared/types'
+import type { AdminPermission } from '@rafaelpilartes/kandengue-shared/types'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { firebaseCollections } from '@/constants/firebaseCollections'
@@ -11,6 +8,7 @@ import {
   type AdminRow,
   type CreateAdminBody,
   type DepartmentRow,
+  type ProfileRow,
   type UpdateAdminBody
 } from '@/modules/Api/rest/adminAccess.dao'
 
@@ -113,12 +111,73 @@ export function useSetAdminAccess() {
     mutationFn: (v: {
       adminId: string
       department_id: string
-      access_level: AdminAccessLevel
+      profile_id: string
     }) =>
       adminAccessDAO.setAccess(v.adminId, {
         department_id: v.department_id,
-        access_level: v.access_level
+        profile_id: v.profile_id
       }),
+    onSuccess: refresh
+  })
+}
+
+const PROFILES_KEY = ['department-profiles'] as const
+
+/**
+ * The profiles of ONE department. The picker on the admin screen re-reads when
+ * the chosen department changes, which is the behaviour the model asks for: a
+ * profile only exists inside its department.
+ */
+export function useDepartmentProfiles(departmentId: string | null | undefined) {
+  const query = useQuery({
+    queryKey: [...PROFILES_KEY, departmentId],
+    queryFn: () => adminAccessDAO.profiles(departmentId as string),
+    enabled: !!departmentId,
+    staleTime: 60_000
+  })
+  return {
+    profiles: query.data ?? ([] as ProfileRow[]),
+    isLoading: query.isLoading
+  }
+}
+
+/** Create and update the profiles of a department. Direction only, in the API. */
+export function useProfileMutations(departmentId: string | null | undefined) {
+  const queryClient = useQueryClient()
+  const refresh = () => {
+    queryClient.invalidateQueries({ queryKey: PROFILES_KEY })
+    queryClient.invalidateQueries({ queryKey: ACCESS_QUERY_KEY })
+  }
+  const create = useMutation({
+    mutationFn: (body: { name: string; permissions: AdminPermission[] }) =>
+      adminAccessDAO.createProfile(departmentId as string, body),
+    onSuccess: refresh
+  })
+  const update = useMutation({
+    mutationFn: (v: {
+      profileId: string
+      values: Partial<{
+        name: string
+        permissions: AdminPermission[]
+        active: boolean
+      }>
+    }) =>
+      adminAccessDAO.updateProfile(
+        departmentId as string,
+        v.profileId,
+        v.values
+      ),
+    onSuccess: refresh
+  })
+  return { create, update }
+}
+
+/** The Direction mark, on its own, because the API keeps it on its own route. */
+export function useSetDirectionMark() {
+  const refresh = useAdminRefresh()
+  return useMutation({
+    mutationFn: (v: { adminId: string; isDirection: boolean }) =>
+      adminAccessDAO.setDirectionMark(v.adminId, v.isDirection),
     onSuccess: refresh
   })
 }

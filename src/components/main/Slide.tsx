@@ -51,13 +51,13 @@ export const Slide = () => {
   const [activeAccordion, setActiveAccordion] = useState<number | null>(null)
   const [moreIsOpen, setMoreIsOpen] = useState(false)
 
-  const { can, level, access } = useAccess()
+  const { can, access } = useAccess()
   // Memoised on the permissions array, which react-query keeps stable: the
   // measuring below must not re-run on every render.
   const items = useMemo(
-    () => filterMenu(dashItem, can, level),
+    () => filterMenu(dashItem, can, access),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [access.permissions, level]
+    [access.permissions, access.isDirection]
   )
 
   const rowRef = useRef<HTMLDivElement>(null)

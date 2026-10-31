@@ -131,7 +131,7 @@ export function WorkProjectPage() {
     )
 
   const done = summary.byStatus.done
-  const canAddTask = ctx.canManageProjects || ctx.level === 'member'
+  const canAddTask = ctx.canManageProjects || ctx.workScope === 'own'
   const pastDue =
     project.status === 'active' &&
     !!project.due_date &&

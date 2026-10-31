@@ -86,9 +86,9 @@ export function WorkTasksPage() {
       <PageHeader
         title="Tarefas"
         description={
-          ctx.level === 'direction'
+          ctx.workScope === 'all'
             ? 'O trabalho de todos os departamentos.'
-            : ctx.level === 'manager'
+            : ctx.workScope === 'department'
               ? 'O trabalho do seu departamento.'
               : 'As tarefas que lhe foram atribuídas ou que criou.'
         }
@@ -118,9 +118,9 @@ export function WorkTasksPage() {
         }
       />
 
-      {ctx.level !== 'member' && (
+      {ctx.workScope !== 'own' && (
         <div className="grid gap-4 sm:grid-cols-3">
-          {ctx.level === 'direction' && (
+          {ctx.workScope === 'all' && (
             <SelectField
               label="Departamento"
               value={departmentId}
@@ -148,7 +148,7 @@ export function WorkTasksPage() {
             options={ctx.admins
               .filter(
                 a =>
-                  ctx.level === 'direction' ||
+                  ctx.workScope === 'all' ||
                   a.department_id === ctx.myDepartment
               )
               .map(a => ({ value: a.id, label: a.name }))}

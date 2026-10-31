@@ -141,6 +141,7 @@ export function AdminPage() {
               accessById.get(item.id as string)?.department_id ?? ''
             )?.name
           }
+          profileName={accessById.get(item.id as string)?.profile_name ?? undefined}
           openModalEditRow={openModalEditRow}
           handleDeleteRow={handleDeleteRow}
           openPageViewRow={openPageViewRow}
@@ -215,7 +216,7 @@ export function AdminPage() {
                 <th className="px-3 py-3 min-w-[18rem]">Utilizador</th>
                 <th className="px-3 py-3 min-w-[8rem]">Telefone</th>
                 <th className="px-3 py-3 min-w-[12rem]">Departamento</th>
-                <th className="px-3 py-3 min-w-[7rem]">Nível</th>
+                <th className="px-3 py-3 min-w-[7rem]">Perfil</th>
                 <th className="px-3 py-3 min-w-[7rem]">Estado</th>
                 <th className="px-3 py-3 min-w-[12rem]">Data de Cadastro</th>
                 <th className="px-3 py-3 min-w-[8rem]">Ação</th>

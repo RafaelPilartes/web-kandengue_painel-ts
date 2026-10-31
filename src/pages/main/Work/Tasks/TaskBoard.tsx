@@ -129,7 +129,7 @@ export function TaskBoard({
                 <p className="text-sm font-medium text-dark [text-wrap:pretty] dark:text-light">
                   {task.title}
                 </p>
-                {ctx.level === 'direction' && (
+                {ctx.workScope === 'all' && (
                   <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
                     {ctx.departmentName(task.department_id)}
                   </p>

@@ -1,5 +1,5 @@
 import type {
-  AdminAccessLevel,
+  AdminAccess,
   AdminPermission
 } from '@rafaelpilartes/kandengue-shared/types'
 
@@ -48,12 +48,16 @@ type MenuItem = { to: string; subMenus?: MenuItem[] }
 export function filterMenu<T extends MenuItem>(
   items: T[],
   can: (p: AdminPermission) => boolean,
-  level: AdminAccessLevel | null = null
+  access: Pick<AdminAccess, 'isDirection'> | null = null
 ): T[] {
   const allowed = (to: string) => {
-    // Work reports follow the level, not a permission (Direction and managers).
+    /*
+     * Work reports used to follow the LEVEL (Direction or manager). The levels
+     * are gone and the capability is a permission of its own — which is also
+     * why this is no longer a special case worth a branch, except for the mark.
+     */
     if (to === '/work/reports')
-      return level === 'direction' || level === 'manager'
+      return access?.isDirection === true || can('view_department_reports')
     const p = permissionFor(to)
     return p === null || can(p)
   }

@@ -1,14 +1,17 @@
 import type {
-  AdminAccessLevel,
-  AdminPermission
+  AdminPermission,
+  AdminProfile
 } from '@rafaelpilartes/kandengue-shared/types'
 import ApiDAO from './Api.dao'
 
 export type MyAccess = {
-  level: AdminAccessLevel | null
+  is_direction: boolean
   department: { id: string; name: string } | null
+  profile: { id: string; name: string } | null
   permissions: AdminPermission[]
 }
+
+export type ProfileRow = AdminProfile & { member_count: number }
 
 export type DepartmentRow = {
   id: string
@@ -28,7 +31,7 @@ export type CreateAdminBody = {
   status: AdminStatus
   photo?: string
   department_id: string
-  access_level: AdminAccessLevel
+  profile_id: string
 }
 
 export type UpdateAdminBody = Partial<{
@@ -43,7 +46,9 @@ export type AdminRow = {
   name: string
   email: string
   department_id: string | null
-  access_level: AdminAccessLevel | null
+  profile_id: string | null
+  profile_name: string | null
+  is_direction: boolean
 }
 
 /** Who may do what: the panel's side of /api/v1/admin/{me,departments,admins}. */
@@ -77,10 +82,44 @@ export const adminAccessDAO = {
     ApiDAO.patch<null>(`/api/v1/admin/admins/${encodeURIComponent(id)}`, body),
   setAccess: (
     adminId: string,
-    body: { department_id: string; access_level: AdminAccessLevel }
+    body: { department_id: string; profile_id: string }
   ) =>
     ApiDAO.patch<null>(
       `/api/v1/admin/admins/${encodeURIComponent(adminId)}/access`,
+      body
+    ),
+  /*
+   * The Direction mark is its own call, as it is its own route: it is the one
+   * change that makes an account able to do everything.
+   */
+  setDirectionMark: (adminId: string, isDirection: boolean) =>
+    ApiDAO.patch<null>(
+      `/api/v1/admin/admins/${encodeURIComponent(adminId)}/direction`,
+      { is_direction: isDirection }
+    ),
+  profiles: (departmentId: string) =>
+    ApiDAO.get<ProfileRow[]>(
+      `/api/v1/admin/departments/${encodeURIComponent(departmentId)}/profiles`
+    ),
+  createProfile: (
+    departmentId: string,
+    body: { name: string; permissions: AdminPermission[] }
+  ) =>
+    ApiDAO.post<{ id: string }>(
+      `/api/v1/admin/departments/${encodeURIComponent(departmentId)}/profiles`,
+      body
+    ),
+  updateProfile: (
+    departmentId: string,
+    profileId: string,
+    body: Partial<{
+      name: string
+      permissions: AdminPermission[]
+      active: boolean
+    }>
+  ) =>
+    ApiDAO.patch<null>(
+      `/api/v1/admin/departments/${encodeURIComponent(departmentId)}/profiles/${encodeURIComponent(profileId)}`,
       body
     )
 }
