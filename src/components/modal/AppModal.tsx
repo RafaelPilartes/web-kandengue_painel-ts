@@ -1,4 +1,4 @@
-import { useId } from 'react'
+import { useEffect, useId } from 'react'
 import type { ReactNode } from 'react'
 import { X } from 'lucide-react'
 import ReactModal from 'react-modal'
@@ -26,6 +26,60 @@ if (typeof document !== 'undefined' && document.getElementById('root')) {
  * um aviso tem de se ver mesmo com um modal aberto.
  */
 const Z_INDEX = 'z-[1000]'
+
+/*
+ * The page behind a modal does not scroll: see `.ReactModal__Body--open` in
+ * global.css.
+ *
+ * ── Why the panel counts the open modals itself ──
+ * react-modal already reference-counts `bodyOpenClassName`, and that counter
+ * LEAKS. Its `ModalPortal.componentWillUnmount` only gives the reference back
+ * when `this.state.isOpen` is already true, and that state only becomes true
+ * after the `setState` inside `open()` has flushed. React's StrictMode mounts
+ * every component, unmounts it and mounts it again — so the first mount adds
+ * a reference and the simulated unmount drops none. The counter ends at 2 for
+ * one modal, closing it brings it down to 1, the class never comes off and the
+ * page stays frozen until a reload.
+ *
+ * Measured on 2026-10-31: after closing the "Cadastrar administrador" modal,
+ * `document.querySelectorAll('[role=dialog]').length` was 0 while
+ * `getComputedStyle(document.body).overflow` was still `hidden`, and a
+ * PageDown moved the page 0 px (571 px before the modal was ever opened).
+ *
+ * An effect is the right place because React guarantees the cleanup of the
+ * first effect runs before the second one — so the count comes back to zero
+ * under StrictMode, and `bodyOpenClassName={null}` keeps react-modal's own
+ * counter out of the way.
+ *
+ * The counter is module-level on purpose: with two modals stacked, the page
+ * must stay locked until the LAST one closes.
+ */
+const BODY_OPEN_CLASS = 'ReactModal__Body--open'
+
+let openModals = 0
+
+/** Exported for the tests, which need a clean count between cases. */
+export function resetScrollLockForTests() {
+  openModals = 0
+  document.body.classList.remove(BODY_OPEN_CLASS)
+}
+
+function useBodyScrollLock(isOpen: boolean) {
+  useEffect(() => {
+    if (!isOpen) return
+
+    openModals += 1
+    document.body.classList.add(BODY_OPEN_CLASS)
+
+    return () => {
+      openModals -= 1
+      if (openModals <= 0) {
+        openModals = 0
+        document.body.classList.remove(BODY_OPEN_CLASS)
+      }
+    }
+  }, [isOpen])
+}
 
 export type ModalVariant = 'center' | 'drawer'
 
@@ -80,6 +134,8 @@ export function AppModal({
   const descriptionId = useId()
   const isDrawer = variant === 'drawer'
 
+  useBodyScrollLock(isOpen)
+
 
   const painel = cn(
     'flex w-full flex-col overflow-hidden bg-light outline-none dark:bg-dark',
@@ -105,8 +161,9 @@ export function AppModal({
       onRequestClose={onClose}
       shouldCloseOnOverlayClick
       shouldCloseOnEsc
-      // The page behind stops scrolling: see `.ReactModal__Body--open` in global.css.
-      bodyOpenClassName="ReactModal__Body--open"
+      // The lock is `useBodyScrollLock`'s: react-modal's own counter leaks
+      // under StrictMode. See the note above it.
+      bodyOpenClassName={null}
       overlayClassName={cn(
         'modal-overlay fixed inset-0 flex bg-gray-950/40 dark:bg-black/60',
         Z_INDEX,
