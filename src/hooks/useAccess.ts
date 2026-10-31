@@ -1,4 +1,4 @@
-import type { AdminPermission } from '@rafaelpilartes/kandengue-shared-v4/types'
+import type { AdminPermission } from '@rafaelpilartes/kandengue-shared/types'
 import { useQuery } from '@tanstack/react-query'
 import { adminAccessDAO } from '@/modules/Api/rest/adminAccess.dao'
 import { useAdminStore } from '@/stores/userStore'

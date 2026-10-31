@@ -1,7 +1,7 @@
 import type {
   AdminAccessLevel,
   AdminPermission
-} from '@rafaelpilartes/kandengue-shared-v4/types'
+} from '@rafaelpilartes/kandengue-shared/types'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { ACCESS_QUERY_KEY } from '@/hooks/useAccess'

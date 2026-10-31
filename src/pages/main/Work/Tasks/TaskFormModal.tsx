@@ -2,8 +2,8 @@ import {
   WORK_TASK_MAX_ASSIGNEES,
   WORK_TASK_PRIORITIES,
   WORK_TASK_PRIORITY_LABELS
-} from '@rafaelpilartes/kandengue-shared-v4/constants'
-import type { WorkTaskPriority } from '@rafaelpilartes/kandengue-shared-v4/types'
+} from '@rafaelpilartes/kandengue-shared/constants'
+import type { WorkTaskPriority } from '@rafaelpilartes/kandengue-shared/types'
 import { Plus, Trash2 } from 'lucide-react'
 import { useId, useState, type FormEvent } from 'react'
 import { AppModal } from '@/components/modal/AppModal'

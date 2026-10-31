@@ -2,7 +2,7 @@ import {
   WORK_PROJECT_STATUS_LABELS,
   WORK_TASK_STATUS_LABELS,
   WORK_TASK_STATUSES
-} from '@rafaelpilartes/kandengue-shared-v4/constants'
+} from '@rafaelpilartes/kandengue-shared/constants'
 import {
   ArrowLeft,
   CalendarClock,
