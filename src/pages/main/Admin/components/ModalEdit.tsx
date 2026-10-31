@@ -7,8 +7,15 @@ import { useAdminStore } from '@/stores/userStore'
 import {
   useAdminDirectory,
   useDepartments,
-  useSetAdminAccess
+  useSetAdminAccess,
+  useUpdateAdminProfile
 } from '@/viewModels/AccessViewModel'
+import { useAccess } from '@/hooks/useAccess'
+import {
+  canAssignAccessLevel,
+  canEditAdminAccount
+} from '@rafaelpilartes/kandengue-shared/functions'
+import type { UpdateAdminBody } from '@/modules/Api/rest/adminAccess.dao'
 import { AppModal } from '@/components/modal/AppModal'
 import { useState, useEffect } from 'react'
 
@@ -17,7 +24,6 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 
 import { useFileUploadViewModel } from '@/viewModels/FileUploadViewModel'
-import { useAdminsViewModel } from '@/viewModels/AdminViewModel'
 import { statusOptions } from '@/data/selectOption'
 
 import { CustomInput } from '@/components/input/InputLabel'
@@ -30,7 +36,7 @@ import { validationFileImage } from '@/utils/file'
 import { mapFirebaseError } from '@/helpers/mapFirebaseError'
 
 // Schema para edição (sem senha)
-const accessLevelOptions = ADMIN_ACCESS_LEVELS.map(level => ({
+const allAccessLevelOptions = ADMIN_ACCESS_LEVELS.map(level => ({
   value: level,
   label: ADMIN_ACCESS_LEVEL_LABELS[level]
 }))
@@ -52,7 +58,7 @@ export function ModalEditAdmin({
   setModalEditRowIsOpen,
   baseInfo
 }: modalEditType<AdminInterface>) {
-  const { updateAdmin } = useAdminsViewModel()
+  const updateProfile = useUpdateAdminProfile()
   const { uploadSimple, isUploading, uploadError } = useFileUploadViewModel()
 
   const { departments } = useDepartments()
@@ -61,6 +67,20 @@ export function ModalEditAdmin({
   const current = accessById.get(baseInfo.id as string)
   // The API refuses changing one's own access; say so instead of failing on save.
   const isSelf = useAdminStore(s => s.currentAdminData?.id) === baseInfo.id
+
+  /*
+   * The panel only HIDES; the API is what refuses. Both call the same two
+   * guards from the shared library with the same `AdminAccess`, so what is
+   * greyed out here is exactly what would come back 403 — a second copy of
+   * this rule would drift, and it would drift in who can grant power.
+   */
+  const { access } = useAccess()
+  const mayEditThisAccount = canEditAdminAccount(access, {
+    access_level: current?.access_level ?? null
+  })
+  const accessLevelOptions = allAccessLevelOptions.filter(option =>
+    canAssignAccessLevel(access, option.value)
+  )
   const departmentOptions = departments
     .filter(d => d.active || d.id === current?.department_id)
     .map(d => ({ value: d.id, label: d.name }))
@@ -147,19 +167,32 @@ export function ModalEditAdmin({
         imageUploaded = await handleUploadPhoto()
       }
 
-      const { department_id, access_level, ...profile } = dataForm
-      const dataToUpdate: Partial<AdminInterface> = {
-        ...baseInfo,
-        ...profile,
-        photo: imageUploaded
+      const { department_id, access_level, name, phone, status } = dataForm
+
+      /*
+       * The profile goes through the API, audited there — `/admins/{id}` is
+       * `allow write: if false` in the Firestore rules, and the direct write
+       * the panel used to do was denied without a word on the screen.
+       *
+       * The email is not sent: it is the Auth identity, and the field is
+       * disabled in the form for the same reason.
+       *
+       * Only what actually changed is sent, because `changed_fields` of the
+       * audit line is built from the keys of this body: sending all four every
+       * time makes every line claim four changes when one was made.
+       */
+      const values: UpdateAdminBody = {}
+      if (name !== baseInfo?.name) values.name = name
+      if (phone !== baseInfo?.phone) values.phone = phone
+      if (status !== baseInfo?.status) values.status = status
+      if (imageUploaded !== (baseInfo?.photo || '')) values.photo = imageUploaded
+
+      if (Object.keys(values).length > 0) {
+        await updateProfile.mutateAsync({
+          adminId: baseInfo.id as string,
+          values
+        })
       }
-
-      delete (dataToUpdate as any).email
-
-      await updateAdmin.mutateAsync({
-        id: baseInfo.id as string,
-        admin: dataToUpdate
-      })
 
       const accessChanged =
         department_id !== (current?.department_id ?? undefined) ||
@@ -169,7 +202,6 @@ export function ModalEditAdmin({
           showToast('error', 'Escolha o departamento e o nível de acesso.')
           return
         }
-        // Through the API, audited there.
         await setAccess.mutateAsync({
           adminId: baseInfo.id as string,
           department_id,
@@ -177,14 +209,10 @@ export function ModalEditAdmin({
         })
       }
 
-      if (updateAdmin.isError) {
-        showToast('error', 'Erro ao actualizar o administrador')
-      } else {
-        showToast('success', 'Administrador actualizado com sucesso!')
-        setTimeout(() => {
-          closeModal()
-        }, 2000)
-      }
+      showToast('success', 'Administrador actualizado com sucesso!')
+      setTimeout(() => {
+        closeModal()
+      }, 2000)
     } catch (error) {
       const message = mapFirebaseError(error)
       showToast('error', message)
@@ -200,7 +228,14 @@ export function ModalEditAdmin({
           <Button variant="secondary" onClick={closeModal}>
             Cancelar
           </Button>
-          <Button type="submit" form="admin-edit" loading={isUploading || updateAdmin.isPending || setAccess.isPending}>
+          <Button
+            type="submit"
+            form="admin-edit"
+            disabled={!mayEditThisAccount}
+            loading={
+              isUploading || updateProfile.isPending || setAccess.isPending
+            }
+          >
             Guardar
           </Button>
         </>
@@ -307,7 +342,7 @@ export function ModalEditAdmin({
                 control={control}
                 error={errors.department_id}
                 options={departmentOptions}
-                isDisabled={isSelf}
+                isDisabled={isSelf || !mayEditThisAccount}
                 onOptionChange={() => null}
               />
               <SelectCustomZod
@@ -316,7 +351,7 @@ export function ModalEditAdmin({
                 control={control}
                 error={errors.access_level}
                 options={accessLevelOptions}
-                isDisabled={isSelf}
+                isDisabled={isSelf || !mayEditThisAccount}
                 onOptionChange={() => null}
               />
             </div>
@@ -324,6 +359,12 @@ export function ModalEditAdmin({
               <p className="w-full text-xs text-gray-500 dark:text-gray-400">
                 Não pode alterar o seu próprio departamento nem o seu nível. Peça a
                 outra pessoa da Direcção.
+              </p>
+            )}
+            {!isSelf && !mayEditThisAccount && (
+              <p className="w-full text-xs text-gray-500 dark:text-gray-400">
+                Esta conta é de nível Direcção: só outra pessoa da Direcção a
+                pode alterar.
               </p>
             )}
             </form>

@@ -1,4 +1,7 @@
-import type { AdminPermission } from '@rafaelpilartes/kandengue-shared/types'
+import type {
+  AdminAccess,
+  AdminPermission
+} from '@rafaelpilartes/kandengue-shared/types'
 import { useQuery } from '@tanstack/react-query'
 import { adminAccessDAO } from '@/modules/Api/rest/adminAccess.dao'
 import { useAdminStore } from '@/stores/userStore'
@@ -18,11 +21,23 @@ export function useAccess() {
     staleTime: 60_000
   })
   const permissions = query.data?.permissions ?? []
+  /*
+   * The same shape the API resolves, so the guards in the shared library can be
+   * called with it as they are — `canEditAdminAccount` and
+   * `canAssignAccessLevel` take an `AdminAccess`, and the panel must hide
+   * exactly what the API refuses.
+   */
+  const access: AdminAccess = {
+    level: query.data?.level ?? null,
+    departmentId: query.data?.department?.id ?? null,
+    permissions
+  }
   return {
     isLoading: query.isLoading,
     isError: query.isError,
-    level: query.data?.level ?? null,
+    level: access.level,
     department: query.data?.department ?? null,
+    access,
     can: (permission: AdminPermission) => permissions.includes(permission)
   }
 }

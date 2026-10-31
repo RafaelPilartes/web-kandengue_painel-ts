@@ -4,11 +4,14 @@ import type {
 } from '@rafaelpilartes/kandengue-shared/types'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useMemo } from 'react'
+import { firebaseCollections } from '@/constants/firebaseCollections'
 import { ACCESS_QUERY_KEY } from '@/hooks/useAccess'
 import {
   adminAccessDAO,
   type AdminRow,
-  type DepartmentRow
+  type CreateAdminBody,
+  type DepartmentRow,
+  type UpdateAdminBody
 } from '@/modules/Api/rest/adminAccess.dao'
 
 const DEPARTMENTS_KEY = ['departments'] as const
@@ -72,8 +75,40 @@ export function useAdminDirectory() {
   }
 }
 
-export function useSetAdminAccess() {
+const ADMINS_COLLECTION_KEY = [firebaseCollections.admins.root] as const
+
+/** Everything that has to be refreshed after an admin changes. */
+function useAdminRefresh() {
   const queryClient = useQueryClient()
+  return () => {
+    queryClient.invalidateQueries({ queryKey: DIRECTORY_KEY })
+    queryClient.invalidateQueries({ queryKey: DEPARTMENTS_KEY })
+    // The Firestore listing of the admins page, which reads the documents.
+    queryClient.invalidateQueries({ queryKey: ADMINS_COLLECTION_KEY })
+  }
+}
+
+/** Create an admin: the Auth account and the document, both in the API. */
+export function useCreateAdmin() {
+  const refresh = useAdminRefresh()
+  return useMutation({
+    mutationFn: (body: CreateAdminBody) => adminAccessDAO.createAdmin(body),
+    onSuccess: refresh
+  })
+}
+
+/** Name, phone, status and photo. The email is the Auth identity: not here. */
+export function useUpdateAdminProfile() {
+  const refresh = useAdminRefresh()
+  return useMutation({
+    mutationFn: (v: { adminId: string; values: UpdateAdminBody }) =>
+      adminAccessDAO.updateAdmin(v.adminId, v.values),
+    onSuccess: refresh
+  })
+}
+
+export function useSetAdminAccess() {
+  const refresh = useAdminRefresh()
   return useMutation({
     mutationFn: (v: {
       adminId: string
@@ -84,9 +119,6 @@ export function useSetAdminAccess() {
         department_id: v.department_id,
         access_level: v.access_level
       }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: DIRECTORY_KEY })
-      queryClient.invalidateQueries({ queryKey: DEPARTMENTS_KEY })
-    }
+    onSuccess: refresh
   })
 }

@@ -18,6 +18,26 @@ export type DepartmentRow = {
   member_count: number
 }
 
+export type AdminStatus = 'active' | 'inactive' | 'pending'
+
+export type CreateAdminBody = {
+  name: string
+  email: string
+  phone: string
+  password: string
+  status: AdminStatus
+  photo?: string
+  department_id: string
+  access_level: AdminAccessLevel
+}
+
+export type UpdateAdminBody = Partial<{
+  name: string
+  phone: string
+  status: AdminStatus
+  photo: string
+}>
+
 export type AdminRow = {
   id: string
   name: string
@@ -45,6 +65,16 @@ export const adminAccessDAO = {
       body
     ),
   admins: () => ApiDAO.get<AdminRow[]>('/api/v1/admin/admins'),
+  /*
+   * Creating and editing an admin goes through the API: `/admins/{id}` is
+   * `allow write: if false` in the Firestore rules, so the panel's own write
+   * was simply denied — and the account used to be created in the browser with
+   * `createUserWithEmailAndPassword`, which signed the current admin out.
+   */
+  createAdmin: (body: CreateAdminBody) =>
+    ApiDAO.post<{ id: string }>('/api/v1/admin/admins', body),
+  updateAdmin: (id: string, body: UpdateAdminBody) =>
+    ApiDAO.patch<null>(`/api/v1/admin/admins/${encodeURIComponent(id)}`, body),
   setAccess: (
     adminId: string,
     body: { department_id: string; access_level: AdminAccessLevel }

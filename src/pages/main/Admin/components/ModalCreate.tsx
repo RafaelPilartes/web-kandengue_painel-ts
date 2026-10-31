@@ -4,9 +4,11 @@ import {
   ADMIN_ACCESS_LEVELS
 } from '@rafaelpilartes/kandengue-shared/constants'
 import {
-  useDepartments,
-  useSetAdminAccess
+  useCreateAdmin,
+  useDepartments
 } from '@/viewModels/AccessViewModel'
+import { useAccess } from '@/hooks/useAccess'
+import { canAssignAccessLevel } from '@rafaelpilartes/kandengue-shared/functions'
 import { AppModal } from '@/components/modal/AppModal'
 import { useState } from 'react'
 
@@ -19,7 +21,6 @@ import { z } from 'zod'
 
 // Services
 import { useFileUploadViewModel } from '@/viewModels/FileUploadViewModel'
-import { useAdminsViewModel } from '@/viewModels/AdminViewModel'
 
 // Data
 import { statusOptions } from '@/data/selectOption'
@@ -39,7 +40,6 @@ import type { modalCreateType } from '@/types/modal'
 // Utils
 import { showToast } from '@/utils/toasts'
 import { validationFileImage } from '@/utils/file'
-import { useAuthViewModel } from '@/viewModels/AuthViewModel'
 import { mapFirebaseError } from '@/helpers/mapFirebaseError'
 
 const requiredStringField = (message = 'Campo obrigatório') =>
@@ -50,7 +50,7 @@ const requiredStringField = (message = 'Campo obrigatório') =>
       message: 'Por favor, preencha este campo'
     })
 
-const accessLevelOptions = ADMIN_ACCESS_LEVELS.map(level => ({
+const allAccessLevelOptions = ADMIN_ACCESS_LEVELS.map(level => ({
   value: level,
   label: ADMIN_ACCESS_LEVEL_LABELS[level]
 }))
@@ -87,14 +87,22 @@ export function ModalCreateAdmin({
   modalCreateRowIsOpen,
   setModalCreateRowIsOpen
 }: modalCreateType<any>) {
-  const { createAdmin, fetchOneAdminByField } = useAdminsViewModel()
+  const createAdmin = useCreateAdmin()
   const { uploadSimple, isUploading, uploadError } = useFileUploadViewModel()
-  const { register, isRegistering, registerError } = useAuthViewModel()
   const { departments } = useDepartments()
-  const setAccess = useSetAdminAccess()
   const departmentOptions = departments
     .filter(d => d.active)
     .map(d => ({ value: d.id, label: d.name }))
+
+  /*
+   * The panel only HIDES; the API is what refuses. The same guard from the
+   * shared library decides both, so the levels on offer here are exactly the
+   * ones the API would accept.
+   */
+  const { access } = useAccess()
+  const accessLevelOptions = allAccessLevelOptions.filter(option =>
+    canAssignAccessLevel(access, option.value)
+  )
 
   // Image
   const [selectedFile, setSelectedFile] = useState<File | undefined>()
@@ -177,90 +185,48 @@ export function ModalCreateAdmin({
     }
   }
 
-  // Function Submit Form
+  /*
+   * Creating an admin is one call to the API, and it used to be four steps in
+   * the browser. Two of them were broken:
+   *
+   *   - `createUserWithEmailAndPassword` signs the CURRENT admin out and the
+   *     new one in — whoever created an account lost their own session;
+   *   - the `admins` document write is denied by `allow write: if false` in
+   *     the Firestore rules, so nothing was ever created.
+   *
+   * The API does the Auth account, the document, the department, the level and
+   * the audit line together, and deletes the Auth account again if the
+   * document write fails.
+   */
   async function handleSubmitForm(dataForm: formType) {
     if (dataForm.password !== dataForm.confirm_password) {
-      showToast('error', 'As palavras pass não convidem')
+      showToast('error', 'As palavras-passe não coincidem.')
       return
     }
 
-    console.log('dataForm =>', dataForm)
-
     try {
-      const adminFounded = await fetchOneAdminByField('email', dataForm.email)
-      if (adminFounded) {
-        showToast('error', `Este email email já encontra-se em uso`)
-        return
-      }
-
-      const proceed = confirm('Não poderá alterar o email, pretende continuar?')
-      if (!proceed) {
-        return
-      }
-
-      const authResult = await register({
-        email: dataForm.email,
-        password: dataForm.password
-      })
-
-      if (registerError) {
-        showToast(
-          'error',
-          `Não foi possivel efetuar login com esse email e senha ${registerError}`
-        )
-        return
-      }
-
       let imageUploaded =
         'https://cdn-icons-png.flaticon.com/512/10307/10307911.png'
 
-      // Primeiro, faz o upload da imagem
       if (selectedFile) {
-        const resUrl = await handleUploadPhoto()
-
-        const { urlFile } = resUrl
-
+        const { urlFile } = await handleUploadPhoto()
         if (!urlFile) {
           showToast('error', 'Erro ao carregar imagem')
           return
         }
-
         imageUploaded = urlFile
       }
 
-      const { department_id, access_level, ...profile } = dataForm
-      const dataToSave: Omit<any, 'id'> = {
-        ...profile,
-        // `role` stays as a legacy field (audit labels read it); access no
-        // longer comes from it, nor from per-admin permissions.
-        role: department_id,
-        permissions: [],
+      await createAdmin.mutateAsync({
+        name: dataForm.name,
+        email: dataForm.email,
+        phone: dataForm.phone,
+        password: dataForm.password,
+        status: dataForm.status,
         photo: imageUploaded,
-        firebase_uid: authResult?.user?.uid
-      }
-
-      console.log('dataToSave =>', dataToSave)
-
-      // remove key from dataToSave
-      delete (dataToSave as any).password
-      delete (dataToSave as any).confirm_password
-
-      const created = await createAdmin.mutateAsync(dataToSave)
-
-      // Department and level go through the API, audited there.
-      try {
-        await setAccess.mutateAsync({
-          adminId: created.id,
-          department_id,
-          access_level
-        })
-      } catch (accessError) {
-        showToast(
-          'error',
-          `Administrador criado, mas o acesso não foi gravado: ${(accessError as Error).message}. Edite-o para tentar outra vez.`
-        )
-        return
-      }
+        department_id: dataForm.department_id,
+        access_level: dataForm.access_level
+      })
 
       showToast('success', 'Administrador criado com sucesso!')
       setTimeout(() => {
@@ -282,7 +248,11 @@ export function ModalCreateAdmin({
           <Button variant="secondary" onClick={closeModal}>
             Cancelar
           </Button>
-          <Button type="submit" form="admin-create" loading={isUploading || createAdmin.isPending || isRegistering || setAccess.isPending}>
+          <Button
+            type="submit"
+            form="admin-create"
+            loading={isUploading || createAdmin.isPending}
+          >
             Guardar
           </Button>
         </>
