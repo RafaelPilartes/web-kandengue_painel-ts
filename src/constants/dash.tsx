@@ -180,6 +180,23 @@ const dashItem = [
         icon: <BarChart2 size={16} />,
         to: routsNameMain.finance.reports.index,
         notification: 0
+      },
+      /*
+       * This was the top-level "Métricas" link until 2026-10-31. It moved in
+       * here rather than being renamed to "Financeiro": a "Financeiro" group
+       * already existed, and the rename would have put two of them side by
+       * side at the top. The screen is rides and revenue over time — a report —
+       * and it belongs next to the other one.
+       *
+       * The label is the one the page's own breadcrumb already used; the route
+       * and the `view_metrics` permission did not change, so nothing needs a
+       * redirect.
+       */
+      {
+        label: 'Relatórios de Corridas',
+        icon: <BarChart2 size={16} />,
+        to: routsNameMain.metrics.index,
+        notification: 0
       }
     ],
     notification: 0,
@@ -247,14 +264,6 @@ const dashItem = [
     accordion: false
   },
 
-  // Metrics
-  {
-    label: 'Métricas',
-    icon: <BarChart2 size={16} />,
-    to: routsNameMain.metrics.index,
-    notification: 0,
-    accordion: false
-  },
   {
     label: 'Configurações',
     icon: <Settings size={16} />,
