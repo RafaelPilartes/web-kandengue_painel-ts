@@ -11,7 +11,8 @@ import {
 import { showToast } from '@/utils/toasts'
 
 /** Where the token of THIS browser is remembered, so it can be unregistered. */
-const TOKEN_KEY = 'kandengue-push-token'
+export const PUSH_TOKEN_KEY = 'kandengue-push-token'
+const TOKEN_KEY = PUSH_TOKEN_KEY
 
 export type PushState =
   | 'unsupported'

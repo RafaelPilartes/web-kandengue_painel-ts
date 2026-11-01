@@ -19,6 +19,8 @@ import { Chat } from 'phosphor-react'
 import { auditService } from '@/observability/audit'
 import { useAuthViewModel } from '@/viewModels/AuthViewModel'
 import { showToast } from '@/utils/toasts'
+import { forgetPushToken } from '@/lib/webPush'
+import { adminAccessDAO } from '@/modules/Api/rest/adminAccess.dao'
 
 export const Header = () => {
   const { can } = useAccess()
@@ -30,6 +32,15 @@ export const Header = () => {
 
   const logOut = async () => {
     await auditService.logLogout()
+
+    /*
+     * This browser stops receiving push BEFORE the session goes. On a shared
+     * machine the token outlived the admin: their notifications — with their
+     * task titles — were drawn over the next person's session, who saw
+     * "Desligar as notificações neste dispositivo" without ever having turned
+     * them on and never got their own.
+     */
+    await forgetPushToken(adminAccessDAO.unregisterDevice)
 
     try {
       // O signOut dispara onAuthChanged(null), e o useAuthSessionSync limpa o

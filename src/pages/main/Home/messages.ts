@@ -38,6 +38,16 @@ export const DAILY_MESSAGES: string[] = [
   'Quando o painel e a app discordam sobre uma corrida, ganha a corrida.'
 ]
 
+/** `YYYY-MM-DD` in Luanda, whatever the browser's clock is set to. */
+function dayInLuanda(now: Date): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Africa/Luanda',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(now)
+}
+
 /**
  * The message of the day for one admin.
  *
@@ -52,7 +62,12 @@ export function messageOfTheDay(
   messages: string[] = DAILY_MESSAGES
 ): string {
   if (messages.length === 0) return ''
-  const day = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}`
+  /*
+   * The day is LUANDA's day, like the greeting above it. Reading the browser's
+   * day meant that between midnight and 1 a.m. in Luanda an admin on a UTC
+   * clock got the new day's "Bom dia" over the previous day's line.
+   */
+  const day = dayInLuanda(now)
   const seed = `${adminId ?? ''}|${day}`
   let hash = 0
   for (let i = 0; i < seed.length; i += 1) {

@@ -15,7 +15,12 @@ describe('permissionFor', () => {
     expect(permissionFor('/wallet/topup/request')).toBe('manage_topup_requests')
     expect(permissionFor('/wallet')).toBe('manage_wallet')
     expect(permissionFor('/finance/balances')).toBe('manage_drivers')
-    expect(permissionFor('/users/admins')).toBe('manage_admins')
+    // Two ways in: managing accounts, or handing out profiles in your own
+    // department. Any one of them opens the screen.
+    expect(permissionFor('/users/admins')).toEqual([
+      'manage_admins',
+      'manage_department_team'
+    ])
     expect(permissionFor('/departments')).toBe('manage_departments')
   })
 

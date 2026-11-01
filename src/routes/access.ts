@@ -9,10 +9,16 @@ import type {
  * other. First matching prefix wins: keep the specific paths above the general.
  * A path with no rule (the work module, 404) is open to every admin.
  */
-const RULES: [prefix: string, permission: AdminPermission][] = [
+const RULES: [prefix: string, permission: AdminPermission | AdminPermission[]][] = [
   ['/users/passengers', 'manage_passengers'],
   ['/users/drivers', 'manage_drivers'],
-  ['/users/admins', 'manage_admins'],
+  /*
+   * Two ways in, like the API route behind it: whoever manages accounts, and
+   * whoever hands out profiles inside their own department. Naming only the
+   * first hid the screen from the second — who then had a permission with
+   * nowhere to use it.
+   */
+  ['/users/admins', ['manage_admins', 'manage_department_team']],
   ['/departments', 'manage_departments'],
   ['/applications', 'manage_applications'],
   ['/vehicles', 'manage_vehicles'],
@@ -34,7 +40,10 @@ const RULES: [prefix: string, permission: AdminPermission][] = [
   ['/logs', 'view_audit_logs']
 ]
 
-export function permissionFor(pathname: string): AdminPermission | null {
+/** One permission, or several of which ANY ONE is enough. */
+export function permissionFor(
+  pathname: string
+): AdminPermission | AdminPermission[] | null {
   /*
    * The home page is open to every admin since 2026-10-31. It carries the
    * greeting and the admin's own tasks and deadlines, which are worth opening
@@ -46,6 +55,14 @@ export function permissionFor(pathname: string): AdminPermission | null {
     ([prefix]) => pathname === prefix || pathname.startsWith(`${prefix}/`)
   )
   return rule ? rule[1] : null
+}
+
+/** True when the admin holds the permission, or any one of several. */
+export function holds(
+  permission: AdminPermission | AdminPermission[],
+  can: (p: AdminPermission) => boolean
+): boolean {
+  return Array.isArray(permission) ? permission.some(can) : can(permission)
 }
 
 type MenuItem = { to: string; subMenus?: MenuItem[] }
@@ -65,7 +82,7 @@ export function filterMenu<T extends MenuItem>(
     if (to === '/work/reports')
       return access?.isDirection === true || can('view_department_reports')
     const p = permissionFor(to)
-    return p === null || can(p)
+    return p === null || holds(p, can)
   }
   return items.flatMap(item => {
     if (!item.subMenus) return allowed(item.to) ? [item] : []

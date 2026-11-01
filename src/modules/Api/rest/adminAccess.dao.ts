@@ -41,7 +41,8 @@ export type UpdateAdminBody = Partial<{
   phone: string
   status: AdminStatus
   photo: string
-  gender: AdminGender
+  /** `null` clears it: absent is neutral, and that has to be reachable. */
+  gender: AdminGender | null
 }>
 
 export type AdminRow = {

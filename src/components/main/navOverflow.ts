@@ -9,22 +9,37 @@
 /** Room kept for the "Mais" button whenever anything overflows. */
 export const MORE_BUTTON_WIDTH = 72
 
+/**
+ * The gap between two items, in pixels — Tailwind's `gap-x-1`.
+ *
+ * ⚠️ It has to be counted. Without it the sum was short by one gap per item:
+ * ten items needed about 36 px more than the arithmetic allowed, and the row
+ * is `overflow-hidden`, so the bar did not grow — the last label was simply
+ * cut in half. Keep this in step with the class on the row in `Slide.tsx`.
+ */
+export const ITEM_GAP = 4
+
 export function fitItemCount(
   widths: number[],
   available: number,
-  moreWidth: number = MORE_BUTTON_WIDTH
+  moreWidth: number = MORE_BUTTON_WIDTH,
+  gap: number = ITEM_GAP
 ): number {
   if (!widths.length) return 0
 
-  const total = widths.reduce((sum, width) => sum + width, 0)
-  // Everything fits: no "Mais", so no room kept for it.
-  if (total <= available) return widths.length
+  const widthOf = (count: number) =>
+    widths.slice(0, count).reduce((sum, w) => sum + w, 0) +
+    Math.max(0, count - 1) * gap
 
-  let used = 0
+  if (widthOf(widths.length) <= available) return widths.length
+
   let count = 0
-  for (const width of widths) {
-    if (used + width > available - moreWidth) break
-    used += width
+  // Every count below the full set needs room for "Mais", and for the gap
+  // before it.
+  while (
+    count < widths.length &&
+    widthOf(count + 1) + gap + moreWidth <= available
+  ) {
     count += 1
   }
   /*

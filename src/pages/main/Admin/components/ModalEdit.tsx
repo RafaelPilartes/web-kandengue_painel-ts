@@ -209,9 +209,28 @@ export function ModalEditAdmin({
       if (phone !== baseInfo?.phone) values.phone = phone
       if (status !== baseInfo?.status) values.status = status
       if (imageUploaded !== (baseInfo?.photo || '')) values.photo = imageUploaded
-      if (gender && gender !== baseInfo?.gender) values.gender = gender
+      /*
+       * `null` clears it. Absent means neutral and the account starts there;
+       * a gender set by mistake has to be removable, or the field is a
+       * one-way door on how a real person is addressed.
+       */
+      if ((gender ?? null) !== (baseInfo?.gender ?? null))
+        values.gender = gender ?? null
 
-      if (mayEditFields && Object.keys(values).length > 0) {
+      /*
+       * ⚠️ Not silently skipped. The fields are editable whenever the account
+       * may be TOUCHED, which is a weaker condition than being allowed to
+       * change them — so someone could type a new phone number, press Guardar,
+       * and be told it worked while nothing was written.
+       */
+      if (Object.keys(values).length > 0) {
+        if (!mayEditFields) {
+          showToast(
+            'error',
+            'Não pode alterar os dados desta conta. Só o departamento e o perfil.'
+          )
+          return
+        }
         await updateProfile.mutateAsync({
           adminId: baseInfo.id as string,
           values
@@ -252,7 +271,13 @@ export function ModalEditAdmin({
        * next sign-in.
        */
       if (isSelf && currentAdminData) {
-        addAdmin({ ...currentAdminData, ...values })
+        addAdmin({
+          ...currentAdminData,
+          ...values,
+          // `null` means "cleared": the store keeps the field absent, which is
+          // what the neutral greeting reads.
+          gender: values.gender ?? undefined
+        })
       }
 
       showToast('success', 'Administrador actualizado com sucesso!')
@@ -352,6 +377,7 @@ export function ModalEditAdmin({
               label="Nome"
               placeholder="Ex.: Rafael"
               control={control}
+              isDisabled={!mayEditFields}
               error={errors.name}
             />
 

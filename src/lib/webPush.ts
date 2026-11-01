@@ -90,3 +90,27 @@ export function onPushWhileOpen(handler: () => void): () => void {
   if (!pushIsSupported() || !VAPID_KEY) return () => {}
   return onMessage(messaging(), () => handler())
 }
+
+/**
+ * Tira este browser do push, ao terminar a sessão.
+ *
+ * ⚠️ Existe por causa de um browser partilhado. Sem isto, o token de quem
+ * saiu continua registado: as notificações dele — com os títulos das tarefas
+ * dele — passavam a ser desenhadas por cima da sessão da pessoa seguinte, que
+ * via "Desligar as notificações neste dispositivo" sem nunca as ter ligado e
+ * nunca recebia as suas.
+ *
+ * Nunca lança: terminar sessão não pode falhar porque a API não respondeu.
+ */
+export async function forgetPushToken(
+  unregister: (token: string) => Promise<unknown>
+): Promise<void> {
+  try {
+    const token = localStorage.getItem('kandengue-push-token')
+    if (!token) return
+    localStorage.removeItem('kandengue-push-token')
+    await unregister(token)
+  } catch {
+    // Já saiu; o token morre sozinho na primeira falha de envio.
+  }
+}
