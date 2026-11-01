@@ -10,7 +10,7 @@ import { useAccess } from '@/hooks/useAccess'
 import { NoAccess } from '@/components/ui/no-access'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Button } from '@/components/ui/button'
-import { permissionFor } from './access'
+import { holds, permissionFor } from './access'
 
 /*
  * ⚠️ **Já não lê `rideRates` no arranque.**
@@ -67,7 +67,7 @@ export function Private({ children }: Props) {
 }
 
 /**
- * The screen opens only when the admin's department grants its permission
+ * The screen opens only when the admin's profile grants its permission
  * (`./access.ts`). The API refuses the same calls; this is what keeps the
  * admin from landing on a page full of 403s.
  */
@@ -99,8 +99,9 @@ export function RequireAccess({ children }: Props) {
       </div>
     )
   }
-  if (access.level === null) return <NoAccess unassigned />
-  if (permission && !access.can(permission)) {
+  // No mark and no profile: the account exists but nothing reaches it yet.
+  if (!access.isDirection && !access.profile) return <NoAccess unassigned />
+  if (permission && !holds(permission, access.can)) {
     // The dashboard is the default landing page; send whoever cannot see it to their tasks.
     if (pathname === '/') return <Navigate to="/work/tasks" replace />
     return <NoAccess />

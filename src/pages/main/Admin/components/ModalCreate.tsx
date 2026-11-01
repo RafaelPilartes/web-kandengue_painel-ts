@@ -1,12 +1,11 @@
 import { Button } from '@/components/ui/button'
 import {
-  ADMIN_ACCESS_LEVEL_LABELS,
-  ADMIN_ACCESS_LEVELS
-} from '@rafaelpilartes/kandengue-shared/constants'
-import {
-  useDepartments,
-  useSetAdminAccess
+  useCreateAdmin,
+  useDepartmentProfiles,
+  useDepartments
 } from '@/viewModels/AccessViewModel'
+import { useAccess } from '@/hooks/useAccess'
+import { canAssignProfile } from '@rafaelpilartes/kandengue-shared/functions'
 import { AppModal } from '@/components/modal/AppModal'
 import { useState } from 'react'
 
@@ -19,10 +18,11 @@ import { z } from 'zod'
 
 // Services
 import { useFileUploadViewModel } from '@/viewModels/FileUploadViewModel'
-import { useAdminsViewModel } from '@/viewModels/AdminViewModel'
+import { useAuthViewModel } from '@/viewModels/AuthViewModel'
 
 // Data
 import { statusOptions } from '@/data/selectOption'
+import { genderOptions } from './genderOptions'
 
 // Component
 import { CustomInput } from '@/components/input/InputLabel'
@@ -39,7 +39,6 @@ import type { modalCreateType } from '@/types/modal'
 // Utils
 import { showToast } from '@/utils/toasts'
 import { validationFileImage } from '@/utils/file'
-import { useAuthViewModel } from '@/viewModels/AuthViewModel'
 import { mapFirebaseError } from '@/helpers/mapFirebaseError'
 
 const requiredStringField = (message = 'Campo obrigatório') =>
@@ -49,11 +48,6 @@ const requiredStringField = (message = 'Campo obrigatório') =>
     .refine(value => value, {
       message: 'Por favor, preencha este campo'
     })
-
-const accessLevelOptions = ADMIN_ACCESS_LEVELS.map(level => ({
-  value: level,
-  label: ADMIN_ACCESS_LEVEL_LABELS[level]
-}))
 
 const formSchema = z.object({
   name: requiredStringField('O nome é obrigatório!'),
@@ -67,19 +61,9 @@ const formSchema = z.object({
   department_id: z
     .string('Escolha o departamento.')
     .min(1, 'Escolha o departamento.'),
-  access_level: z.enum(['direction', 'manager', 'member'], {
-    error: () => ({ message: 'Escolha o nível de acesso.' })
-  }),
-  password: z
-    .string('A palavra-passe é obrigatório!')
-    .min(6, 'A palavra-passe tem de no mínimo 6 caracteres')
-    .trim()
-    .refine(value => value, {
-      message: 'Por favor, preencha este campo.'
-    }),
-  confirm_password: z
-    .string()
-    .min(6, 'A confirmação de palavra-passe deve ter no mínimo 6 caracteres')
+  profile_id: z.string('Escolha o perfil.').min(1, 'Escolha o perfil.'),
+  // Empty is a real answer: the greeting stays neutral.
+  gender: z.enum(['female', 'male']).optional(),
 })
 type formType = z.infer<typeof formSchema>
 
@@ -87,14 +71,30 @@ export function ModalCreateAdmin({
   modalCreateRowIsOpen,
   setModalCreateRowIsOpen
 }: modalCreateType<any>) {
-  const { createAdmin, fetchOneAdminByField } = useAdminsViewModel()
+  const createAdmin = useCreateAdmin()
+  const { resetPassword } = useAuthViewModel()
   const { uploadSimple, isUploading, uploadError } = useFileUploadViewModel()
-  const { register, isRegistering, registerError } = useAuthViewModel()
   const { departments } = useDepartments()
-  const setAccess = useSetAdminAccess()
   const departmentOptions = departments
     .filter(d => d.active)
     .map(d => ({ value: d.id, label: d.name }))
+
+  /*
+   * The profile list follows the chosen department: a profile only exists
+   * inside one, and the API refuses a profile that belongs to another.
+   */
+  const [departmentId, setDepartmentId] = useState<string>('')
+  const { profiles } = useDepartmentProfiles(departmentId || null)
+
+  /*
+   * The panel only HIDES; the API is what refuses. The same guard from the
+   * shared library decides both, so the profiles on offer here are exactly
+   * the ones the API would accept.
+   */
+  const { access } = useAccess()
+  const profileOptions = profiles
+    .filter(p => p.active && canAssignProfile(access, p))
+    .map(p => ({ value: p.id, label: p.name }))
 
   // Image
   const [selectedFile, setSelectedFile] = useState<File | undefined>()
@@ -108,7 +108,8 @@ export function ModalCreateAdmin({
   const {
     control,
     handleSubmit,
-    formState: { errors }
+    formState: { errors },
+    setValue
   } = useForm<formType>({
     resolver: zodResolver(formSchema)
   })
@@ -177,92 +178,61 @@ export function ModalCreateAdmin({
     }
   }
 
-  // Function Submit Form
+  /*
+   * Creating an admin is one call to the API, and it used to be four steps in
+   * the browser. Two of them were broken:
+   *
+   *   - `createUserWithEmailAndPassword` signs the CURRENT admin out and the
+   *     new one in — whoever created an account lost their own session;
+   *   - the `admins` document write is denied by `allow write: if false` in
+   *     the Firestore rules, so nothing was ever created.
+   *
+   * The API does the Auth account, the document, the department, the level and
+   * the audit line together, and deletes the Auth account again if the
+   * document write fails.
+   */
   async function handleSubmitForm(dataForm: formType) {
-    if (dataForm.password !== dataForm.confirm_password) {
-      showToast('error', 'As palavras pass não convidem')
-      return
-    }
-
-    console.log('dataForm =>', dataForm)
-
-    try {
-      const adminFounded = await fetchOneAdminByField('email', dataForm.email)
-      if (adminFounded) {
-        showToast('error', `Este email email já encontra-se em uso`)
-        return
-      }
-
-      const proceed = confirm('Não poderá alterar o email, pretende continuar?')
-      if (!proceed) {
-        return
-      }
-
-      const authResult = await register({
-        email: dataForm.email,
-        password: dataForm.password
-      })
-
-      if (registerError) {
-        showToast(
-          'error',
-          `Não foi possivel efetuar login com esse email e senha ${registerError}`
-        )
-        return
-      }
-
+      try {
       let imageUploaded =
         'https://cdn-icons-png.flaticon.com/512/10307/10307911.png'
 
-      // Primeiro, faz o upload da imagem
       if (selectedFile) {
-        const resUrl = await handleUploadPhoto()
-
-        const { urlFile } = resUrl
-
+        const { urlFile } = await handleUploadPhoto()
         if (!urlFile) {
           showToast('error', 'Erro ao carregar imagem')
           return
         }
-
         imageUploaded = urlFile
       }
 
-      const { department_id, access_level, ...profile } = dataForm
-      const dataToSave: Omit<any, 'id'> = {
-        ...profile,
-        // `role` stays as a legacy field (audit labels read it); access no
-        // longer comes from it, nor from per-admin permissions.
-        role: department_id,
-        permissions: [],
+      await createAdmin.mutateAsync({
+        name: dataForm.name,
+        email: dataForm.email,
+        phone: dataForm.phone,
+        status: dataForm.status,
         photo: imageUploaded,
-        firebase_uid: authResult?.user?.uid
-      }
+        department_id: dataForm.department_id,
+        profile_id: dataForm.profile_id,
+        gender: dataForm.gender
+      })
 
-      console.log('dataToSave =>', dataToSave)
-
-      // remove key from dataToSave
-      delete (dataToSave as any).password
-      delete (dataToSave as any).confirm_password
-
-      const created = await createAdmin.mutateAsync(dataToSave)
-
-      // Department and level go through the API, audited there.
+      /*
+       * O link vai pelo Firebase, directamente para a pessoa. É de propósito
+       * que não passa por quem cria a conta: ver o link é poder definir a
+       * palavra-passe, e isso era a escalada que isto fecha.
+       */
       try {
-        await setAccess.mutateAsync({
-          adminId: created.id,
-          department_id,
-          access_level
-        })
-      } catch (accessError) {
+        await resetPassword(dataForm.email)
         showToast(
-          'error',
-          `Administrador criado, mas o acesso não foi gravado: ${(accessError as Error).message}. Edite-o para tentar outra vez.`
+          'success',
+          'Administrador criado. Foi enviado um email para definir a palavra-passe.'
         )
-        return
+      } catch {
+        showToast(
+          'warning',
+          'Administrador criado, mas o email para definir a palavra-passe não saiu. Usa "Esqueci-me da palavra-passe" no login com este email.'
+        )
       }
-
-      showToast('success', 'Administrador criado com sucesso!')
       setTimeout(() => {
         closeModal()
       }, 3000)
@@ -282,7 +252,11 @@ export function ModalCreateAdmin({
           <Button variant="secondary" onClick={closeModal}>
             Cancelar
           </Button>
-          <Button type="submit" form="admin-create" loading={isUploading || createAdmin.isPending || isRegistering || setAccess.isPending}>
+          <Button
+            type="submit"
+            form="admin-create"
+            loading={isUploading || createAdmin.isPending}
+          >
             Guardar
           </Button>
         </>
@@ -381,6 +355,14 @@ export function ModalCreateAdmin({
                   options={statusOptions}
                   onOptionChange={handleStatusChange}
                 />
+                <SelectCustomZod
+                  name="gender"
+                  label="Tratamento na saudação"
+                  control={control}
+                  error={errors.gender}
+                  options={genderOptions}
+                  onOptionChange={() => {}}
+                />
               </div>
 
               <div className="w-full grid gap-6 md:grid-cols-2">
@@ -390,36 +372,34 @@ export function ModalCreateAdmin({
                   control={control}
                   error={errors.department_id}
                   options={departmentOptions}
-                  onOptionChange={() => {}}
+                  onOptionChange={value => {
+                    setDepartmentId(value)
+                    // The profile that was chosen belongs to the department
+                    // that was chosen before: it cannot stay selected.
+                    setValue('profile_id', '')
+                  }}
                 />
                 <SelectCustomZod
-                  name="access_level"
-                  label="Nível de acesso"
+                  name="profile_id"
+                  label="Perfil"
                   control={control}
-                  error={errors.access_level}
-                  options={accessLevelOptions}
+                  error={errors.profile_id}
+                  options={profileOptions}
+                  isDisabled={!departmentId}
                   onOptionChange={() => {}}
                 />
               </div>
 
-              <div className="w-full grid gap-6 md:grid-cols-2">
-                <CustomInput
-                  type="password"
-                  htmlFor="password"
-                  label="Palavra Pass"
-                  placeholder="•••••••••"
-                  control={control}
-                  error={errors.password}
-                />
-                <CustomInput
-                  type="password"
-                  htmlFor="confirm_password"
-                  label="Confirme a Palavra Pass"
-                  placeholder="•••••••••"
-                  control={control}
-                  error={errors.confirm_password}
-                />
-              </div>
+              {/*
+                * Sem campos de palavra-passe, e é o ponto: quem cria a conta
+                * nunca a escolhe nem a vê. A pessoa recebe no email dela um
+                * link para a definir.
+                */}
+              <p className="w-full rounded-lg bg-gray-100 p-3 text-xs text-gray-600 dark:bg-gray-700/40 dark:text-gray-300">
+                A palavra-passe não se define aqui. Assim que a conta for
+                criada, <strong>a pessoa recebe no email dela</strong> um link
+                para a definir.
+              </p>
             </form>
       </AppModal>
     </>

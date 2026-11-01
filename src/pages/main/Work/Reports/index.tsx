@@ -20,7 +20,7 @@ export function WorkReportsPage() {
   const ctx = useWorkContext()
   const [departmentId, setDepartmentId] = useState('')
   const scope =
-    ctx.level === 'direction'
+    ctx.workScope === 'all'
       ? departmentId || undefined
       : (ctx.myDepartment ?? undefined)
   const { report, isLoading, isError } = useWorkReport(scope, ctx.canSeeReports)
@@ -43,7 +43,7 @@ export function WorkReportsPage() {
         title="Relatórios de trabalho"
         description="Quanto há por fazer, o que está atrasado e quem tem mais em mãos."
         actions={
-          ctx.level === 'direction' && (
+          ctx.workScope === 'all' && (
             <div className="w-64">
               <SelectField
                 label="Departamento"

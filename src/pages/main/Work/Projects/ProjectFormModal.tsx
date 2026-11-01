@@ -117,7 +117,7 @@ export function ProjectFormModal({
           <SelectField
             label="Departamento"
             value={departmentId}
-            disabled={ctx.level !== 'direction'}
+            disabled={ctx.workScope !== 'all'}
             options={ctx.departments
               .filter(d => d.active)
               .map(d => ({ value: d.id, label: d.name }))}
@@ -129,7 +129,7 @@ export function ProjectFormModal({
             options={ctx.admins
               .filter(
                 a =>
-                  ctx.level === 'direction' || a.department_id === departmentId
+                  ctx.workScope === 'all' || a.department_id === departmentId
               )
               .map(a => ({ value: a.id, label: a.name }))}
             onChange={e => setOwnerId(e.target.value)}

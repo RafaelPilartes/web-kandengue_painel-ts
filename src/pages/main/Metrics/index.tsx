@@ -108,14 +108,12 @@ export function MetricsPage() {
     return date
   }, [selectedDateEnd])
 
-  const namePageRides = 'Corridas'
-  const namePageReports = 'Relatórios'
+  // The screen lives under "Financeiro" since 2026-10-31; the trail says so.
   const namePageReportsDetails = 'Relatórios de Corridas'
 
   const itemsBreadcrumbs = [
     { label: 'Início', to: routsNameMain.home },
-    { label: namePageRides, to: routsNameMain.rides.index },
-    { label: namePageReports, to: routsNameMain.metrics.index },
+    { label: 'Financeiro', to: routsNameMain.finance.reports.index },
     { label: namePageReportsDetails }
   ]
 
@@ -324,7 +322,7 @@ export function MetricsPage() {
       {/* Header Invisible Clean */}
       <div className="flex flex-col gap-1 mb-2">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
-          Relatórios Detalhados
+          Relatórios de Corridas
         </h1>
         <p className="text-sm text-gray-500 dark:text-gray-400">
           Análise profunda de performance e financeiro

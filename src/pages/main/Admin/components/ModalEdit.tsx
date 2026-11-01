@@ -1,14 +1,21 @@
 import { Button } from '@/components/ui/button'
-import {
-  ADMIN_ACCESS_LEVEL_LABELS,
-  ADMIN_ACCESS_LEVELS
-} from '@rafaelpilartes/kandengue-shared/constants'
 import { useAdminStore } from '@/stores/userStore'
 import {
   useAdminDirectory,
+  useDepartmentProfiles,
   useDepartments,
-  useSetAdminAccess
+  useSetAdminAccess,
+  useSetDirectionMark,
+  useUpdateAdminProfile
 } from '@/viewModels/AccessViewModel'
+import { useAccess } from '@/hooks/useAccess'
+import {
+  canAssignProfile,
+  canEditAdminAccount,
+  canSetDirectionMark,
+  canTouchAdminAccount
+} from '@rafaelpilartes/kandengue-shared/functions'
+import type { UpdateAdminBody } from '@/modules/Api/rest/adminAccess.dao'
 import { AppModal } from '@/components/modal/AppModal'
 import { useState, useEffect } from 'react'
 
@@ -17,8 +24,8 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 
 import { useFileUploadViewModel } from '@/viewModels/FileUploadViewModel'
-import { useAdminsViewModel } from '@/viewModels/AdminViewModel'
 import { statusOptions } from '@/data/selectOption'
+import { genderOptions } from './genderOptions'
 
 import { CustomInput } from '@/components/input/InputLabel'
 import { SelectCustomZod } from '@/components/selects/SelectCustomZod'
@@ -30,11 +37,6 @@ import { validationFileImage } from '@/utils/file'
 import { mapFirebaseError } from '@/helpers/mapFirebaseError'
 
 // Schema para edição (sem senha)
-const accessLevelOptions = ADMIN_ACCESS_LEVELS.map(level => ({
-  value: level,
-  label: ADMIN_ACCESS_LEVEL_LABELS[level]
-}))
-
 const formSchema = z.object({
   name: z.string().min(3, 'O nome é obrigatório'),
   email: z.string().email('E-mail inválido'),
@@ -43,7 +45,9 @@ const formSchema = z.object({
     error: () => ({ message: "Selecione 'Ativo', 'Inativo' ou 'Pendente'" })
   }),
   department_id: z.string().optional(),
-  access_level: z.enum(['direction', 'manager', 'member']).optional()
+  profile_id: z.string().optional(),
+  // Empty is a real answer: the greeting stays neutral.
+  gender: z.enum(['female', 'male']).optional()
 })
 type formType = z.infer<typeof formSchema>
 
@@ -52,7 +56,8 @@ export function ModalEditAdmin({
   setModalEditRowIsOpen,
   baseInfo
 }: modalEditType<AdminInterface>) {
-  const { updateAdmin } = useAdminsViewModel()
+  const updateProfile = useUpdateAdminProfile()
+  const setDirectionMark = useSetDirectionMark()
   const { uploadSimple, isUploading, uploadError } = useFileUploadViewModel()
 
   const { departments } = useDepartments()
@@ -60,11 +65,44 @@ export function ModalEditAdmin({
   const setAccess = useSetAdminAccess()
   const current = accessById.get(baseInfo.id as string)
   // The API refuses changing one's own access; say so instead of failing on save.
-  const isSelf = useAdminStore(s => s.currentAdminData?.id) === baseInfo.id
+  const currentAdminData = useAdminStore(s => s.currentAdminData)
+  const addAdmin = useAdminStore(s => s.addAdmin)
+  const isSelf = currentAdminData?.id === baseInfo.id
+
+  /*
+   * The panel only HIDES; the API is what refuses. Both call the same guards
+   * from the shared library with the same `AdminAccess`, so what is greyed out
+   * here is exactly what would come back 403 — a second copy of these rules
+   * would drift, and it would drift in who can grant power.
+   *
+   * Three different questions, and they are not the same one:
+   *   touch   may this ACCOUNT be changed at all (its mark says)
+   *   edit    may its own fields be changed (that is managing accounts)
+   *   assign  may THIS profile be handed out (own department, not sensitive)
+   */
+  const { access } = useAccess()
+  const target = { is_direction: current?.is_direction === true }
+  const mayTouchThisAccount = canTouchAdminAccount(access, target)
+  const mayEditFields = canEditAdminAccount(access, target)
+  const mayMark = canSetDirectionMark(access)
+
+  const [departmentId, setDepartmentId] = useState<string | undefined>(
+    current?.department_id ?? undefined
+  )
+  const { profiles } = useDepartmentProfiles(departmentId ?? null)
+  const profileOptions = profiles
+    .filter(
+      p => (p.active || p.id === current?.profile_id) && canAssignProfile(access, p)
+    )
+    .map(p => ({ value: p.id, label: p.name }))
+
   const departmentOptions = departments
     .filter(d => d.active || d.id === current?.department_id)
     .map(d => ({ value: d.id, label: d.name }))
 
+  const [isDirectionMark, setIsDirectionMark] = useState(
+    current?.is_direction === true
+  )
   const [selectedFile, setSelectedFile] = useState<File | undefined>()
   const [imagePreview, setImagePreview] = useState<string>(
     baseInfo?.photo || ''
@@ -76,7 +114,8 @@ export function ModalEditAdmin({
     control,
     handleSubmit,
     formState: { errors },
-    reset
+    reset,
+    setValue
   } = useForm<formType>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -85,7 +124,8 @@ export function ModalEditAdmin({
       phone: baseInfo?.phone || '',
       status: (baseInfo?.status as any) || 'active',
       department_id: current?.department_id ?? undefined,
-      access_level: current?.access_level ?? undefined
+      profile_id: current?.profile_id ?? undefined,
+      gender: baseInfo?.gender ?? undefined
     }
   })
 
@@ -97,8 +137,11 @@ export function ModalEditAdmin({
         phone: baseInfo.phone,
         status: baseInfo.status as any,
         department_id: current?.department_id ?? undefined,
-        access_level: current?.access_level ?? undefined
+        profile_id: current?.profile_id ?? undefined,
+        gender: baseInfo.gender ?? undefined
       })
+      setDepartmentId(current?.department_id ?? undefined)
+      setIsDirectionMark(current?.is_direction === true)
       setImagePreview(baseInfo.photo || '')
     }
   }, [baseInfo, current, reset])
@@ -147,44 +190,100 @@ export function ModalEditAdmin({
         imageUploaded = await handleUploadPhoto()
       }
 
-      const { department_id, access_level, ...profile } = dataForm
-      const dataToUpdate: Partial<AdminInterface> = {
-        ...baseInfo,
-        ...profile,
-        photo: imageUploaded
-      }
+      const { department_id, profile_id, name, phone, status, gender } = dataForm
 
-      delete (dataToUpdate as any).email
+      /*
+       * The profile goes through the API, audited there — `/admins/{id}` is
+       * `allow write: if false` in the Firestore rules, and the direct write
+       * the panel used to do was denied without a word on the screen.
+       *
+       * The email is not sent: it is the Auth identity, and the field is
+       * disabled in the form for the same reason.
+       *
+       * Only what actually changed is sent, because `changed_fields` of the
+       * audit line is built from the keys of this body: sending all four every
+       * time makes every line claim four changes when one was made.
+       */
+      const values: UpdateAdminBody = {}
+      if (name !== baseInfo?.name) values.name = name
+      if (phone !== baseInfo?.phone) values.phone = phone
+      if (status !== baseInfo?.status) values.status = status
+      if (imageUploaded !== (baseInfo?.photo || '')) values.photo = imageUploaded
+      /*
+       * `null` clears it. Absent means neutral and the account starts there;
+       * a gender set by mistake has to be removable, or the field is a
+       * one-way door on how a real person is addressed.
+       */
+      if ((gender ?? null) !== (baseInfo?.gender ?? null))
+        values.gender = gender ?? null
 
-      await updateAdmin.mutateAsync({
-        id: baseInfo.id as string,
-        admin: dataToUpdate
-      })
-
-      const accessChanged =
-        department_id !== (current?.department_id ?? undefined) ||
-        access_level !== (current?.access_level ?? undefined)
-      if (!isSelf && accessChanged) {
-        if (!department_id || !access_level) {
-          showToast('error', 'Escolha o departamento e o nível de acesso.')
+      /*
+       * ⚠️ Not silently skipped. The fields are editable whenever the account
+       * may be TOUCHED, which is a weaker condition than being allowed to
+       * change them — so someone could type a new phone number, press Guardar,
+       * and be told it worked while nothing was written.
+       */
+      if (Object.keys(values).length > 0) {
+        if (!mayEditFields) {
+          showToast(
+            'error',
+            'Não pode alterar os dados desta conta. Só o departamento e o perfil.'
+          )
           return
         }
-        // Through the API, audited there.
-        await setAccess.mutateAsync({
+        await updateProfile.mutateAsync({
           adminId: baseInfo.id as string,
-          department_id,
-          access_level
+          values
         })
       }
 
-      if (updateAdmin.isError) {
-        showToast('error', 'Erro ao actualizar o administrador')
-      } else {
-        showToast('success', 'Administrador actualizado com sucesso!')
-        setTimeout(() => {
-          closeModal()
-        }, 2000)
+      const accessChanged =
+        department_id !== (current?.department_id ?? undefined) ||
+        profile_id !== (current?.profile_id ?? undefined)
+      if (!isSelf && accessChanged) {
+        if (!department_id || !profile_id) {
+          showToast('error', 'Escolha o departamento e o perfil.')
+          return
+        }
+        await setAccess.mutateAsync({
+          adminId: baseInfo.id as string,
+          department_id,
+          profile_id
+        })
       }
+
+      /*
+       * The mark is its own call, as it is its own route in the API. Sent only
+       * when it actually changed, and never for oneself — the API refuses both,
+       * and saying so here saves a round trip that would only fail.
+       */
+      if (mayMark && !isSelf && isDirectionMark !== (current?.is_direction === true)) {
+        await setDirectionMark.mutateAsync({
+          adminId: baseInfo.id as string,
+          isDirection: isDirectionMark
+        })
+      }
+
+      /*
+       * Editing one's OWN account has to reach the store, or the screen keeps
+       * showing what was persisted at login — the greeting on the home page
+       * would go on using the old name or the old form of address until the
+       * next sign-in.
+       */
+      if (isSelf && currentAdminData) {
+        addAdmin({
+          ...currentAdminData,
+          ...values,
+          // `null` means "cleared": the store keeps the field absent, which is
+          // what the neutral greeting reads.
+          gender: values.gender ?? undefined
+        })
+      }
+
+      showToast('success', 'Administrador actualizado com sucesso!')
+      setTimeout(() => {
+        closeModal()
+      }, 2000)
     } catch (error) {
       const message = mapFirebaseError(error)
       showToast('error', message)
@@ -200,7 +299,17 @@ export function ModalEditAdmin({
           <Button variant="secondary" onClick={closeModal}>
             Cancelar
           </Button>
-          <Button type="submit" form="admin-edit" loading={isUploading || updateAdmin.isPending || setAccess.isPending}>
+          <Button
+            type="submit"
+            form="admin-edit"
+            disabled={!mayTouchThisAccount}
+            loading={
+              isUploading ||
+              updateProfile.isPending ||
+              setAccess.isPending ||
+              setDirectionMark.isPending
+            }
+          >
             Guardar
           </Button>
         </>
@@ -268,6 +377,7 @@ export function ModalEditAdmin({
               label="Nome"
               placeholder="Ex.: Rafael"
               control={control}
+              isDisabled={!mayEditFields}
               error={errors.name}
             />
 
@@ -291,14 +401,24 @@ export function ModalEditAdmin({
               />
             </div>
 
-            <SelectCustomZod
-              name="status"
-              label="Estado da conta"
-              control={control}
-              error={errors.status}
-              options={statusOptions}
-              onOptionChange={() => null}
-            />
+            <div className="w-full grid gap-6 md:grid-cols-2">
+              <SelectCustomZod
+                name="status"
+                label="Estado da conta"
+                control={control}
+                error={errors.status}
+                options={statusOptions}
+                onOptionChange={() => null}
+              />
+              <SelectCustomZod
+                name="gender"
+                label="Tratamento na saudação"
+                control={control}
+                error={errors.gender}
+                options={genderOptions}
+                onOptionChange={() => null}
+              />
+            </div>
 
             <div className="w-full grid gap-6 md:grid-cols-2">
               <SelectCustomZod
@@ -307,23 +427,53 @@ export function ModalEditAdmin({
                 control={control}
                 error={errors.department_id}
                 options={departmentOptions}
-                isDisabled={isSelf}
-                onOptionChange={() => null}
+                isDisabled={isSelf || !mayTouchThisAccount}
+                onOptionChange={value => {
+                  setDepartmentId(value)
+                  // The chosen profile belongs to the department chosen
+                  // before: it cannot stay selected.
+                  setValue('profile_id', '')
+                }}
               />
               <SelectCustomZod
-                name="access_level"
-                label="Nível de acesso"
+                name="profile_id"
+                label="Perfil"
                 control={control}
-                error={errors.access_level}
-                options={accessLevelOptions}
-                isDisabled={isSelf}
+                error={errors.profile_id}
+                options={profileOptions}
+                isDisabled={isSelf || !mayTouchThisAccount || !departmentId}
                 onOptionChange={() => null}
               />
             </div>
+
+            {/* The mark lives outside the departments, and only Direction sees it. */}
+            {mayMark && !isSelf && (
+              <label className="flex w-full items-start gap-3 rounded-lg border border-gray-200 p-4 dark:border-gray-700">
+                <input
+                  type="checkbox"
+                  checked={isDirectionMark}
+                  onChange={event => setIsDirectionMark(event.target.checked)}
+                  className="mt-0.5 h-4 w-4 accent-primary-200"
+                />
+                <span className="text-sm">
+                  <span className="font-semibold">Direcção</span>
+                  <span className="block text-xs text-gray-500 dark:text-gray-400">
+                    Dá todas as permissões, sem depender do departamento nem do
+                    perfil. Só a Direcção dá ou tira esta marca.
+                  </span>
+                </span>
+              </label>
+            )}
             {isSelf && (
               <p className="w-full text-xs text-gray-500 dark:text-gray-400">
                 Não pode alterar o seu próprio departamento nem o seu nível. Peça a
                 outra pessoa da Direcção.
+              </p>
+            )}
+            {!isSelf && !mayTouchThisAccount && (
+              <p className="w-full text-xs text-gray-500 dark:text-gray-400">
+                Esta conta tem a marca de Direcção: só outra pessoa da Direcção
+                a pode alterar.
               </p>
             )}
             </form>

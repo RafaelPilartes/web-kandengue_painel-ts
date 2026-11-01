@@ -10,10 +10,14 @@ import type { DepartmentRow } from '@/modules/Api/rest/adminAccess.dao'
 import { showToast } from '@/utils/toasts'
 import { useDepartments } from '@/viewModels/AccessViewModel'
 import { DepartmentModal } from './DepartmentModal'
+import { ProfilesModal } from './ProfilesModal'
 
 export function DepartmentsPage() {
   const { departments, isLoading, update } = useDepartments()
   const [editing, setEditing] = useState<DepartmentRow | 'new' | null>(null)
+  const [showingProfiles, setShowingProfiles] = useState<DepartmentRow | null>(
+    null
+  )
 
   async function toggleActive(d: DepartmentRow) {
     try {
@@ -31,7 +35,7 @@ export function DepartmentsPage() {
     <div className="flex w-full flex-col gap-6">
       <PageHeader
         title="Departamentos"
-        description="Cada administrador pertence a um departamento. O que o departamento permite é o que os seus Gestores e Colaboradores podem usar."
+        description="O departamento guarda as permissões que existem nele. Cada administrador tem um departamento e um perfil, e é o perfil que lhe dá as permissões."
         breadcrumbs={[
           { label: 'Início', to: routsNameMain.home },
           { label: 'Departamentos' }
@@ -67,6 +71,7 @@ export function DepartmentsPage() {
                   <th className="px-3 py-3 font-semibold">Departamento</th>
                   <th className="px-3 py-3 font-semibold">Membros</th>
                   <th className="px-3 py-3 font-semibold">Permissões</th>
+                  <th className="px-3 py-3 font-semibold">Perfis</th>
                   <th className="px-3 py-3 font-semibold">Estado</th>
                   <th className="px-3 py-3 text-right font-semibold">Acções</th>
                 </tr>
@@ -82,6 +87,15 @@ export function DepartmentsPage() {
                     </td>
                     <td className="px-3 py-3">{d.member_count}</td>
                     <td className="px-3 py-3">{d.permissions.length}</td>
+                    <td className="px-3 py-3">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setShowingProfiles(d)}
+                      >
+                        Ver perfis
+                      </Button>
+                    </td>
                     <td className="px-3 py-3">
                       <Badge tone={d.active ? 'success' : 'neutral'}>
                         {d.active ? 'Activo' : 'Inactivo'}
@@ -112,6 +126,13 @@ export function DepartmentsPage() {
           </div>
         )}
       </Panel>
+
+      {showingProfiles && (
+        <ProfilesModal
+          department={showingProfiles}
+          onClose={() => setShowingProfiles(null)}
+        />
+      )}
 
       {editing && (
         <DepartmentModal

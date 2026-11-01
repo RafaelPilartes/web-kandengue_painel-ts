@@ -3,7 +3,11 @@ import { filterMenu, permissionFor } from '../access'
 
 describe('permissionFor', () => {
   it('maps each screen to its permission, specific paths first', () => {
-    expect(permissionFor('/')).toBe('view_dashboard')
+    /*
+     * The home page is open: it carries the greeting and the admin's own work,
+     * and the operation's numbers on it check `view_dashboard` themselves.
+     */
+    expect(permissionFor('/')).toBeNull()
     expect(permissionFor('/rides')).toBe('view_rides')
     expect(permissionFor('/rides/view/abc')).toBe('view_rides')
     expect(permissionFor('/rides/realtime')).toBe('view_realtime_map')
@@ -11,7 +15,12 @@ describe('permissionFor', () => {
     expect(permissionFor('/wallet/topup/request')).toBe('manage_topup_requests')
     expect(permissionFor('/wallet')).toBe('manage_wallet')
     expect(permissionFor('/finance/balances')).toBe('manage_drivers')
-    expect(permissionFor('/users/admins')).toBe('manage_admins')
+    // Two ways in: managing accounts, or handing out profiles in your own
+    // department. Any one of them opens the screen.
+    expect(permissionFor('/users/admins')).toEqual([
+      'manage_admins',
+      'manage_department_team'
+    ])
     expect(permissionFor('/departments')).toBe('manage_departments')
   })
 
@@ -43,9 +52,11 @@ describe('filterMenu', () => {
     { label: 'Trabalho', to: '/work/tasks' }
   ]
 
-  it('keeps only what a member with view_rides can open', () => {
+  it('keeps only what an admin with view_rides can open', () => {
     const can = (p: string) => p === 'view_rides'
     expect(filterMenu(menu, can)).toEqual([
+      // The home page needs no permission since 2026-10-31.
+      { label: 'Dashboard', to: '/' },
       {
         label: 'Corridas',
         to: '/',
@@ -66,11 +77,23 @@ describe('filterMenu', () => {
         ]
       }
     ]
+    // Work reports follow `view_department_reports` now, or the mark.
     expect(
-      filterMenu(work, () => false, 'member')[0].subMenus?.map(s => s.label)
+      filterMenu(work, () => false, { isDirection: false })[0].subMenus?.map(
+        s => s.label
+      )
     ).toEqual(['Tarefas'])
     expect(
-      filterMenu(work, () => false, 'manager')[0].subMenus?.map(s => s.label)
+      filterMenu(
+        work,
+        p => p === 'view_department_reports',
+        { isDirection: false }
+      )[0].subMenus?.map(s => s.label)
+    ).toEqual(['Tarefas', 'Relatórios'])
+    expect(
+      filterMenu(work, () => false, { isDirection: true })[0].subMenus?.map(
+        s => s.label
+      )
     ).toEqual(['Tarefas', 'Relatórios'])
   })
 

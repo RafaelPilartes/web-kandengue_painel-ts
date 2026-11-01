@@ -232,12 +232,30 @@ export function useWorkReport(
   }
 }
 
+/**
+ * The bell, polled.
+ *
+ * ── Why polling and not an `onSnapshot` ──
+ * `workNotifications` has NO rule in `firestore.rules`, so the catch-all
+ * denies it: a listener would need a new rule, written and tested in the
+ * emulator and uploaded to production — an owner's step — for something the
+ * API already serves. And the API filter is server-side: it returns only the
+ * signed-in admin's unread. A rule would have to trust the client to constrain
+ * its own query, which is a weaker guarantee for the same screen.
+ *
+ * ⚠️ 20 seconds, not 60, and `refetchOnWindowFocus` left at its default: with
+ * the browser push delivering immediately, the poll is the fallback for a tab
+ * that stays open, and react-query pauses it while the window is in the
+ * background anyway. Decided on 2026-10-31; see `docs/decisions.md`.
+ */
+const NOTIFICATIONS_REFRESH_MS = 20_000
+
 export function useWorkNotifications() {
   const queryClient = useQueryClient()
   const query = useQuery({
     queryKey: NOTIFICATIONS,
     queryFn: workDAO.notifications,
-    refetchInterval: 60_000
+    refetchInterval: NOTIFICATIONS_REFRESH_MS
   })
   const markRead = useMutation({
     mutationFn: (ids: string[]) => workDAO.markRead(ids),

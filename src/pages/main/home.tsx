@@ -31,6 +31,12 @@ import { useRidesViewModel } from '@/viewModels/RideViewModel'
 import { Spinner } from 'phosphor-react'
 import { formatMoney } from '@/utils/number'
 import { rideCalculation } from '@/utils/rideCalculation'
+import { useAccess } from '@/hooks/useAccess'
+import { useAdminStore } from '@/stores/userStore'
+import { Panel } from '@/components/ui/panel'
+import { greeting } from './Home/greeting'
+import { messageOfTheDay } from './Home/messages'
+import { MyWorkPanel } from './Home/MyWorkPanel'
 
 // Registrar chart.js
 ChartJS.register(
@@ -52,17 +58,51 @@ const customIcon = new L.Icon({
   popupAnchor: [0, -32]
 })
 
+/**
+ * The home page: who you are and what you have open, and then — for whoever
+ * may see them — the operation's numbers.
+ *
+ * ⚠️ `/` stopped requiring `view_dashboard` on 2026-10-31. The page is now
+ * worth opening without it: an admin with no operational permission still has
+ * their own tasks and deadlines here, and being bounced to another screen told
+ * them nothing. The NUMBERS still need the permission, and that check moved to
+ * where they are drawn.
+ */
 export function Home() {
-  const { users, isLoadingUsers } = useUsersViewModel()
-  const { drivers, isLoadingDrivers } = useDriversViewModel()
-  const { rides, isLoadingRides, ridesMetrics, calculateCompanyProfit } = useRidesViewModel()
-
-  const companyProfit = calculateCompanyProfit(rides)
+  const { can } = useAccess()
+  const admin = useAdminStore(s => s.currentAdminData)
 
   const itemsBreadcrumbs = [
     { label: 'Painel', to: routsNameMain.home },
     { label: 'Painel Administrativo' }
   ]
+
+  return (
+    <div className="w-full h-full flex flex-col gap-6 overflow-x-hidden">
+      <Breadcrumbs items={itemsBreadcrumbs} />
+
+      <Panel className="flex flex-col gap-1">
+        <h1 className="text-2xl font-bold text-dark dark:text-light">
+          {greeting(admin?.name, admin?.gender, new Date())}
+        </h1>
+        <p className="text-sm text-gray-600 dark:text-gray-300">
+          {messageOfTheDay(admin?.id)}
+        </p>
+      </Panel>
+
+      <MyWorkPanel />
+
+      {can('view_dashboard') && <OperationOverview />}
+    </div>
+  )
+}
+
+function OperationOverview() {
+  const { users, isLoadingUsers } = useUsersViewModel()
+  const { drivers, isLoadingDrivers } = useDriversViewModel()
+  const { rides, isLoadingRides, ridesMetrics, calculateCompanyProfit } = useRidesViewModel()
+
+  const companyProfit = calculateCompanyProfit(rides)
 
   const ridesByMonth = rideCalculation.getRidesByMonth(rides)
   const revenueByMonth = rideCalculation.getRevenueByMonth(rides)
@@ -95,9 +135,7 @@ export function Home() {
   const defaultCenter: [number, number] = [-8.839988, 13.289437] // Luanda, Angola
 
   return (
-    <div className="w-full h-full flex flex-col gap-6 overflow-x-hidden">
-      <Breadcrumbs items={itemsBreadcrumbs} />
-
+    <div className="w-full flex flex-col gap-6">
       {/* Estatísticas - Layout Assimétrico */}
       <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Corridas - Card Grande (destaque principal) */}

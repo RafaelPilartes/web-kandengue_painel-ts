@@ -24,6 +24,13 @@ export function useNotificationsViewModel(
     refetch
   } = useQuery<ListResponseType<NotificationEntity[]>>({
     queryKey: ['notifications', limit, offset, searchTerm, filtersKey],
+    /*
+     * The screen used to update only on a reload: there was no interval and
+     * nothing listening. The same choice as the bell — polling the data the
+     * screen already reads — for the same reason, which is in
+     * `docs/decisions.md` of 2026-10-31.
+     */
+    refetchInterval: 30_000,
     queryFn: () =>
       notificationUseCase.executeGetAll(limit, offset, searchTerm, filters),
     staleTime: 1000 * 60 // cache 1min

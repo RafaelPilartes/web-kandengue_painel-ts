@@ -13,7 +13,6 @@ import { Eye } from 'lucide-react'
 import { formatDateTimeFromFirestore } from '@/utils/date'
 import { Avatar } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
-import { ADMIN_ACCESS_LEVEL_LABELS } from '@rafaelpilartes/kandengue-shared/constants'
 import type { AdminRow } from '@/modules/Api/rest/adminAccess.dao'
 
 interface TableRowProps {
@@ -24,6 +23,8 @@ interface TableRowProps {
   /** Department and level come from the API directory, not the Firestore entity. */
   access?: AdminRow
   departmentName?: string
+  /** The name of the admin's profile, looked up by the page. */
+  profileName?: string
 }
 
 const TableRow: React.FC<TableRowProps> = ({
@@ -32,7 +33,8 @@ const TableRow: React.FC<TableRowProps> = ({
   openModalEditRow,
   handleDeleteRow,
   access,
-  departmentName
+  departmentName,
+  profileName
 }) => {
   return (
     <motion.tr
@@ -63,14 +65,12 @@ const TableRow: React.FC<TableRowProps> = ({
         <p>{departmentName ?? getAdminRoleLabel(rowItem.role)}</p>
       </td>
       <td className="px-3 py-3 min-w-[6rem]">
-        {access?.access_level ? (
-          <Badge
-            tone={access.access_level === 'direction' ? 'brand' : 'neutral'}
-          >
-            {ADMIN_ACCESS_LEVEL_LABELS[access.access_level]}
-          </Badge>
+        {access?.is_direction ? (
+          <Badge tone="brand">Direcção</Badge>
+        ) : profileName ? (
+          <Badge tone="neutral">{profileName}</Badge>
         ) : (
-          <Badge tone="warning">Sem nível</Badge>
+          <Badge tone="warning">Sem perfil</Badge>
         )}
       </td>
       <td className="px-3 py-3 min-w-[6rem]">

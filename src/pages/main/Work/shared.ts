@@ -73,12 +73,25 @@ export function useWorkContext() {
     () => new Map(departments.map(d => [d.id, d.name])),
     [departments]
   )
-  const level = access.level
+  /*
+   * How far this admin's work reaches. The screens used to read the LEVEL —
+   * direction, manager, member — and the levels are gone; what is left is the
+   * same three answers, now derived from the permissions the API resolved.
+   *
+   * ⚠️ This is a label for the screens, never an authority. What an admin may
+   * actually do is decided in the API, in `work-visibility.ts`, against the
+   * same permissions. Reading it here is for showing and hiding.
+   */
+  const workScope: 'all' | 'department' | 'own' = access.isDirection
+    ? 'all'
+    : access.can('manage_department_work')
+      ? 'department'
+      : 'own'
   const myDepartment = access.department?.id ?? null
 
   return {
     meId,
-    level,
+    workScope,
     myDepartment,
     admins,
     departments,
@@ -89,10 +102,15 @@ export function useWorkContext() {
       ids.map(id => adminName.get(id) ?? 'Desconhecido'),
     /** Mirrors the API's canEditTask; the API decides, this only hides buttons. */
     canEdit: (t: WorkTask) =>
-      level === 'direction' ||
-      (level === 'manager' && t.department_id === myDepartment) ||
-      (level === 'member' && t.created_by === meId && t.status !== 'done'),
-    canManageProjects: level === 'direction' || level === 'manager',
-    canSeeReports: level === 'direction' || level === 'manager'
+      workScope === 'all' ||
+      (workScope === 'department' && t.department_id === myDepartment) ||
+      (workScope === 'own' && t.created_by === meId && t.status !== 'done'),
+    canManageProjects: workScope !== 'own',
+    /*
+     * Reports have a permission of their own now: running the department's
+     * work no longer implies reading its reports.
+     */
+    canSeeReports:
+      access.isDirection || access.can('view_department_reports')
   }
 }
