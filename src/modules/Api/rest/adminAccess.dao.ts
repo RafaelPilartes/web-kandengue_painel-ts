@@ -28,7 +28,12 @@ export type CreateAdminBody = {
   name: string
   email: string
   phone: string
-  password: string
+  /*
+   * ⚠️ There is no `password`. Nobody chooses an account's password and
+   * nobody sees it: the API creates the account with one it discards, and the
+   * person receives a link to set their own. Whoever created the account
+   * could otherwise sign in as it.
+   */
   status: AdminStatus
   photo?: string
   gender?: AdminGender

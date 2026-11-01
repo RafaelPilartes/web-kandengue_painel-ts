@@ -18,6 +18,7 @@ import { z } from 'zod'
 
 // Services
 import { useFileUploadViewModel } from '@/viewModels/FileUploadViewModel'
+import { useAuthViewModel } from '@/viewModels/AuthViewModel'
 
 // Data
 import { statusOptions } from '@/data/selectOption'
@@ -63,16 +64,6 @@ const formSchema = z.object({
   profile_id: z.string('Escolha o perfil.').min(1, 'Escolha o perfil.'),
   // Empty is a real answer: the greeting stays neutral.
   gender: z.enum(['female', 'male']).optional(),
-  password: z
-    .string('A palavra-passe é obrigatório!')
-    .min(6, 'A palavra-passe tem de no mínimo 6 caracteres')
-    .trim()
-    .refine(value => value, {
-      message: 'Por favor, preencha este campo.'
-    }),
-  confirm_password: z
-    .string()
-    .min(6, 'A confirmação de palavra-passe deve ter no mínimo 6 caracteres')
 })
 type formType = z.infer<typeof formSchema>
 
@@ -81,6 +72,7 @@ export function ModalCreateAdmin({
   setModalCreateRowIsOpen
 }: modalCreateType<any>) {
   const createAdmin = useCreateAdmin()
+  const { resetPassword } = useAuthViewModel()
   const { uploadSimple, isUploading, uploadError } = useFileUploadViewModel()
   const { departments } = useDepartments()
   const departmentOptions = departments
@@ -200,12 +192,7 @@ export function ModalCreateAdmin({
    * document write fails.
    */
   async function handleSubmitForm(dataForm: formType) {
-    if (dataForm.password !== dataForm.confirm_password) {
-      showToast('error', 'As palavras-passe não coincidem.')
-      return
-    }
-
-    try {
+      try {
       let imageUploaded =
         'https://cdn-icons-png.flaticon.com/512/10307/10307911.png'
 
@@ -222,7 +209,6 @@ export function ModalCreateAdmin({
         name: dataForm.name,
         email: dataForm.email,
         phone: dataForm.phone,
-        password: dataForm.password,
         status: dataForm.status,
         photo: imageUploaded,
         department_id: dataForm.department_id,
@@ -230,7 +216,23 @@ export function ModalCreateAdmin({
         gender: dataForm.gender
       })
 
-      showToast('success', 'Administrador criado com sucesso!')
+      /*
+       * O link vai pelo Firebase, directamente para a pessoa. É de propósito
+       * que não passa por quem cria a conta: ver o link é poder definir a
+       * palavra-passe, e isso era a escalada que isto fecha.
+       */
+      try {
+        await resetPassword(dataForm.email)
+        showToast(
+          'success',
+          'Administrador criado. Foi enviado um email para definir a palavra-passe.'
+        )
+      } catch {
+        showToast(
+          'warning',
+          'Administrador criado, mas o email para definir a palavra-passe não saiu. Usa "Esqueci-me da palavra-passe" no login com este email.'
+        )
+      }
       setTimeout(() => {
         closeModal()
       }, 3000)
@@ -388,24 +390,16 @@ export function ModalCreateAdmin({
                 />
               </div>
 
-              <div className="w-full grid gap-6 md:grid-cols-2">
-                <CustomInput
-                  type="password"
-                  htmlFor="password"
-                  label="Palavra Pass"
-                  placeholder="•••••••••"
-                  control={control}
-                  error={errors.password}
-                />
-                <CustomInput
-                  type="password"
-                  htmlFor="confirm_password"
-                  label="Confirme a Palavra Pass"
-                  placeholder="•••••••••"
-                  control={control}
-                  error={errors.confirm_password}
-                />
-              </div>
+              {/*
+                * Sem campos de palavra-passe, e é o ponto: quem cria a conta
+                * nunca a escolhe nem a vê. A pessoa recebe no email dela um
+                * link para a definir.
+                */}
+              <p className="w-full rounded-lg bg-gray-100 p-3 text-xs text-gray-600 dark:bg-gray-700/40 dark:text-gray-300">
+                A palavra-passe não se define aqui. Assim que a conta for
+                criada, <strong>a pessoa recebe no email dela</strong> um link
+                para a definir.
+              </p>
             </form>
       </AppModal>
     </>
