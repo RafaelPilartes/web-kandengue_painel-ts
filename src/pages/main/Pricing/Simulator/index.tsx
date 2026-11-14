@@ -24,7 +24,7 @@ import {
   usePricingProfilesViewModel,
   usePricingRulesViewModel
 } from '@/viewModels/PricingViewModel'
-import { formatMoney } from '@/utils/number'
+import { formatMoney, formatKwanza } from '@/utils/number'
 
 /**
  * Simulador de tarifas. **Só leitura — não grava nada.**
@@ -338,7 +338,7 @@ function Breakdown({
                 <span className="font-semibold whitespace-nowrap">
                   {rule.kind === 'percent'
                     ? `+${rule.value}%`
-                    : `+${formatMoney(rule.value)} Kz`}
+                    : `+${formatKwanza(rule.value)}`}
                 </span>
               </li>
             ))}
