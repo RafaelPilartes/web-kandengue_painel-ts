@@ -31,7 +31,7 @@ import {
   customDropoffIcon,
   customPickupIcon
 } from '@/data/customPickupIcon'
-import { formatMoney } from '@/utils/number'
+import { formatKwanza } from '@/utils/number'
 import { RideSkeleton } from './components/RideSkeleton'
 import { StatusBadge } from './components/StatusBadge'
 
@@ -559,8 +559,7 @@ export function RealtimePage() {
 
                     <div className="text-left">
                       <div className="text-sm font-medium">
-                        AOA{' '}
-                        {formatMoney(rideChargeOnScreen(selectedRide).total)}
+                        {formatKwanza(rideChargeOnScreen(selectedRide).total)}
                       </div>
                       <div className="text-xs text-gray-500 dark:text-gray-400">
                         Total

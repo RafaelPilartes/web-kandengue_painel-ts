@@ -4,7 +4,7 @@ import type { RideInterface } from '@/interfaces/IRide'
 import { CopyField } from '@/components/CopyField'
 import { StatusBadge } from '../components/StatusBadge'
 import { formatDateTimeFromFirestore } from '@/utils/date'
-import { formatMoney } from '@/utils/number'
+import { formatKwanza } from '@/utils/number'
 import {
   Mail,
   Phone,
@@ -56,8 +56,7 @@ export function RideDetailsPanel({
             <div className="flex items-center gap-3">
               <StatusBadge status={ride.status} />
               <div className="text-right">
-                <div className="text-sm font-bold text-gray-900 dark:text-white">
-                  AOA {formatMoney(charge.total)}
+                <div className="text-sm font-bold text-gray-900 dark:text-white">{formatKwanza(charge.total)}
                 </div>
                 {charge.provisional && (
                   <div className="text-[10px] text-gray-400">a confirmar</div>
@@ -97,8 +96,7 @@ export function RideDetailsPanel({
           <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg border border-gray-100 dark:border-gray-700">
             <StatusBadge status={ride.status} />
             <div className="text-right">
-              <div className="text-lg font-bold text-gray-900 dark:text-white">
-                AOA {formatMoney(charge.total)}
+              <div className="text-lg font-bold text-gray-900 dark:text-white">{formatKwanza(charge.total)}
               </div>
               {charge.provisional && (
                 <div className="text-[10px] text-gray-400">a confirmar</div>

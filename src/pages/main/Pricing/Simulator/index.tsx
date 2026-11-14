@@ -263,8 +263,7 @@ function Breakdown({
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-row items-baseline justify-between">
-        <span className="text-3xl font-bold text-dark dark:text-light">
-          AOA {formatMoney(fare.total)}
+        <span className="text-3xl font-bold text-dark dark:text-light">{formatKwanza(fare.total)}
         </span>
         <BadgeSimple
           label={`${DAY_OF_WEEK_LABELS[dia]} ${hora} · faixa ${band.start_time}–${band.end_time}`}

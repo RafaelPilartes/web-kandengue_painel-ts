@@ -16,7 +16,7 @@ import type { UserInterface } from '@/interfaces/IUser'
 import { useRidesViewModel } from '@/viewModels/RideViewModel'
 import type { RideInterface } from '@/interfaces/IRide'
 import { formatDateTimeFromFirestore } from '@/utils/date'
-import { formatMoney } from '@/utils/number'
+import { formatMoney, formatKwanza } from '@/utils/number'
 import { Card } from '@/components/ui/card'
 import { getRideStatusLabel } from '@/utils/gettersLabels'
 
@@ -171,7 +171,7 @@ export function UserViewPage() {
         <Card
           title="Total gasto com corridas"
           icon={<Wallet />}
-          value={`AOA ${formatMoney(passengerExpenses as number)}`}
+          value={formatKwanza(passengerExpenses as number)}
         />
         <Card
           title="Corridas Concluídas"

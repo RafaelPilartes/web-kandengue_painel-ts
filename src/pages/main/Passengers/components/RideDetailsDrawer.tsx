@@ -2,7 +2,7 @@ import { MapPin, Clock, CreditCard, User as UserIcon } from 'lucide-react'
 import { rideChargeOnScreen } from '@/helpers/fareReview'
 import type { RideInterface } from '@/interfaces/IRide'
 import { formatDateTimeFromFirestore } from '@/utils/date'
-import { formatMoney } from '@/utils/number'
+import { formatKwanza } from '@/utils/number'
 import { getRideStatusLabel } from '@/utils/gettersLabels'
 import { Avatar } from '@/components/ui/avatar'
 import { AppModal } from '@/components/modal/AppModal'
@@ -41,8 +41,7 @@ export function RideDetailsDrawer({ ride, isOpen, onClose }: RideDetailsDrawerPr
             </div>
             <div className="text-right">
               <span className="text-sm text-gray-500 dark:text-gray-400 block mb-1">Valor Total</span>
-              <span className="text-xl font-bold text-green-600 dark:text-green-400">
-                AOA {formatMoney(fareTotal)}
+              <span className="text-xl font-bold text-green-600 dark:text-green-400">{formatKwanza(fareTotal)}
               </span>
             </div>
           </div>
@@ -140,30 +139,29 @@ export function RideDetailsDrawer({ ride, isOpen, onClose }: RideDetailsDrawerPr
               <div className="text-sm space-y-2 text-gray-600 dark:text-gray-300">
                 <div className="flex justify-between">
                   <span>Tarifa Base:</span>
-                  <span>AOA {formatMoney(ride.fare.breakdown?.base_fare || 0)}</span>
+                  <span>{formatKwanza(ride.fare.breakdown?.base_fare || 0)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Custo Distância:</span>
-                  <span>AOA {formatMoney(ride.fare.breakdown?.distance_cost || 0)}</span>
+                  <span>{formatKwanza(ride.fare.breakdown?.distance_cost || 0)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Custo Espera:</span>
-                  <span>AOA {formatMoney(ride.fare.breakdown?.wait_cost || 0)}</span>
+                  <span>{formatKwanza(ride.fare.breakdown?.wait_cost || 0)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Taxa Seguro:</span>
-                  <span>AOA {formatMoney(ride.fare.breakdown?.insurance_fee || 0)}</span>
+                  <span>{formatKwanza(ride.fare.breakdown?.insurance_fee || 0)}</span>
                 </div>
                 {(ride.fare.breakdown?.discount || 0) > 0 && (
                   <div className="flex justify-between text-green-500">
                     <span>Desconto:</span>
-                    <span>- AOA {formatMoney(ride.fare.breakdown?.discount || 0)}</span>
+                    <span>−{formatKwanza(ride.fare.breakdown?.discount || 0)}</span>
                   </div>
                 )}
                 <div className="flex justify-between font-bold pt-2 border-t border-gray-200 dark:border-gray-700">
                   <span>Total:</span>
-                  <span className={isCanceled ? "text-gray-500 line-through" : ""}>
-                    AOA {formatMoney(fareTotal)}
+                  <span className={isCanceled ? "text-gray-500 line-through" : ""}>{formatKwanza(fareTotal)}
                   </span>
                 </div>
               </div>

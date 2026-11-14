@@ -24,7 +24,7 @@ import type { RideReviewFlag } from '@rafaelpilartes/kandengue-shared/types'
 import { mapApiError, stripMarkdown } from '@/helpers/apiError'
 import { auditService } from '@/observability/audit'
 import { formatDateTimeFromFirestore } from '@/utils/date'
-import { formatMoney } from '@/utils/number'
+import { formatKwanza } from '@/utils/number'
 import {
   FARE_DISTANCE_SOURCE_LABELS,
   TRACK_END_REFERENCE_LABELS,
@@ -610,7 +610,7 @@ function MoneyColumn({
   const desvioBruto =
     grossDelta === null || grossDelta === undefined || grossDelta === 0
       ? null
-      : `${grossDelta > 0 ? '+' : '−'}AOA ${formatMoney(Math.abs(grossDelta))}`
+      : `${grossDelta > 0 ? '+' : '−'}${formatKwanza(Math.abs(grossDelta))}`
 
   return (
     <div className="flex flex-col gap-2 p-4 rounded-md bg-gray-50 dark:bg-gray-800">
@@ -633,7 +633,7 @@ function MoneyColumn({
                 : 'text-dark dark:text-light'
             }`}
           >
-            AOA {formatMoney(side.gross)}
+            {formatKwanza(side.gross)}
           </dd>
         </div>
 
@@ -648,14 +648,14 @@ function MoneyColumn({
                   : 'text-gray-400 dark:text-gray-500'
             }`}
           >
-            {side.discount > 0 ? `−AOA ${formatMoney(side.discount)}` : '—'}
+            {side.discount > 0 ? `−${formatKwanza(side.discount)}` : '—'}
           </dd>
         </div>
 
         <div className="flex flex-row justify-between pt-1 border-t border-gray-200 dark:border-gray-700">
           <dt className="font-semibold text-dark dark:text-light">Total</dt>
           <dd className="font-mono font-bold text-dark dark:text-light">
-            AOA {formatMoney(side.total)}
+            {formatKwanza(side.total)}
           </dd>
         </div>
       </dl>
@@ -701,7 +701,7 @@ function ReservationFailedNotice({
           <span className="text-xs text-gray-600 dark:text-gray-300">
             {perdido > 0 ? (
               <>
-                A cotação mostrou <strong>AOA {formatMoney(perdido)}</strong> de
+                A cotação mostrou <strong>{formatKwanza(perdido)}</strong> de
                 desconto e o fecho não aplicou nenhum: o código esgotou-se
                 entre a cotação e a criação da corrida.{' '}
               </>

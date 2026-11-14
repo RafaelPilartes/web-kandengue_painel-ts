@@ -1,3 +1,4 @@
+import { formatKwanza } from '@/utils/number'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Plus, Tag, Eye, Edit2, Power } from 'lucide-react'
@@ -180,7 +181,7 @@ export function PromotionsPage() {
                     ? `${p.value}%`
                     : p.type === 'free_ride'
                       ? '100%'
-                      : `${p.value} AOA`
+                      : formatKwanza(p.value)
                 return (
                   <tr
                     key={p.code}

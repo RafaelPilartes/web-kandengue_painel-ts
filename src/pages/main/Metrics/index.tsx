@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react'
 import { Breadcrumbs } from '@/components/Breadcrumbs'
 import { routsNameMain } from '@/constants/routsName'
 import { useRidesViewModel } from '@/viewModels/RideViewModel'
-import { formatMoney } from '@/utils/number'
+import { formatMoney, formatKwanza } from '@/utils/number'
 import { Bar, Line, Pie } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
@@ -235,7 +235,7 @@ export function MetricsPage() {
       labels,
       datasets: [
         {
-          label: 'Receita (AOA)',
+          label: 'Receita (Kz)',
           data: revenues,
           backgroundColor: 'rgba(37,99,235,0.6)',
           borderWidth: 1
@@ -362,12 +362,12 @@ export function MetricsPage() {
         <StatCard label="Total Corridas" value={metrics.totalRides} />
         <StatCard
           label="Receita Total"
-          value={`AOA ${formatMoney(metrics.totalRevenue)}`}
+          value={formatKwanza(metrics.totalRevenue)}
           highlight
         />
         <StatCard
           label="Ticket Médio"
-          value={`AOA ${formatMoney(metrics.avgTicket)}`}
+          value={formatKwanza(metrics.avgTicket)}
         />
         <StatCard
           label="Distância Média"
@@ -605,7 +605,7 @@ export function MetricsPage() {
                     </div>
                   </div>
                   <div className="text-xs font-medium text-gray-500">
-                    AOA {formatMoney(driver.revenue)}
+                    {formatKwanza(driver.revenue)}
                   </div>
                 </div>
               ))}
