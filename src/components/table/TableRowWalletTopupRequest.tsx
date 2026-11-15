@@ -7,7 +7,7 @@ import {
   getWalletTopupStatusLabel,
   getWalletTopupMethodTypeLabel
 } from '@/utils/gettersLabels'
-import { formatMoney } from '@/utils/number'
+import { formatKwanza } from '@/utils/number'
 import { Check, Wallet } from 'lucide-react'
 import { FiX } from 'react-icons/fi'
 
@@ -51,7 +51,7 @@ export default function TableRowWalletTopupRequest({
         </div>
       </td>
 
-      <td className="px-3 py-3 font-bold">{formatMoney(rowItem.amount)} AOA</td>
+      <td className="px-3 py-3 font-bold">{formatKwanza(rowItem.amount)}</td>
 
       {/* Comprovativo: a miniatura chega para decidir se vale a pena abrir. */}
       <td className="px-3 py-3">

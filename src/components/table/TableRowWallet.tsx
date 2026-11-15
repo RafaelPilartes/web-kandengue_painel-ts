@@ -1,7 +1,7 @@
 import { ActionsMenu } from '@/components/ActionsMenu'
 import type { WalletInterface } from '@/interfaces/IWallet'
 import { getStatusLabel } from '@/utils/gettersLabels'
-import { formatMoney } from '@/utils/number'
+import { formatKwanza } from '@/utils/number'
 import { Eye, Lock, Unlock, Wallet } from 'lucide-react'
 
 interface TableRowWalletProps {
@@ -39,7 +39,7 @@ export default function TableRowWallet({
       </td>
       <td className="px-3 py-3">{rowItem.user.phone}</td>
       <td className="px-3 py-3 text-green-600 font-bold">
-        {formatMoney(rowItem.balance)} AOA
+        {formatKwanza(rowItem.balance)}
       </td>
       <td className="px-3 py-3">
         <span

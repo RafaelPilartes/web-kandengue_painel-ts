@@ -74,7 +74,7 @@ export const rideCalculation = {
       labels: months,
       datasets: [
         {
-          label: 'Receita por mês (AOA)',
+          label: 'Receita por mês (Kz)',
           data: revenues,
           backgroundColor: '#10B981'
         }

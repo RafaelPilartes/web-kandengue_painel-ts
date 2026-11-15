@@ -29,7 +29,7 @@ import { useUsersViewModel } from '@/viewModels/UserViewModel'
 import { useDriversViewModel } from '@/viewModels/DriverViewModel'
 import { useRidesViewModel } from '@/viewModels/RideViewModel'
 import { Spinner } from 'phosphor-react'
-import { formatMoney } from '@/utils/number'
+import { formatKwanza } from '@/utils/number'
 import { rideCalculation } from '@/utils/rideCalculation'
 import { useAccess } from '@/hooks/useAccess'
 import { useAdminStore } from '@/stores/userStore'
@@ -185,7 +185,7 @@ function OperationOverview() {
           ) : (
             <>
               <div className="text-3xl font-bold text-amber-900 dark:text-amber-100 tracking-tight">
-                AOA {formatMoney(companyProfit)}
+                {formatKwanza(companyProfit)}
               </div>
               <p className="text-xs text-amber-700 dark:text-amber-400 mt-2">
                 Faturamento da empresa

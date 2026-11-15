@@ -10,7 +10,7 @@ import { ActionsMenu } from '../ActionsMenu'
 import { Eye } from 'lucide-react'
 import { formatDateTimeFromFirestore } from '@/utils/date'
 import { colorRideStatusSimple } from '@/utils/colorBy'
-import { formatMoney } from '@/utils/number'
+import { formatKwanza } from '@/utils/number'
 
 interface TableRowProps {
   rowItem: RideInterface
@@ -107,7 +107,7 @@ const TableRow: React.FC<TableRowProps> = ({
           ⚠️ O `fare` só existe depois do fecho; uma corrida a decorrer
           mostrava 0 AOA. Ver `rideChargeOnScreen`.
         */}
-        <p>{formatMoney(charge.total)} AOA</p>
+        <p>{formatKwanza(charge.total)}</p>
         {charge.provisional && (
           <p className="text-[10px] text-gray-400">a confirmar</p>
         )}

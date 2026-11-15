@@ -5,7 +5,7 @@ import { AlertTriangle, RotateCcw, Wallet } from 'lucide-react'
 import { Breadcrumbs } from '@/components/Breadcrumbs'
 import { BadgeSimple } from '@/components/badge/BadgeSimple'
 import { useLowBalanceViewModel } from '@/viewModels/LowBalanceViewModel'
-import { formatMoney } from '@/utils/number'
+import { formatKwanza } from '@/utils/number'
 import { routsNameMain } from '@/constants/routsName'
 
 /**
@@ -36,7 +36,7 @@ export function BalancesPage() {
         </div>
         <p className="text-sm text-gray-600 dark:text-gray-300">
           O mínimo para receber corridas é{' '}
-          <strong>{formatMoney(minimo)} Kz</strong>. Quem está abaixo não
+          <strong>{formatKwanza(minimo)}</strong>. Quem está abaixo não
           aparece no dispatch, mesmo com viatura validada e serviços aprovados.
         </p>
       </div>
@@ -60,7 +60,7 @@ export function BalancesPage() {
             />
             <Resumo
               label="Falta carregar, ao todo"
-              value={`${formatMoney(somaEmFalta)} Kz`}
+              value={formatKwanza(somaEmFalta)}
             />
           </div>
 
@@ -122,7 +122,7 @@ export function BalancesPage() {
                                 : 'text-amber-600 dark:text-amber-400'
                             }`}
                           >
-                            {formatMoney(saldo)} Kz
+                            {formatKwanza(saldo)}
                             {/* Ausente conta como zero, como no dispatch. */}
                             {typeof wallet.balance !== 'number' && (
                               <span className="block text-[10px] font-normal text-gray-400">
@@ -132,7 +132,7 @@ export function BalancesPage() {
                           </td>
 
                           <td className="px-3 py-3 text-right whitespace-nowrap text-gray-700 dark:text-gray-200">
-                            {formatMoney(falta)} Kz
+                            {formatKwanza(falta)}
                           </td>
 
                           <td className="px-3 py-3">

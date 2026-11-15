@@ -10,6 +10,7 @@ import {
   explainSource,
   NO_CONTACT_LABEL,
   type PrivateContacts,
+  ridePersonNames,
   rideContacts
 } from '@/helpers/rideContacts'
 import { rideUseCase } from '@/domain/usecases/rideUseCase'
@@ -31,7 +32,7 @@ import {
   customDropoffIcon,
   customPickupIcon
 } from '@/data/customPickupIcon'
-import { formatMoney } from '@/utils/number'
+import { formatKwanza } from '@/utils/number'
 import { RideSkeleton } from './components/RideSkeleton'
 import { StatusBadge } from './components/StatusBadge'
 
@@ -254,9 +255,9 @@ export function RealtimePage() {
                   <span className="text-sm font-medium text-gray-800 dark:text-gray-100">
                     {ride.user?.name}
                   </span>
-                  <span className="text-xs text-gray-500 dark:text-gray-300">
-                    {ride.user?.email}
-                  </span>
+                  {/* ⚠️ `user.email` saiu da corrida na 2.0.0 e nunca mais foi escrito:
+                      isto renderizava vazio. O email do passageiro está no
+                      documento dele, não na corrida. */}
                 </div>
               </div>
               <button className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600">
@@ -443,16 +444,20 @@ export function RealtimePage() {
                 </h4>
                 <div className="flex items-center gap-3">
                   <img
-                    src={selectedRide.user?.photo || '/default-avatar.png'}
+                    src={
+                      ridePersonNames(selectedRide, privateContacts)
+                        .passengerPhoto.value || '/default-avatar.png'
+                    }
                     alt={selectedRide.user?.name}
                     className="w-10 h-10 rounded-full object-cover"
                   />
                   <div className="flex-1">
                     <h5 className="text-sm font-medium text-gray-900 dark:text-white">
-                      {selectedRide.user?.name || 'Cliente'}
+                      {ridePersonNames(selectedRide, privateContacts).passenger
+                        .value || 'Cliente'}
                     </h5>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {selectedRide.user?.email}
+                      {''}
                     </p>
                   </div>
                 </div>
@@ -559,8 +564,7 @@ export function RealtimePage() {
 
                     <div className="text-left">
                       <div className="text-sm font-medium">
-                        AOA{' '}
-                        {formatMoney(rideChargeOnScreen(selectedRide).total)}
+                        {formatKwanza(rideChargeOnScreen(selectedRide).total)}
                       </div>
                       <div className="text-xs text-gray-500 dark:text-gray-400">
                         Total

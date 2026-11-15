@@ -21,7 +21,7 @@ import {
 } from 'chart.js'
 import { Breadcrumbs } from '@/components/Breadcrumbs'
 import { routsNameMain } from '@/constants/routsName'
-import { formatMoney } from '@/utils/number'
+import { formatMoney, formatKwanza } from '@/utils/number'
 import { showToast } from '@/utils/toasts'
 import {
   usePromotionDetailViewModel,
@@ -150,7 +150,7 @@ export function PromotionDetailsPage() {
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400">
               {promotion.type === 'percentage' && `${promotion.value}% de desconto`}
-              {promotion.type === 'fixed' && `${promotion.value} AOA de desconto`}
+              {promotion.type === 'fixed' && `${formatKwanza(promotion.value)} de desconto`}
               {promotion.type === 'free_ride' && 'Ride totalmente grátis'}
             </p>
           </div>
@@ -254,7 +254,7 @@ export function PromotionDetailsPage() {
               <p className="text-sm">
                 Recompensa:{' '}
                 {promotion.referral.reward_type === 'fixed'
-                  ? `${promotion.referral.reward_value} AOA`
+                  ? formatKwanza(promotion.referral.reward_value)
                   : `${promotion.referral.reward_value}%`}
               </p>
             </div>

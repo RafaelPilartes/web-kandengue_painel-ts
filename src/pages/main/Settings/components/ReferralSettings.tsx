@@ -43,7 +43,7 @@ export function ReferralSettings() {
       <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 flex flex-col gap-4">
         <div className="flex flex-col gap-1">
           <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            Valor mínimo para saque (AOA)
+            Valor mínimo para saque (Kz)
           </label>
           <input
             type="number"

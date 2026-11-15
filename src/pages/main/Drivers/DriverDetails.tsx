@@ -56,7 +56,7 @@ import type { DriverInterface } from '@/interfaces/IDriver'
 import { useRidesViewModel } from '@/viewModels/RideViewModel'
 import type { RideInterface } from '@/interfaces/IRide'
 import { formatDateTimeFromFirestore } from '@/utils/date'
-import { formatMoney } from '@/utils/number'
+import { formatMoney, formatKwanza } from '@/utils/number'
 import { Card } from '@/components/ui/card'
 import { useTransactionsViewModel } from '@/viewModels/TransactionViewModel'
 import { useWalletTopupRequestsViewModel } from '@/viewModels/WalletTopupRequestViewModel'
@@ -1092,7 +1092,7 @@ export function DriverViewPage() {
           icon={<Wallet />}
           value={
             rowDataWallet
-              ? `AOA ${formatMoney(rowDataWallet?.balance as number)}`
+              ? formatKwanza(rowDataWallet?.balance as number)
               : 'Sem carteira criada'
           }
         />

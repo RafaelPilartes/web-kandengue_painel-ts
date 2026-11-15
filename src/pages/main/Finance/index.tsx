@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { Breadcrumbs } from '@/components/Breadcrumbs'
 import { SelectSearchableCustom } from '@/components/selects/SelectSearchableCustom'
 import { DatePickerCustom } from '@/components/selects/DatePickerCustom'
-import { formatMoney } from '@/utils/number'
+import { formatMoney, formatKwanza } from '@/utils/number'
 import { useFinanceViewModel } from '@/viewModels/FinanceViewModel'
 import type { FinanceFilters, FinancialLedgerEntry } from '@/interfaces/IFinance'
 import { formatDateTimeFromFirestore } from '@/utils/date'
@@ -149,7 +149,7 @@ export function FinancePage() {
             {filtered.length > 0 && (
               <tfoot className="bg-gray-50 dark:bg-gray-900/80 font-bold text-sm border-t-2 border-gray-200 dark:border-gray-700">
                 <tr>
-                  <td colSpan={7} className="px-4 py-3 text-right uppercase tracking-wider text-gray-500 text-xs">Totais da Seleção (AOA):</td>
+                  <td colSpan={7} className="px-4 py-3 text-right uppercase tracking-wider text-gray-500 text-xs">Totais da Seleção (Kz):</td>
                   <td className="px-4 py-3 text-right text-gray-400 italic">{formatMoney(tableTotals.gross)}</td>
                   <td className="px-4 py-3 text-right text-blue-600">{formatMoney(tableTotals.company)}</td>
                   <td className="px-4 py-3 text-right text-emerald-600">{formatMoney(tableTotals.driver)}</td>
@@ -325,11 +325,11 @@ export function FinancePage() {
                       <div key={method} className="flex flex-col border-b border-gray-100 dark:border-gray-700 pb-3 last:border-0">
                         <div className="flex justify-between items-center text-sm font-semibold text-gray-700 dark:text-gray-300">
                           <span className="uppercase">{method}</span>
-                          <span className="text-gray-900 dark:text-white">AOA {formatMoney(data.total)}</span>
+                          <span className="text-gray-900 dark:text-white">{formatKwanza(data.total)}</span>
                         </div>
                         <div className="flex justify-between text-xs text-gray-500 mt-1">
                           <span>{data.count} Transações confirmadas</span>
-                          <span>Receita real: <strong className="text-blue-500">AOA {formatMoney(data.company)}</strong></span>
+                          <span>Receita real: <strong className="text-blue-500">{formatKwanza(data.company)}</strong></span>
                         </div>
                       </div>
                     ))}
@@ -346,8 +346,8 @@ export function FinancePage() {
                         <div className="flex justify-between items-center text-sm font-semibold text-gray-700 dark:text-gray-300">
                           <span className="uppercase">{cat}</span>
                           <div className="flex flex-col items-end">
-                            <span className="text-gray-400 text-[10px] italic">Movimentado: AOA {formatMoney(data.total)}</span>
-                            <span className="text-green-600 font-bold underline">Líquido: AOA {formatMoney(data.net)}</span>
+                            <span className="text-gray-400 text-[10px] italic">Movimentado: {formatKwanza(data.total)}</span>
+                            <span className="text-green-600 font-bold underline">Líquido: {formatKwanza(data.net)}</span>
                           </div>
                         </div>
                       </div>
@@ -410,7 +410,7 @@ function StatBox({ label, value, icon: Icon, color = 'gray', raw = false }: Stat
         )}
       </div>
       <div className={`text-2xl font-black tracking-tight ${color === 'gray' ? 'text-gray-900 dark:text-white' : getColors().split(' ')[1]}`}>
-        {raw ? value : `AOA ${formatMoney(Number(value))}`}
+        {raw ? value : formatKwanza(Number(value))}
       </div>
     </div>
   )
