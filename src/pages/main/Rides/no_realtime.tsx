@@ -520,7 +520,8 @@ export function RealtimePage() {
                         </div>
                         <div className="flex-1">
                           <p className="font-medium">
-                            {selectedRide.details.receiver.name}
+                            {ridePersonNames(selectedRide, privateContacts)
+                              .receiver.value ?? '—'}
                           </p>
                           <p
                             className="text-sm"

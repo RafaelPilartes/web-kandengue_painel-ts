@@ -292,7 +292,8 @@ export const notifications: NotificationInterface[] = [
 export const rides: RideInterface[] = [
   {
     id: 'r1',
-    user: users[2],
+    /* Retrato mínimo, como o `RideUserSnapshotType` da lib. */
+    user: { id: users[2].id ?? '', name: users[2].name },
     driver: drivers[0],
     pickup: {
       name: 'Bengo, Luanda',
@@ -331,7 +332,8 @@ export const rides: RideInterface[] = [
   },
   {
     id: 'r2',
-    user: users[3],
+    /* Retrato mínimo, como o `RideUserSnapshotType` da lib. */
+    user: { id: users[3].id ?? '', name: users[3].name },
     driver: drivers[1],
     pickup: {
       name: 'Luanda, Maianga',
@@ -370,7 +372,8 @@ export const rides: RideInterface[] = [
   },
   {
     id: 'r3',
-    user: users[3],
+    /* Retrato mínimo, como o `RideUserSnapshotType` da lib. */
+    user: { id: users[3].id ?? '', name: users[3].name },
     driver: drivers[0],
     pickup: {
       name: 'Rua Samba, Luanda',
@@ -410,7 +413,8 @@ export const rides: RideInterface[] = [
   },
   {
     id: 'r4',
-    user: users[2],
+    /* Retrato mínimo, como o `RideUserSnapshotType` da lib. */
+    user: { id: users[2].id ?? '', name: users[2].name },
     driver: drivers[1],
     pickup: {
       name: 'Rua Mutamba, Luanda',
