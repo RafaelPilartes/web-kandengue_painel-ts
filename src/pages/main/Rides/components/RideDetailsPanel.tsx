@@ -203,6 +203,8 @@ export function RideDetailsPanel({
                 />
                 <div>
                   <h5 className="font-medium text-sm text-gray-900 dark:text-white">
+                    {/* ⚠️ Sem o privado, uma corrida nova não traz o nome —
+                        ver `ridePersonNames` no helpers/rideContacts. */}
                     {ride.user?.name || 'Cliente'}
                   </h5>
                   <div className="text-[10px] text-gray-500">Passageiro</div>
@@ -211,7 +213,7 @@ export function RideDetailsPanel({
               <div className="space-y-1.5">
                 <CopyField
                   icon={<Mail size={12} />}
-                  value={ride.user?.email || 'N/A'}
+                  value={'N/A'}
                 />
                 <div className="h-6"></div>{' '}
                 {/* Spacer to align with driver cards */}
@@ -264,7 +266,7 @@ export function RideDetailsPanel({
                 </p>
                 <p>
                   <span className="font-medium">Para:</span>{' '}
-                  {ride.details.receiver.name}
+                  {ride.details.receiver?.name ?? '—'}
                 </p>
               </div>
             </div>
